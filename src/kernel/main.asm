@@ -2,40 +2,40 @@ ORG 0x7C00
 BITS 16
 
 main:
-    mov ax, 0
-    mov ds, ax
-    mov es, ax
-    mov ss, ax
+    MOV ax, 0
+    MOV ds, ax
+    MOV es, ax
+    MOV ss, ax
 
-    mov sp, 0x7C00
-    mov si, os_boot_msg
-    call print
+    MOV sp, 0x7C00
+    MOV si, os_boot_msg
+    CALL print
     HLT
 
 halt:
     JMP halt
 
 print:
-    push si
-    push ax
-    push bx
+    PUSH si
+    PUSH ax
+    PUSH bx
 
 print_loop:
-    lodsb
-    or al,al
-    jz done_print
+    LODSB
+    OR al,al
+    JZ done_print
 
-    mov ah, 0x0E
-    mov bh, 0
-    int 0x10
+    MOV ah, 0x0E
+    MOV bh, 0
+    INT 0x10
 
     JMP print_loop
 
 done_print:
-    pop bx
-    pop ax
-    pop si
-    ret
+    POP bx
+    POP ax
+    POP si
+    RET
 
 os_boot_msg: DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0
 
