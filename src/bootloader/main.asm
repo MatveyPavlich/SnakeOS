@@ -26,41 +26,79 @@ ebr_volume_label:           DB 'MatthewOS  '  ; Must be exactly 11 bytes
 ebr_system_id:              DB 'FAT12   '     ; Must be exactly 8 bytes
 
 
-; Initialise data, extra and stack segments
 main:
-    MOV ax, 0x0000      ; Get 0 into ax to later use as data, code and extra segment
-    MOV ds, ax          ; Use first data segment
-    MOV es, ax          ; Use first extra segment
-    MOV ss, ax          ; Use first stack segment
+    MOV ax, 0x0000              ; Get 0 into ax to later use as memory segment number
+    MOV ds, ax                  ; Pick first memory segment for data
+    MOV es, ax                  ; Pick first memory segment for extra segment also
+    MOV ss, ax                  ; Pick first memory segment for stack segment also
 
-    MOV sp, 0x7C00
-    MOV si, os_boot_msg ; Set string pointer to msg start
+    ; Set up disk stuff (WIP)
+    MOV [ebr_drive_number], dl  ; I think the guy is wrong here
+    MOV ax, 1                   ; LBA block to use in a disk_read
+    MOV cl, 1                   ; Sector number on the disk
+    MOV bx, 0x07E00 ; ???
+    CALL disk_read
+
+    MOV sp, 0x7C00              ; Make stack occumy memory above bootloader code
+    MOV si, os_boot_msg         ; Set string pointer to msg start
     CALL print
     HLT
 
 halt:
     JMP halt
 
-print:
-    PUSH si
+; --------------------------(WIP)--------------------
+; Input:
+;   AX = LBA
+; Output:
+;   CH = Cylinder (low 8 bits)
+;   DH = Head
+;   CL = Sector (bits 0-5), top bits hold high 2 bits of cylinder (for BIOS 10-bit cylinder)
+lba_to_chs:
+    MOV ax, [bdb_heads]               ; Move heads/cylinders
+    MUL [bdb_sectors_per_track]       ; Do (heads/cylinders) * (sectors/track)
+    MOV [0x7F00], ax                  ; Save the cylinder
+    XOR ax, ax
+    MOV al, 2                         ; Need second sector since after bootloader?
+    DIV [bdb_sectors_per_track]       ; Do
+    DIV [bdb_heads]                   ; al already contains (LBA/SPT). Just doing modulus with  HPC
+    MOV [0x7F001], al                 ; Saving head
+    XOR ax, ax
+    MOV al, 2
+    DIV [bdb_sectors_per_track]       ; Do LBA % STP
+    ADD al, 1
+    MOV [0x7F002]                     ; Save sectors to memory
+
+
+disk_read:
     PUSH ax
     PUSH bx
+    PUSH cx
+    PUSH dx
+    PUSH di
+
+    CALL lba_to_chs
+
+print:
+    PUSH si             ; Preserve 
+    PUSH ax
+    PUSH bx             ; Preserve bx and fall trhough to code below
 
 print_loop:
-    LODSB
-    OR al, al
-    JZ done_print
+    LODSB               ; Load DS:SI byte to al, then increment SI
+    OR al, al           ; Hacky way to avoid CMP al, 0x00
+    JZ done_print       ; Finish printing if zero
 
-    MOV ah, 0x0E
-    MOV bh, 0
-    int 0x10
+    MOV ah, 0x0E        ; Set ah to 0x0E to access BIOS teletype print
+    MOV bh, 0           ; Set page number to 0
+    int 0x10            ; Call BIOS interrup
 
     JMP print_loop
 
 done_print:
-    POP bx
-    POP ax
-    POP si
+    POP bx             ; Get bx value from before print loop
+    POP ax             ; Get ax value from before print loop
+    POP si             ; Get si value from before print loop
     RET
 
 os_boot_msg: DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0x00
