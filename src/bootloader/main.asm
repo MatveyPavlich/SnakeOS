@@ -48,27 +48,30 @@ halt:
     JMP halt
 
 ; --------------------------(WIP)--------------------
-; Input:
-;   AX = LBA
-; Output:
-;   CH = Cylinder (low 8 bits)
-;   DH = Head
-;   CL = Sector (bits 0-5), top bits hold high 2 bits of cylinder (for BIOS 10-bit cylinder)
+; Input:  ax = LBA
+; Output: ch = cylinder | cl = sector | dh = head 
 lba_to_chs:
-    MOV ax, [bdb_heads]               ; Move heads/cylinders
-    MUL [bdb_sectors_per_track]       ; Do (heads/cylinders) * (sectors/track)
-    MOV [0x7F00], ax                  ; Save the cylinder
-    XOR ax, ax
-    MOV al, 2                         ; Need second sector since after bootloader?
-    DIV [bdb_sectors_per_track]       ; Do
-    DIV [bdb_heads]                   ; al already contains (LBA/SPT). Just doing modulus with  HPC
-    MOV [0x7F001], al                 ; Saving head
-    XOR ax, ax
-    MOV al, 2
-    DIV [bdb_sectors_per_track]       ; Do LBA % STP
-    ADD al, 1
-    MOV [0x7F002]                     ; Save sectors to memory
+    PUSH ax
+    PUSH dx
 
+    XOR dx,dx
+    DIV word [bdb_sectors_per_track] ;(LBA % sectors per track) + 1 <- sector
+    INC dx  ;Sector
+    MOV cx,dx
+
+    XOR dx,dx
+    DIV word [bdb_heads]
+
+    MOV dh,dl ;head
+    MOV ch,al
+    SHL ah, 6
+    OR CL, AH   ;cylinder
+
+    POP ax
+    MOV dl,al
+    POP ax
+
+    RET
 
 disk_read:
     PUSH ax
@@ -77,7 +80,45 @@ disk_read:
     PUSH dx
     PUSH di
 
-    CALL lba_to_chs
+    call lba_to_chs
+
+    MOV ah, 02h
+    MOV di, 3   ;counter
+
+retry:
+    STC
+    INT 13h
+    jnc doneRead
+ 
+    call diskReset
+
+    DEC di
+    TEST di,di
+    JNZ retry
+
+failDiskRead:
+    MOV si, read_failure
+    CALL print
+    HLT
+    JMP halt
+
+diskReset:
+    pusha
+    MOV ah,0
+    STC
+    INT 13h
+    JC failDiskRead
+    POPA
+    RET
+
+doneRead:
+    pop di
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+
+    ret
 
 print:
     PUSH si             ; Preserve 
@@ -102,6 +143,15 @@ done_print:
     RET
 
 os_boot_msg: DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0x00
+read_failure DB "Failed to read disk!", 0x0D, 0x0A, 0
+file_kernel_bin DB "KERNEL  BIN"
+msg_kernel_not_found DB "KERNEL.BIN not found!"
+kernel_cluster DW 0
+
+kernel_load_segment EQU 0x2000
+kernel_load_offset EQU 0
 
 TIMES 510-($-$$) DB 0
 DW 0xAA55
+
+buffer:
