@@ -1,8 +1,8 @@
-ORG 0x7C00
-BITS 16
+ORG 0x7C00              ; Info for assembler only (do not see in code)
+BITS 16                 ; Info for assembler only (do not see in code)
 
-JMP SHORT main
-NOP
+JMP SHORT main          ; Jump to code in main (<127 bytes down in memo, so use SHORT)
+NOP                     ; Do nothing for 1 CPU cycle
 
 bdb_oem:         DB     'MSWIN4.1'
 bdb_bytes_per_sector:       DW 512 ; (0x0200 in hex)
@@ -18,7 +18,7 @@ bdb_heads:                  DW 2
 bdb_hidden_sectors:         DD 0
 bdb_large_sector_count:     DD 0
 
-ebr_drive_number:           DB 0
+ebr_drive_number:           DB 0x00           ; Hardcoding that we are using a floppy disk
                             DB 0              ; Reserved, often used for "current head"
 ebr_signature:              DB 0x29
 ebr_volume_id:              DB 0x12, 0x34, 0x56, 0x78
@@ -27,19 +27,20 @@ ebr_system_id:              DB 'FAT12   '     ; Must be exactly 8 bytes
 
 
 main:
-    MOV ax, 0x0000              ; Get 0 into ax to later use as memory segment number
+    MOV ax, 0                   ; Get 0 into ax to later use as memory segment number
     MOV ds, ax                  ; Pick first memory segment for data
     MOV es, ax                  ; Pick first memory segment for extra segment also
     MOV ss, ax                  ; Pick first memory segment for stack segment also
 
-    ; Set up disk stuff (WIP)
-    MOV [ebr_drive_number], dl  ; I think the guy is wrong here
-    MOV ax, 1                   ; LBA block to use in a disk_read
-    MOV cl, 1                   ; Sector number on the disk
-    MOV bx, 0x07E00 ; ???
-    CALL disk_read
+    MOV sp, 0x7C00             ; Make stack occupy memory above bootloader code
 
-    MOV sp, 0x7C00              ; Make stack occumy memory above bootloader code
+    ; Set up disk stuff (WIP)
+    MOV [ebr_drive_number], dl  ; BIOS sets dl to device that had bootloader (0x00 -> floppy, 0x80 -> HHD) 
+    MOV ax, 1                   ; LBA block to use in a disk_read (0 is bootloader)
+    MOV cl, 1                   ; Sector number on the disk
+    MOV bx, 0x07E00             ; Pointer to memory buffer to write disk sectors. Will be written to ES:BX
+    CALL disk_read
+             
     MOV si, os_boot_msg         ; Set string pointer to msg start
     CALL print
     HLT
@@ -51,7 +52,7 @@ halt:
 ; Input:  ax = LBA
 ; Output: ch = cylinder | cl = sector | dh = head 
 lba_to_chs:
-    PUSH ax
+    PUSH ax                          
     PUSH dx
 
     XOR dx,dx
@@ -74,19 +75,18 @@ lba_to_chs:
     RET
 
 disk_read:
-    PUSH ax
-    PUSH bx
-    PUSH cx
-    PUSH dx
-    PUSH di
+    PUSH ax                    ; Preserve number of sectors to read
+    PUSH bx                    ; Preserver pointer to the memory buffer to dump sectors from disk      
+    PUSH cx                    ; Preserve sector number
+    PUSH dx                    ; Preserver device identifier
 
     call lba_to_chs
 
-    MOV ah, 02h
+    MOV ah, 0x2
     MOV di, 3   ;counter
 
 retry:
-    STC
+    STC          ; Way to set up a carry in BIOS
     INT 13h
     jnc doneRead
  
@@ -144,12 +144,6 @@ done_print:
 
 os_boot_msg: DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0x00
 read_failure DB "Failed to read disk!", 0x0D, 0x0A, 0
-file_kernel_bin DB "KERNEL  BIN"
-msg_kernel_not_found DB "KERNEL.BIN not found!"
-kernel_cluster DW 0
-
-kernel_load_segment EQU 0x2000
-kernel_load_offset EQU 0
 
 TIMES 510-($-$$) DB 0
 DW 0xAA55
