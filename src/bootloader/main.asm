@@ -23,8 +23,14 @@ ebr_drive_number:           DB 0x00           ; Hardcoding that we are using a f
 ebr_signature:              DB 0x29
 ebr_volume_id:              DB 12h,34h,56h,78h
 ebr_volume_label:           DB 'MatthewOS  '  ; Must be exactly 11 bytes
-ebr_system_id:              DB 'FAT12   '     ; Must be exactly 8 bytes
+ebr_system_id:              DB 'FAT12   '     ; Magical value that tells it is FAT12 (must be 8 bytes)
 
+LBA:                        DB 1              ; Place to store LBA
+sectors_in_cylinder :       DB 0              ; This is to store result of heads * (sectors / tracks)
+disk_stuff_dump_memo:       DW 0x7E00         ; This is where we will dump a first sector from disk
+cylinder            :       DB 0
+head                :       DB 0
+sector              :       DB 0
 
 main:
     MOV ax, 0                                 ; Get 0 into ax to later use as memory segment number
@@ -35,15 +41,21 @@ main:
     MOV sp, 0x7C00                            ; Make stack occupy memory above bootloader code
 
     ; Set up disk stuff (WIP)
-    MOV [ebr_drive_number], dl                ; Save device that had bootloader (0x00 -> floppy, 0x80 -> HHD) BIOS sets dl automatically
-    MOV ax, 1                                 ; LBA block to use in a disk_read (0 is bootloader)
-    MOV cl, 1                                 ; Sector cylinder number on the disk
-    MOV bx, 0x07E00                           ; Pointer to memory buffer to write disk sectors. Will be written to ES:BX
+    MOV [ebr_drive_number], dl                ; Save device that had bootloader (0x00 floppy, 0x80 HHD) BIOS sets dl automatically
+    XOR dl, dl                                ; Clean dl
     CALL disk_read              
 
     MOV si, os_boot_msg                       ; Set string pointer to msg start
     CALL print
     HLT
+
+; AH = 02
+; AL = number of sectors to read	(1-128 dec.)
+; CH = track/cylinder number  (0-1023 dec., see below)
+; CL = sector number  (1-17 dec.)
+; DH = head number  (0-15 dec.)
+; DL = drive number (0=A:, 1=2nd floppy, 80h=drive 0, 81h=drive 1)
+; ES:BX = pointer to buffer
 
 halt:
     JMP halt
@@ -52,77 +64,85 @@ halt:
 ; Input:  ax = LBA
 ; Output: ch = cylinder | cl = sector | dh = head 
 lba_to_chs:
-    PUSH ax                          
-    PUSH dx
+    ; MOV al, [LBA]                    ; Get LBA
+    MOV ax, [bdb_heads]                ; Get number of heads
+    MUL WORD [bdb_sectors_per_track]   ; Get total sectors in a cylinder
+    MOV BYTE [sectors_in_cylinder], al ; Save value
+    XOR ax, ax
+    MOV al, [LBA]                      ; Get LBA
+    DIV BYTE [sectors_in_cylinder]     ; Get cylinder
+    MOV BYTE [cylinder], al
+    XOR al, al
+    MOV al, ah                         ; Get remainder as sector number
+    INC al                             ; Get the sector number in a head
+    XOR ah, ah
+    DIV WORD [bdb_sectors_per_track]   ; do sectors / 
+    MOV [head], al
+    MOV [sector], ah
+    XOR bx, bx
+    MOV bl, [cylinder] 
 
-    XOR dx,dx
-    DIV word [bdb_sectors_per_track] ;(LBA % sectors per track) + 1 <- sector
-    INC dx  ;Sector
-    MOV cx,dx
+    ; DIV word [bdb_sectors_per_track] ;
+    ; INC dx  ;Sector
+    ; MOV cx,dx
 
-    XOR dx,dx
-    DIV word [bdb_heads]
+    ; XOR dx,dx
+    ; DIV word [bdb_heads]
 
-    MOV dh,dl ;head
-    MOV ch,al
-    SHL ah, 6
-    OR CL, AH   ;cylinder
+    ; MOV dh,dl ;head
+    ; MOV ch,al
+    ; SHL ah, 6
+    ; OR CL, AH   ;cylinder
 
+    ; ; POP ax
+    ; ; MOV dl,al
+    ; POP dx
     ; POP ax
-    ; MOV dl,al
-    POP dx
-    POP ax
 
     RET
 
 disk_read:
-    PUSH ax                    ; Preserve number of sectors to read
-    PUSH bx                    ; Preserver pointer to the memory buffer to dump sectors from disk      
-    PUSH cx                    ; Preserve sector number
-    PUSH dx                    ; Preserver device identifier
-
     call lba_to_chs
-    ; Load drive number and sector count
-    mov dl, [ebr_drive_number]
-    mov al, 1
+;     mov dl, [ebr_drive_number]
+;     mov al, 1
 
-    MOV ah, 0x2
-    MOV di, 3   ;counter
+;     MOV ah, 0x2
+;     MOV di, 3   ;counter
 
-retry:
-    STC          ; Way to set up a carry in BIOS
-    INT 13h
-    jnc doneRead
+; retry:
+;     STC          ; Way to set up a carry in BIOS
+;     INT 13h
+;     jnc doneRead
  
-    call diskReset
+;     call diskReset
 
-    DEC di
-    TEST di,di
-    JNZ retry
+;     DEC di
+;     TEST di,di
+;     JNZ retry
 
-failDiskRead:
-    MOV si, read_failure
-    CALL print
-    HLT
-    JMP halt
+; failDiskRead:
+;     MOV si, read_failure
+;     CALL print
+;     HLT
+;     JMP halt
 
-diskReset:
-    pusha
-    MOV ah,0
-    STC
-    INT 13h
-    JC failDiskRead
-    POPA
-    RET
+; diskReset:
+;     pusha
+;     MOV ah,0
+;     STC
+;     INT 13h
+;     JC failDiskRead
+;     POPA
+;     RET
 
-doneRead:
-    pop di
-    pop dx
-    pop cx
-    pop bx
-    pop ax
+; doneRead:
+;     pop di
+;     pop dx
+;     pop cx
+;     pop bx
+;     pop ax
 
-    ret
+;     ret
 
 print:
     PUSH si             ; Preserve 
