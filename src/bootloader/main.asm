@@ -1,3 +1,5 @@
+; TODO: Find a way to use GDB in real mode
+
 ORG 0x7C00                                     ; For assembler to organise the code where first address is 0x7C00
 BITS 16                                        ; For assembler to know that should be in 16 bits
 
@@ -45,7 +47,7 @@ main:
     MOV [ebr_drive_number], dl                ; Save device that had bootloader (0x00 floppy, 0x80 HHD) BIOS sets dl automatically
     XOR dl, dl                                ; Clean dl
     CALL lba_to_chs
-    CALL disk_read_setup              
+    CALL disk_read             
 
     MOV si, os_boot_msg                       ; Set string pointer to msg start
     CALL print
@@ -62,7 +64,6 @@ main:
 halt:
     JMP halt
 
-; --------------------------(WIP)--------------------
 ; Input:  ax = LBA
 ; Output: ch = cylinder | cl = sector | dh = head 
 lba_to_chs:
@@ -122,6 +123,8 @@ diskReset:
     RET
 
 .doneRead:
+    MOV si, disk_read_sucessfully
+    CALL print
     RET
 
 print:
@@ -146,9 +149,9 @@ done_print:
     POP si             ; Get si value from before print loop
     RET
 
-os_boot_msg: DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0x00
-read_failure: DB "Failed to read disk!", 0x0D, 0x0A, 0
-disk_read_sucessfully: "Disk read, all good", 0x0D, 0x0A, 0x00
+os_boot_msg          : DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0x00
+read_failure         : DB "Failed to read disk!", 0x0D, 0x0A, 0x00
+disk_read_sucessfully: DB "Disk read, all good", 0x0D, 0x0A, 0x00
 
 TIMES 510-($-$$) DB 0
 DW 0xAA55
