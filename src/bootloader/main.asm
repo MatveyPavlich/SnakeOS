@@ -1,5 +1,3 @@
-; TODO: Find a way to use GDB in real mode
-
 ORG 0x7C00                                     ; For assembler to organise the code where first address is 0x7C00
 BITS 16                                        ; For assembler to know that should be in 16 bits
 
