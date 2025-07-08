@@ -31,6 +31,7 @@ disk_stuff_dump_memo:       DW 0x7E00         ; This is where we will dump a fir
 cylinder            :       DB 0
 head                :       DB 0
 sector              :       DB 0
+sectors_to_read     :       DB 1
 
 main:
     MOV ax, 0                                 ; Get 0 into ax to later use as memory segment number
@@ -42,8 +43,9 @@ main:
 
     ; Set up disk stuff (WIP)
     MOV [ebr_drive_number], dl                ; Save device that had bootloader (0x00 floppy, 0x80 HHD) BIOS sets dl automatically
-    XOR dl, dl                                ; Clean dl
-    CALL disk_read              
+    XOR dx, dx                                ; Clean dl
+    CALL lba_to_chs
+    CALL disk_read             
 
     MOV si, os_boot_msg                       ; Set string pointer to msg start
     CALL print
@@ -60,11 +62,9 @@ main:
 halt:
     JMP halt
 
-; --------------------------(WIP)--------------------
 ; Input:  ax = LBA
 ; Output: ch = cylinder | cl = sector | dh = head 
 lba_to_chs:
-    ; MOV al, [LBA]                    ; Get LBA
     MOV ax, [bdb_heads]                ; Get number of heads
     MUL WORD [bdb_sectors_per_track]   ; Get total sectors in a cylinder
     MOV BYTE [sectors_in_cylinder], al ; Save value
@@ -76,73 +76,55 @@ lba_to_chs:
     MOV al, ah                         ; Get remainder as sector number
     INC al                             ; Get the sector number in a head
     XOR ah, ah
-    DIV WORD [bdb_sectors_per_track]   ; do sectors / 
+    DIV WORD [bdb_sectors_per_track]   ; Find the number of tracks
     MOV [head], al
-    MOV [sector], ah
-    XOR bx, bx
-    MOV bl, [cylinder] 
-
-    ; DIV word [bdb_sectors_per_track] ;
-    ; INC dx  ;Sector
-    ; MOV cx,dx
-
-    ; XOR dx,dx
-    ; DIV word [bdb_heads]
-
-    ; MOV dh,dl ;head
-    ; MOV ch,al
-    ; SHL ah, 6
-    ; OR CL, AH   ;cylinder
-
-    ; ; POP ax
-    ; ; MOV dl,al
-    ; POP dx
-    ; POP ax
-
+    MOV [sector], dl                   ; Save sectors and fall through to disk_read
     RET
 
 disk_read:
-    call lba_to_chs
-;     mov dl, [ebr_drive_number]
-;     mov al, 1
+    XOR ax, ax
+    XOR bx, bx
+    XOR cx, cx
+    XOR dx, dx
 
-;     MOV ah, 0x2
-;     MOV di, 3   ;counter
+    MOV al, [sectors_to_read]           ; Move number of sectors to read to al
+    MOV bx, [disk_stuff_dump_memo]      ; ES:BX is where our stuff will be dumped
+    MOV ch, [cylinder]
+    MOV cl, [sector]
+    MOV dh, [head]
+    MOV dl, [ebr_drive_number]
 
-; retry:
-;     STC          ; Way to set up a carry in BIOS
-;     INT 13h
-;     jnc doneRead
- 
-;     call diskReset
+    MOV di, 3                            ; counter
 
-;     DEC di
-;     TEST di,di
-;     JNZ retry
+retry:
+    MOV ah, 2                           ; Get disk read interrupt
+    STC                                 ; Set carry flag before INT 13h (BIOS uses this)
+    INT 13h                             ; BIOS disk read
+    JNC .doneRead                       ; Jump if Carry flag not set
+    
+    DEC di                              ; Retry counter -= 1
+    TEST di, di                         ; Is it zero yet?
+    JNZ retry                          ; If not, retry
+    CALL .diskReset                      ; If read failed, try to reset disk and retry
 
-; failDiskRead:
-;     MOV si, read_failure
-;     CALL print
-;     HLT
-;     JMP halt
+.failDiskRead:
+    MOV si, read_failure
+    CALL print
+    HLT
 
-; diskReset:
-;     pusha
-;     MOV ah,0
-;     STC
-;     INT 13h
-;     JC failDiskRead
-;     POPA
-;     RET
+.doneRead:
+    MOV si, disk_read_sucessfully
+    CALL print
+    RET
 
-; doneRead:
-;     pop di
-;     pop dx
-;     pop cx
-;     pop bx
-;     pop ax
-
-;     ret
+.diskReset:
+    pusha                               ; Save all general registers
+    MOV ah, 0x00                        ; BIOS Reset Disk
+    STC
+    INT 13h
+    jc .failDiskRead                    ; Still failing? Halt
+    popa                                ; Get back all general registers (no need to clean registers beforehand)
+    RET
 
 print:
     PUSH si             ; Preserve 
@@ -166,8 +148,9 @@ done_print:
     POP si             ; Get si value from before print loop
     RET
 
-os_boot_msg: DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0x00
-read_failure DB "Failed to read disk!", 0x0D, 0x0A, 0
+os_boot_msg          : DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0x00
+read_failure         : DB "Failed to read disk!", 0x0D, 0x0A, 0x00
+disk_read_sucessfully: DB "Disk read, all good", 0x0D, 0x0A, 0x00
 
 TIMES 510-($-$$) DB 0
 DW 0xAA55

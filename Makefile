@@ -2,6 +2,11 @@ ASM=nasm
 SRC_DIR=src
 BUILD_DIR=build
 
+# Clean  build directory...
+.PHONY: clean
+clean:
+	rm -rf $(BUILD_DIR)/*.bin $(BUILD_DIR)/*.img
+
 # Floppy disk
 floppy_image: $(BUILD_DIR)/main.img
 
