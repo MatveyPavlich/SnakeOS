@@ -2,6 +2,8 @@ ASM=nasm
 SRC_DIR=src
 BUILD_DIR=build
 
+# First step should be clean  build directory...
+
 # Floppy disk
 floppy_image: $(BUILD_DIR)/main.img
 

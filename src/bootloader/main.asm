@@ -43,7 +43,7 @@ main:
 
     ; Set up disk stuff (WIP)
     MOV [ebr_drive_number], dl                ; Save device that had bootloader (0x00 floppy, 0x80 HHD) BIOS sets dl automatically
-    XOR dl, dl                                ; Clean dl
+    XOR dx, dx                                ; Clean dl
     CALL lba_to_chs
     CALL disk_read             
 
@@ -78,7 +78,8 @@ lba_to_chs:
     XOR ah, ah
     DIV WORD [bdb_sectors_per_track]   ; Find the number of tracks
     MOV [head], al
-    MOV [sector], ah                   ; Save sectors and fall through to disk_read
+    MOV [sector], dl                   ; Save sectors and fall through to disk_read
+    RET
 
 disk_read:
     XOR ax, ax
@@ -95,7 +96,7 @@ disk_read:
 
     MOV di, 3                            ; counter
 
-.retry:
+retry:
     MOV ah, 2                           ; Get disk read interrupt
     STC                                 ; Set carry flag before INT 13h (BIOS uses this)
     INT 13h                             ; BIOS disk read
@@ -103,26 +104,26 @@ disk_read:
     
     DEC di                              ; Retry counter -= 1
     TEST di, di                         ; Is it zero yet?
-    JNZ .retry                          ; If not, retry
-    CALL diskReset                      ; If read failed, try to reset disk and retry
+    JNZ retry                          ; If not, retry
+    CALL .diskReset                      ; If read failed, try to reset disk and retry
 
 .failDiskRead:
     MOV si, read_failure
     CALL print
     HLT
 
-diskReset:
+.doneRead:
+    MOV si, disk_read_sucessfully
+    CALL print
+    RET
+
+.diskReset:
     pusha                               ; Save all general registers
     MOV ah, 0x00                        ; BIOS Reset Disk
     STC
     INT 13h
     jc .failDiskRead                    ; Still failing? Halt
     popa                                ; Get back all general registers (no need to clean registers beforehand)
-    RET
-
-.doneRead:
-    MOV si, disk_read_sucessfully
-    CALL print
     RET
 
 print:
