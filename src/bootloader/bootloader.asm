@@ -43,8 +43,6 @@ main:
     XOR dx, dx                                ; Clean dl
     CALL lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
     CALL disk_read                            ; Read disk using CHS values
-    MOV si, os_boot_msg                       ; Set string pointer to msg start
-    CALL print                                ; Print string
     HLT
 
 halt:
@@ -132,7 +130,6 @@ done_print:
     POP si                                    ; Get si value from before print loop
     RET
 
-os_boot_msg:           DB "Welcome to MatthewOS.", 0x0D, 0x0A, 0x00
 read_failure:          DB "Failed to read disk!", 0x0D, 0x0A, 0x00
 disk_read_sucessfully: DB "Disk read, all good", 0x0D, 0x0A, 0x00
 
