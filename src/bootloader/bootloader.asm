@@ -43,12 +43,9 @@ main:
     XOR dx, dx                                ; Clean dl
     CALL lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
     CALL disk_read                            ; Read disk using CHS values
-    CALL compute_root                         ; WIP: computing root start, length and offset to the first data segment
+    CALL compute_root_dir_stuff               ; WIP: computing root start, length and offset to the first data segment
     HLT
 
-halt:
-    JMP halt
- 
 lba_to_chs:
     MOV ax, [bdb_heads]                       ; Get number of heads
     MUL WORD [bdb_sectors_per_track]          ; Get total sectors in a cylinder
@@ -131,7 +128,7 @@ done_print:
     POP si                                    ; Get si value from before print loop
     RET
 
-compute_root:
+compute_root_dir_stuff:
     xor al, al
     xor bh, bh
 
@@ -154,7 +151,11 @@ compute_root:
 ; WIP, make sure to rewrite LBA and sectors_to_read from memo
 rootDirAfter:
     mov cl, al
+    mov al, 0
+    mov [LBA], al
+    mov BYTE [sectors_to_read], 0
     pop ax
+    mov [LBA], al
     mov dl, [ebr_drive_number]
     MOV bx, buffer
     CALL disk_read
@@ -163,16 +164,16 @@ rootDirAfter:
     MOV di,buffer
 
 searchKernel:
-    MOV si, file_kernel_bin
-    MOV cx,11
-    PUSH di
-    REPE CMPSB
-    POP di
-    JE foundKernel
+    MOV si, file_kernel_bin                   ; move kernel bin file name into si
+    MOV cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
+    PUSH di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
+    REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
+    POP di                                    ; Restore original di
+    JE foundKernel                            ; ZF = 1 if a match is found
 
-    ADD di, 32
-    INC bx 
-    CMP bx, [bdb_dir_entries_count]
+    ADD di, 32                                ; Go to next record in root folder (+32 bytes) 
+    INC bx                                    ; Save the number of records that were searched 
+    CMP bx, [bdb_dir_entries_count]           ; If all record search then print that kernel wasn't found
     JL searchKernel
 
     JMP kernelNotFound
@@ -185,70 +186,81 @@ kernelNotFound:
     JMP halt
 
 foundKernel:
-    MOV ax, [di+26]
-    MOV [kernel_cluster], ax
+    mov si, msg_kernel_found
+    CALL print
+;     MOV ax, [di+26]
+;     MOV [kernel_cluster], ax
 
-    MOV ax, [bdb_reserved_sectors]
-    MOV bx, buffer 
-    MOV cl, [bdb_sectors_per_fat]
-    MOV dl, [ebr_drive_number]
+;     MOV ax, [bdb_reserved_sectors]
+;     MOV bx, buffer 
+;     MOV cl, [bdb_sectors_per_fat]
+;     MOV dl, [ebr_drive_number]
 
-    CALL disk_read
+;     CALL disk_read
 
-    MOV bx, kernel_load_segment
-    MOV es,bx
-    MOV bx, kernel_load_offset
+;     MOV bx, kernel_load_segment
+;     MOV es,bx
+;     MOV bx, kernel_load_offset
 
-loadKernelLoop:
-    MOV ax, [kernel_cluster]
-    ADD ax, 31
-    MOV cl, 1
-    MOV dl, [ebr_drive_number]
+; loadKernelLoop:
+;     MOV ax, [kernel_cluster]
+;     ADD ax, 31
+;     MOV cl, 1
+;     MOV dl, [ebr_drive_number]
 
-    CALL disk_read
+;     CALL disk_read
 
-    ADD bx, [bdb_bytes_per_sector]
+;     ADD bx, [bdb_bytes_per_sector]
 
-    MOV ax, [kernel_cluster] ;(kernel cluster * 3)/2
-    MOV cx, 3
-    MUL cx
-    MOV cx, 2
-    DIV cx
+;     MOV ax, [kernel_cluster] ;(kernel cluster * 3)/2
+;     MOV cx, 3
+;     MUL cx
+;     MOV cx, 2
+;     DIV cx
 
-    MOV si, buffer
-    ADD si, ax
-    MOV ax, [ds:si]
+;     MOV si, buffer
+;     ADD si, ax
+;     MOV ax, [ds:si]
 
-    OR dx,dx
-    JZ even
+;     OR dx,dx
+;     JZ even
 
-odd:
-    SHR ax,4
-    JMP nextClusterAfter
-even:
-    AND ax, 0x0FFF
+; odd:
+;     SHR ax,4
+;     JMP nextClusterAfter
+; even:
+;     AND ax, 0x0FFF
 
-nextClusterAfter:
-    CMP ax, 0x0FF8
-    JAE readFinish
+; nextClusterAfter:
+;     CMP ax, 0x0FF8
+;     JAE readFinish
 
-    MOV [kernel_cluster], ax
-    JMP loadKernelLoop
+;     MOV [kernel_cluster], ax
+;     JMP loadKernelLoop
 
-readFinish:
-    MOV dl, [ebr_drive_number]
-    MOV ax, kernel_load_segment
-    MOV ds,ax
-    MOV es,ax
+; readFinish:
+;     MOV dl, [ebr_drive_number]
+;     MOV ax, kernel_load_segment
+;     MOV ds,ax
+;     MOV es,ax
 
-    JMP kernel_load_segment:kernel_load_offset
+;     JMP kernel_load_segment:kernel_load_offset
 
-    HLT
+;     HLT
 
+halt:
+    JMP halt
     
 
-read_failure:          DB "Failed to read disk!", 0x0D, 0x0A, 0x00
-disk_read_sucessfully: DB "Disk read, all good", 0x0D, 0x0A, 0x00
+read_failure:           DB "Failed to read disk!", 0x0D, 0x0A, 0x00
+disk_read_sucessfully:  DB "Disk read successful", 0x0D, 0x0A, 0x00
+file_kernel_bin:        DB "KERNEL  BIN", 0x0D, 0x0A, 0x00
+msg_kernel_not_found:   DB "KERNEL.BIN not found!", 0x0D, 0x0A, 0x00
+msg_kernel_found:       DB "KERNEL.BIN found!", 0x0D, 0x0A, 0x00
+kernel_cluster;         DW 0
+
+kernel_load_segment EQU 0x2000
+kernel_load_offset EQU 0
 
 TIMES 510-($-$$) DB 0
 DW 0xAA55
