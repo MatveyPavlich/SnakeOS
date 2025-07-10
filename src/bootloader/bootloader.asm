@@ -1,3 +1,5 @@
+; Don't need to do a disk read x2 times (remove the first read, but you will be reading multiple times later when find what clusters you need)
+; I still think I am loading the same LBA twice
 ORG 0x7C00                                    ; For assembler to organise the code where first address is 0x7C00
 BITS 16                                       ; For assembler to know that should be in 16 bits
 
@@ -92,6 +94,8 @@ retry:
     MOV si, read_failure
     CALL print
     HLT
+    JMP halt
+
 
 .doneRead:
     MOV si, disk_read_sucessfully
@@ -153,15 +157,17 @@ rootDirAfter:
     mov cl, al
     mov al, 0
     mov [LBA], al
-    mov BYTE [sectors_to_read], 0
+    mov [sectors_to_read], al
+    mov [sectors_to_read], cl
     pop ax
     mov [LBA], al
     mov dl, [ebr_drive_number]
     MOV bx, buffer
+    CALL lba_to_chs
     CALL disk_read
 
     XOR bx,bx
-    MOV di,buffer
+    MOV di, buffer
 
 searchKernel:
     MOV si, file_kernel_bin                   ; move kernel bin file name into si
@@ -257,7 +263,7 @@ disk_read_sucessfully:  DB "Disk read successful", 0x0D, 0x0A, 0x00
 file_kernel_bin:        DB "KERNEL  BIN", 0x0D, 0x0A, 0x00
 msg_kernel_not_found:   DB "KERNEL.BIN not found!", 0x0D, 0x0A, 0x00
 msg_kernel_found:       DB "KERNEL.BIN found!", 0x0D, 0x0A, 0x00
-kernel_cluster;         DW 0
+kernel_cluster:         DW 0
 
 kernel_load_segment EQU 0x2000
 kernel_load_offset EQU 0
