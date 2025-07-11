@@ -1,5 +1,3 @@
-; Don't need to do a disk read x2 times (remove the first read, but you will be reading multiple times later when find what clusters you need)
-; I still think I am loading the same LBA twice
 ORG 0x7C00                                    ; For assembler to organise the code where first address is 0x7C00
 BITS 16                                       ; For assembler to know that should be in 16 bits
 
@@ -49,8 +47,8 @@ main:
     HLT
 
 lba_to_chs:
-    MOV ax, [bdb_heads]                       ; Get number of heads
-    MUL WORD [bdb_sectors_per_track]          ; Get total sectors in a cylinder
+    mov ax, [bdb_heads]                       ; Get number of heads
+    mul WORD [bdb_sectors_per_track]          ; Get total sectors in a cylinder
     MOV BYTE [sectors_in_cylinder], al        ; Save value
     XOR ax, ax
     MOV al, [LBA]                             ; Get LBA
@@ -139,8 +137,8 @@ compute_root_dir_stuff:
     mov ax, [bdb_sectors_per_fat]             ; Get number of sectors each FAT table takes
     mov bl, [bdb_fat_count]                   ; Get total sectors all FAT tables take 
     mul bx                                    ;  
-    add ax, [bdb_reserved_sectors]            ; Add reserved sectors before FATs => LBA of a root dir
-    push ax
+    add ax, [bdb_reserved_sectors]            ; Add reserved sectors before FATs
+    push ax                                   ; LBA of a root directory
 
     xor bx, bx
     xor ax, ax
@@ -150,7 +148,7 @@ compute_root_dir_stuff:
     div WORD [bdb_bytes_per_sector]           ; Lenght of root dir in sectors
     test dx, dx                               ; Check if remainder = 0
     je rootDirAfter
-    inc al
+    inc al                                    ; Length of the root directory
 
 ; WIP, make sure to rewrite LBA and sectors_to_read from memo
 rootDirAfter:
@@ -162,9 +160,9 @@ rootDirAfter:
     pop ax
     mov [LBA], al
     mov dl, [ebr_drive_number]
-    MOV bx, buffer
-    CALL lba_to_chs
-    CALL disk_read
+    mov bx, buffer
+    call lba_to_chs
+    call disk_read
 
     XOR bx,bx
     MOV di, buffer
@@ -175,7 +173,7 @@ searchKernel:
     PUSH di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
     REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
     POP di                                    ; Restore original di
-    JE foundKernel                            ; ZF = 1 if a match is found
+    JE foundKernel                            ; ZF = 1 if a match is found. di will contain address of first character in the name
 
     ADD di, 32                                ; Go to next record in root folder (+32 bytes) 
     INC bx                                    ; Save the number of records that were searched 
@@ -193,66 +191,66 @@ kernelNotFound:
 
 foundKernel:
     mov si, msg_kernel_found
-    CALL print
-;     MOV ax, [di+26]
-;     MOV [kernel_cluster], ax
+    call print
+    mov ax, [di+26]                ; Get first logical cluster (LBA for the cluster)
+    mov [kernel_cluster], ax       ; Save kernel cluster
 
-;     MOV ax, [bdb_reserved_sectors]
-;     MOV bx, buffer 
-;     MOV cl, [bdb_sectors_per_fat]
-;     MOV dl, [ebr_drive_number]
+    ; Load FAT table into memory
+    mov ax, [bdb_reserved_sectors] ; Starting sector of a FAT table
+    mov [LBA], al                  ; Load into memo
+    mov cl, [bdb_sectors_per_fat]  ; Sectors to read
+    mov [sectors_to_read], cl      ; Save sectors to read
+    call disk_read
 
-;     CALL disk_read
+    mov bx, kernel_load_segment
+    mov es, bx
+    mov bx, kernel_load_offset
 
-;     MOV bx, kernel_load_segment
-;     MOV es,bx
-;     MOV bx, kernel_load_offset
+loadKernelLoop:
+    MOV ax, [kernel_cluster]
+    ADD ax, 31
+    MOV cl, 1
+    MOV dl, [ebr_drive_number]
 
-; loadKernelLoop:
-;     MOV ax, [kernel_cluster]
-;     ADD ax, 31
-;     MOV cl, 1
-;     MOV dl, [ebr_drive_number]
+    CALL disk_read
 
-;     CALL disk_read
+    ADD bx, [bdb_bytes_per_sector]
 
-;     ADD bx, [bdb_bytes_per_sector]
+    MOV ax, [kernel_cluster] ; (kernel cluster * 3)/2
+    MOV cx, 3
+    MUL cx
+    MOV cx, 2
+    DIV cx
 
-;     MOV ax, [kernel_cluster] ;(kernel cluster * 3)/2
-;     MOV cx, 3
-;     MUL cx
-;     MOV cx, 2
-;     DIV cx
+    MOV si, buffer
+    ADD si, ax
+    MOV ax, [ds:si]
 
-;     MOV si, buffer
-;     ADD si, ax
-;     MOV ax, [ds:si]
+    OR dx,dx
+    JZ even
 
-;     OR dx,dx
-;     JZ even
+odd:
+    SHR ax,4
+    JMP nextClusterAfter
+even:
+    AND ax, 0x0FFF
 
-; odd:
-;     SHR ax,4
-;     JMP nextClusterAfter
-; even:
-;     AND ax, 0x0FFF
+nextClusterAfter:
+    CMP ax, 0x0FF8
+    JAE readFinish
 
-; nextClusterAfter:
-;     CMP ax, 0x0FF8
-;     JAE readFinish
+    MOV [kernel_cluster], ax
+    JMP loadKernelLoop
 
-;     MOV [kernel_cluster], ax
-;     JMP loadKernelLoop
+readFinish:
+    MOV dl, [ebr_drive_number]
+    MOV ax, kernel_load_segment
+    MOV ds,ax
+    MOV es,ax
 
-; readFinish:
-;     MOV dl, [ebr_drive_number]
-;     MOV ax, kernel_load_segment
-;     MOV ds,ax
-;     MOV es,ax
+    JMP kernel_load_segment:kernel_load_offset
 
-;     JMP kernel_load_segment:kernel_load_offset
-
-;     HLT
+    HLT
 
 halt:
     JMP halt
