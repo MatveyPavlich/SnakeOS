@@ -190,32 +190,40 @@ kernelNotFound:
     JMP halt
 
 foundKernel:
+    
+    ; Save starting kernel cluster found from root directory
     mov si, msg_kernel_found
     call print
     mov ax, [di+26]                ; Get first logical cluster (LBA for the cluster)
-    mov [kernel_cluster], ax       ; Save kernel cluster
+    mov [kernel_cluster], ax       ; Save starting kernel cluster
 
     ; Load FAT table into memory
     mov ax, [bdb_reserved_sectors] ; Starting sector of a FAT table
     mov [LBA], al                  ; Load into memo
     mov cl, [bdb_sectors_per_fat]  ; Sectors to read
     mov [sectors_to_read], cl      ; Save sectors to read
+    call lba_to_chs
     call disk_read
 
+    ; Set up memory to load kernel clusters
     mov bx, kernel_load_segment
     mov es, bx
     mov bx, kernel_load_offset
 
 loadKernelLoop:
-    MOV ax, [kernel_cluster]
-    ADD ax, 31
-    MOV cl, 1
-    MOV dl, [ebr_drive_number]
+    
+    ; Load starting kernel cluster into RAM
+    mov ax, [kernel_cluster]
+    mov [LBA], al                  ; Load into memo
+    add ax, 31                     ; Cluster number -> LBA conversion
+    mov cl, 1                      ; Number of sectors we'll read
+    mov [sectors_to_read], cl      ; Read one sector (since cluster is 1 sector)
+    mov dl, [ebr_drive_number]
+    call lba_to_chs
+    call disk_read
+    add bx, [bdb_bytes_per_sector] ; Increment kernel offset to load the next cluster
 
-    CALL disk_read
-
-    ADD bx, [bdb_bytes_per_sector]
-
+    ; Find next pointer in FAT
     MOV ax, [kernel_cluster] ; (kernel cluster * 3)/2
     MOV cx, 3
     MUL cx
@@ -263,8 +271,8 @@ msg_kernel_not_found:   DB "KERNEL.BIN not found!", 0x0D, 0x0A, 0x00
 msg_kernel_found:       DB "KERNEL.BIN found!", 0x0D, 0x0A, 0x00
 kernel_cluster:         DW 0
 
-kernel_load_segment EQU 0x2000
-kernel_load_offset EQU 0
+kernel_load_segment     EQU 0x2000
+kernel_load_offset      EQU 0
 
 TIMES 510-($-$$) DB 0
 DW 0xAA55
