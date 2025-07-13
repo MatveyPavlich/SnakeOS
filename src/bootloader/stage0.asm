@@ -25,24 +25,14 @@ ebr_volume_id:              DB 12h,34h,56h,78h
 ebr_volume_label:           DB 'SnakeOS    '  ; Must be exactly 11 bytes
 ebr_system_id:              DB 'FAT12   '     ; Magical value that tells it is FAT12 (must be 8 bytes)
 
-LBA:                        DB 1              ; Place to store LBA
-sectors_in_cylinder :       DB 0              ; This is to store result of heads * (sectors / tracks)
-disk_stuff_dump_memo:       DW 0x7E00         ; This is where we will dump a first sector from disk
-cylinder            :       DB 0
-head                :       DB 0
-sector              :       DB 0
-sectors_to_read     :       DB 1
-
 main:
     
-    ; Set up all segments
+    ; Set up all segments to the same 64kB chunk
     mov ax, 0                                 
-    mov ds, ax                                ; Pick first memory segment for data
-    mov es, ax                                ; Pick first memory segment for extra segment also
-    mov ss, ax                                ; Pick first memory segment for stack segment also
-    mov sp, 0x7C00                            ; Make stack occupy memory above bootloader code
-    mov [ebr_drive_number], dl                ; Save device that had bootloader (0x00 floppy, 0x80 HHD) BIOS sets dl automatically
-    xor dx, dx                                ; Clean dl
+    mov ds, ax                                
+    mov es, ax                                
+    mov ss, ax                                
+    mov sp, 0x7C00                            ; Grow stack below above the code
 
     ; Find LBA of root directory
     mov ax, [bdb_sectors_per_fat]             ; Get number of sectors each FAT table takes
@@ -53,29 +43,23 @@ main:
  
     ; Find length of root directory
     mov ax, [bdb_dir_entries_count] 
-    shl ax, 5                                 ; max_num_of_files * 32 bits/file = total byte size of root dir
+    shl ax, 5                                 ; max_files * 32 bits/file = total size of root dir
     div WORD [bdb_bytes_per_sector]           ; Lenght of root dir in sectors
     test dx, dx                               ; Check if remainder = 0
     je rootDirAfter
     inc al                                    ; Length of the root directory
 
 rootDirAfter:
-    mov cl, al
-    mov al, 0
-    mov [LBA], al
-    mov [sectors_to_read], al
-    mov [sectors_to_read], cl
-    pop ax
-    mov [LBA], al
-    mov dl, [ebr_drive_number]
-    mov bx, buffer
+    mov cl, al                                ; Store root dir length in cl
+    pop ax                                    ; Starting LBA
+    mov bx, buffer                            ; ES:BX is where our stuff will be dumped
     call disk_read
 
     xor bx,bx
     mov di, buffer
 
 searchStage1:
-    mov si, file_stage_1                      ; move kernel bin file name into si
+    mov si, file_stage_1                      ; move stage1 bin file name into si
     mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
     push di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
     REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
@@ -88,68 +72,6 @@ searchStage1:
     jl searchStage1
     jmp stage1NotFound
 
-disk_read:
-    call lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
-    xor ax, ax
-    xor bx, bx
-    xor cx, cx
-    xor dx, dx
-
-    mov al, [sectors_to_read]                 ; Move number of sectors to read to al
-    mov bx, [disk_stuff_dump_memo]            ; ES:BX is where our stuff will be dumped
-    mov ch, [cylinder]
-    mov cl, [sector]
-    mov dh, [head]
-    mov dl, [ebr_drive_number]
-
-    mov di, 3                                 ; Ste counter for disk re-tries
-
-retry:
-    mov ah, 2                                 ; Get disk read interrupt
-    stc                                       ; Set carry flag before INT 13h (BIOS uses this)
-    int 0x13                                  ; BIOS disk read
-    jnc .doneRead                             ; Jump if Carry flag not set
-    dec di                                    ; Retry counter -= 1
-    test di, di                               ; Is it zero yet?
-    jnz retry                                 ; If not, retry
-    call .diskReset                           ; If read failed, try to reset disk and retry
-
-.failDiskRead:
-    mov si, read_failure
-    call print
-    jmp halt
-
-
-.doneRead:
-    mov si, disk_read_sucessfully
-    call print
-    ret
-
-.diskReset:
-    pusha                                     ; Save all general registers
-    mov ah, 0x00                              ; BIOS Reset Disk
-    stc
-    int 0x13
-    jc .failDiskRead                          ; Still failing? Halt
-    popa                                      ; Get back all general registers (no need to clean registers beforehand)
-    ret
-
-lba_to_chs:
-    mov ax, [bdb_heads]                       ; Get number of heads
-    mul WORD [bdb_sectors_per_track]          ; Get total sectors in a cylinder
-    mov BYTE [sectors_in_cylinder], al        ; Save value
-    xor ax, ax
-    mov al, [LBA]                             ; Get LBA
-    div BYTE [sectors_in_cylinder]            ; Get cylinder
-    mov BYTE [cylinder], al       
-    xor al, al
-    mov al, ah                                ; Get remainder as sector number
-    inc al                                    ; Get the sector number in a head
-    xor ah, ah
-    div WORD [bdb_sectors_per_track]          ; Find the number of tracks
-    mov [head], al
-    mov [sector], dl                          ; Save sectors and fall through to disk_read
-    ret
 
 stage1NotFound:
     mov si, msg_stage1_not_found
@@ -158,7 +80,7 @@ stage1NotFound:
 
 foundStage1:
     
-    ; Save starting kernel cluster found from root directory
+    ; Save starting stage1 cluster found from root directory
     mov si, msg_stage1_found
     call print
     mov ax, [di+26]                ; Get first logical cluster (LBA for the cluster)
@@ -167,11 +89,8 @@ foundStage1:
     ; Load FAT table into memory
     mov si, msg_moving_fat_to_ram
     call print
-    mov ax, [bdb_reserved_sectors] ; Starting sector of a FAT table
-    mov [LBA], al                  ; Load into memo
+    mov ax, [bdb_reserved_sectors] ; Starting LBA of a FAT table
     mov cl, [bdb_sectors_per_fat]  ; Sectors to read
-    mov [sectors_to_read], cl      ; Save sectors to read
-    call lba_to_chs
     call disk_read
 
     ; Set up memory to load kernel clusters
@@ -226,30 +145,7 @@ foundStage1:
 ;     mov es,ax
 ;     jmp stage1_load_segment:stage1_load_offset
 
-print:
-    push si                                   ; Preserve 
-    push ax                                   ; Preserve
-    push bx                                   ; Preserve bx and fall trhough to code below
-
-print_loop:
-    lodsb                                     ; Load DS:SI byte to al, then increment SI
-    or al, al                                 ; Hacky way to avoid CMP al, 0x00
-    jz done_print                             ; Finish printing if zero
-    mov ah, 0x0E                              ; Set ah to 0x0E to access BIOS teletype print
-    mov bh, 0                                 ; Set page number to 0
-    int 0x10                                  ; Call BIOS interrup
-    jmp print_loop
-
-done_print:
-    pop bx                                    ; Get bx value from before print loop
-    pop ax                                    ; Get ax value from before print loop
-    pop si                                    ; Get si value from before print loop
-    ret
-
-halt:
-    hlt
-    jmp halt
-    
+%include "./src/bootloader/utils.asm"
 
 read_failure:           DB "Failed to read disk!", 0x0D, 0x0A, 0x00
 disk_read_sucessfully:  DB "Disk read successful", 0x0D, 0x0A, 0x00

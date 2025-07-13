@@ -1,0 +1,84 @@
+; ==============================| Disk stuff |============================== 
+disk_read:
+    push cx
+    call lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
+    pop cx
+    mov al, cl
+    mov ah, 0x2
+    mov di, 3                                 ; Ste counter for disk re-tries
+
+retry:
+    mov ah, 2                                 ; Get disk read interrupt
+    stc                                       ; Set carry flag before INT 13h (BIOS uses this)
+    int 0x13                                  ; BIOS disk read
+    jnc .doneRead                             ; Jump if Carry flag not set
+    dec di                                    ; Retry counter -= 1
+    test di, di                               ; Is it zero yet?
+    jnz retry                                 ; If not, retry
+    call .diskReset                           ; If read failed, try to reset disk and retry
+
+.failDiskRead:
+    mov si, read_failure
+    call print
+    jmp halt
+.doneRead:
+    mov si, disk_read_sucessfully
+    call print
+    ret
+.diskReset:
+    pusha                                     ; Save all general registers
+    mov ah, 0x00                              ; BIOS Reset Disk
+    stc
+    int 0x13
+    jc .failDiskRead                          ; Still failing? Halt
+    popa                                      ; Get back all general registers (no need to clean registers beforehand)
+    ret
+
+; Input: AX = LBA
+; Output: AL = sectors_to_read, CL = sector (!!!0-5 bits), CH = cylinder (!!!6-15), DH = head, DL = drive number
+; Sectors to read will be 1 always
+lba_to_chs:
+    xor cx, cx
+    xor dx, dx                                ; Clean dx to be used for div remainder
+    div WORD [bdb_sectors_per_track]          ; dx = (LBA % sectors per track); ax = LBA / sectors_per_track
+    inc dx                                    ; Sector
+    mov cx, dx                                ; Save sectors into cx
+    xor dx,dx                                 ; Prep dx for division
+    DIV word [bdb_heads]                      ; dx = (LBA / sectors_per_track) % heads, ax = (LBA / sectors_per_track) / heads
+    mov dh, dl                                ; Head
+    mov dh, [ebr_drive_number]                ; Load the drive number
+    mov ch, al                                ; Move cylinder to ch
+    shl ah, 6                                 ; See int 13,2 page (bottom)
+    or cl, ah                                 ; Cylinder
+    ret
+
+
+
+
+
+; ==============================| Print stuff |============================== 
+
+print:
+    push si                                   ; Preserve 
+    push ax                                   ; Preserve
+    push bx                                   ; Preserve bx and fall trhough to code below
+
+print_loop:
+    lodsb                                     ; Load DS:SI byte to al, then increment SI
+    or al, al                                 ; Hacky way to avoid CMP al, 0x00
+    jz done_print                             ; Finish printing if zero
+    mov ah, 0x0E                              ; Set ah to 0x0E to access BIOS teletype print
+    mov bh, 0                                 ; Set page number to 0
+    int 0x10                                  ; Call BIOS interrup
+    jmp print_loop
+
+done_print:
+    pop bx                                    ; Get bx value from before print loop
+    pop ax                                    ; Get ax value from before print loop
+    pop si                                    ; Get si value from before print loop
+    ret
+
+; ==============================| Halt |============================== 
+halt:
+    hlt
+    jmp halt
