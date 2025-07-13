@@ -1,8 +1,8 @@
-ORG 0x7C00                                    ; For assembler to organise the code where first address is 0x7C00
-BITS 16                                       ; For assembler to know that should be in 16 bits
+org 0x7C00                                    ; For assembler to organise the code where first address is 0x7C00
+bits 16                                       ; For assembler to know that should be in 16 bits
 
-JMP SHORT main                                ; Jump to code in main (<127 bytes down in memo, so use SHORT)
-NOP                                           ; Do nothing for 1 CPU cycle
+jmp short main                                ; Jump to code in main (<127 bytes down in memo, so use SHORT)
+nop                                           ; Do nothing for 1 CPU cycle
 
 bdb_oem:                    DB 'MSWIN4.1'     ; Tells what formatted the disk
 bdb_bytes_per_sector:       DW 512            ; 
@@ -34,101 +34,98 @@ sector              :       DB 0
 sectors_to_read     :       DB 1
 
 main:
-    MOV ax, 0                                 ; Get 0 into ax to later use as memory segment number
-    MOV ds, ax                                ; Pick first memory segment for data
-    MOV es, ax                                ; Pick first memory segment for extra segment also
-    MOV ss, ax                                ; Pick first memory segment for stack segment also
-    MOV sp, 0x7C00                            ; Make stack occupy memory above bootloader code
-    MOV [ebr_drive_number], dl                ; Save device that had bootloader (0x00 floppy, 0x80 HHD) BIOS sets dl automatically
-    XOR dx, dx                                ; Clean dl
-    CALL lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
-    CALL disk_read                            ; Read disk using CHS values
-    CALL compute_root_dir_stuff               ; WIP: computing root start, length and offset to the first data segment
-    HLT
+    mov ax, 0                                 ; Get 0 into ax to later use as memory segment number
+    mov ds, ax                                ; Pick first memory segment for data
+    mov es, ax                                ; Pick first memory segment for extra segment also
+    mov ss, ax                                ; Pick first memory segment for stack segment also
+    mov sp, 0x7C00                            ; Make stack occupy memory above bootloader code
+    mov [ebr_drive_number], dl                ; Save device that had bootloader (0x00 floppy, 0x80 HHD) BIOS sets dl automatically
+    xor dx, dx                                ; Clean dl
+    call compute_root_dir_stuff               ; WIP: computing root start, length and offset to the first data segment
+    jmp halt
 
 lba_to_chs:
     mov ax, [bdb_heads]                       ; Get number of heads
     mul WORD [bdb_sectors_per_track]          ; Get total sectors in a cylinder
-    MOV BYTE [sectors_in_cylinder], al        ; Save value
-    XOR ax, ax
-    MOV al, [LBA]                             ; Get LBA
-    DIV BYTE [sectors_in_cylinder]            ; Get cylinder
-    MOV BYTE [cylinder], al       
-    XOR al, al
-    MOV al, ah                                ; Get remainder as sector number
-    INC al                                    ; Get the sector number in a head
-    XOR ah, ah
-    DIV WORD [bdb_sectors_per_track]          ; Find the number of tracks
-    MOV [head], al
-    MOV [sector], dl                          ; Save sectors and fall through to disk_read
-    RET
+    mov BYTE [sectors_in_cylinder], al        ; Save value
+    xor ax, ax
+    mov al, [LBA]                             ; Get LBA
+    div BYTE [sectors_in_cylinder]            ; Get cylinder
+    mov BYTE [cylinder], al       
+    xor al, al
+    mov al, ah                                ; Get remainder as sector number
+    inc al                                    ; Get the sector number in a head
+    xor ah, ah
+    div WORD [bdb_sectors_per_track]          ; Find the number of tracks
+    mov [head], al
+    mov [sector], dl                          ; Save sectors and fall through to disk_read
+    ret
 
 disk_read:
-    XOR ax, ax
-    XOR bx, bx
-    XOR cx, cx
-    XOR dx, dx
+    call lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
+    xor ax, ax
+    xor bx, bx
+    xor cx, cx
+    xor dx, dx
 
-    MOV al, [sectors_to_read]                 ; Move number of sectors to read to al
-    MOV bx, [disk_stuff_dump_memo]            ; ES:BX is where our stuff will be dumped
-    MOV ch, [cylinder]
-    MOV cl, [sector]
-    MOV dh, [head]
-    MOV dl, [ebr_drive_number]
+    mov al, [sectors_to_read]                 ; Move number of sectors to read to al
+    mov bx, [disk_stuff_dump_memo]            ; ES:BX is where our stuff will be dumped
+    mov ch, [cylinder]
+    mov cl, [sector]
+    mov dh, [head]
+    mov dl, [ebr_drive_number]
 
-    MOV di, 3                                 ; Ste counter for disk re-tries
+    mov di, 3                                 ; Ste counter for disk re-tries
 
 retry:
-    MOV ah, 2                                 ; Get disk read interrupt
-    STC                                       ; Set carry flag before INT 13h (BIOS uses this)
-    INT 13h                                   ; BIOS disk read
-    JNC .doneRead                             ; Jump if Carry flag not set
-    DEC di                                    ; Retry counter -= 1
-    TEST di, di                               ; Is it zero yet?
-    JNZ retry                                 ; If not, retry
-    CALL .diskReset                           ; If read failed, try to reset disk and retry
+    mov ah, 2                                 ; Get disk read interrupt
+    stc                                       ; Set carry flag before INT 13h (BIOS uses this)
+    int 0x13                                  ; BIOS disk read
+    jnc .doneRead                             ; Jump if Carry flag not set
+    dec di                                    ; Retry counter -= 1
+    test di, di                               ; Is it zero yet?
+    jnz retry                                 ; If not, retry
+    call .diskReset                           ; If read failed, try to reset disk and retry
 
 .failDiskRead:
-    MOV si, read_failure
-    CALL print
-    HLT
-    JMP halt
+    mov si, read_failure
+    call print
+    jmp halt
 
 
 .doneRead:
-    MOV si, disk_read_sucessfully
-    CALL print
-    RET
+    mov si, disk_read_sucessfully
+    call print
+    ret
 
 .diskReset:
     pusha                                     ; Save all general registers
-    MOV ah, 0x00                              ; BIOS Reset Disk
-    STC
-    INT 13h
+    mov ah, 0x00                              ; BIOS Reset Disk
+    stc
+    int 0x13
     jc .failDiskRead                          ; Still failing? Halt
     popa                                      ; Get back all general registers (no need to clean registers beforehand)
-    RET
+    ret
 
 print:
-    PUSH si                                   ; Preserve 
-    PUSH ax                                   ; Preserve
-    PUSH bx                                   ; Preserve bx and fall trhough to code below
+    push si                                   ; Preserve 
+    push ax                                   ; Preserve
+    push bx                                   ; Preserve bx and fall trhough to code below
 
 print_loop:
-    LODSB                                     ; Load DS:SI byte to al, then increment SI
-    OR al, al                                 ; Hacky way to avoid CMP al, 0x00
-    JZ done_print                             ; Finish printing if zero
-    MOV ah, 0x0E                              ; Set ah to 0x0E to access BIOS teletype print
-    MOV bh, 0                                 ; Set page number to 0
+    lodsb                                     ; Load DS:SI byte to al, then increment SI
+    or al, al                                 ; Hacky way to avoid CMP al, 0x00
+    jz done_print                             ; Finish printing if zero
+    mov ah, 0x0E                              ; Set ah to 0x0E to access BIOS teletype print
+    mov bh, 0                                 ; Set page number to 0
     int 0x10                                  ; Call BIOS interrup
-
-    JMP print_loop
+    jmp print_loop
 
 done_print:
-    POP bx                                    ; Get bx value from before print loop
-    POP ax                                    ; Get ax value from before print loop
-    POP si                                    ; Get si value from before print loop
-    RET
+    pop bx                                    ; Get bx value from before print loop
+    pop ax                                    ; Get ax value from before print loop
+    pop si                                    ; Get si value from before print loop
+    ret
 
 compute_root_dir_stuff:
     xor al, al
@@ -161,33 +158,29 @@ rootDirAfter:
     mov [LBA], al
     mov dl, [ebr_drive_number]
     mov bx, buffer
-    call lba_to_chs
     call disk_read
 
-    XOR bx,bx
-    MOV di, buffer
+    xor bx,bx
+    mov di, buffer
 
 searchKernel:
-    MOV si, file_kernel_bin                   ; move kernel bin file name into si
-    MOV cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
-    PUSH di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
+    mov si, file_kernel_bin                   ; move kernel bin file name into si
+    mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
+    push di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
     REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
-    POP di                                    ; Restore original di
-    JE foundKernel                            ; ZF = 1 if a match is found. di will contain address of first character in the name
+    pop di                                    ; Restore original di
+    je foundKernel                            ; ZF = 1 if a match is found. di will contain address of first character in the name
 
-    ADD di, 32                                ; Go to next record in root folder (+32 bytes) 
-    INC bx                                    ; Save the number of records that were searched 
-    CMP bx, [bdb_dir_entries_count]           ; If all record search then print that kernel wasn't found
-    JL searchKernel
-
-    JMP kernelNotFound
+    add di, 32                                ; Go to next record in root folder (+32 bytes) 
+    inc bx                                    ; Save the number of records that were searched 
+    cmp bx, [bdb_dir_entries_count]           ; If all record search then print that kernel wasn't found
+    jl searchKernel
+    jmp kernelNotFound
 
 kernelNotFound:
-    MOV si, msg_kernel_not_found
-    CALL print
-
-    HLT
-    JMP halt
+    mov si, msg_kernel_not_found
+    call print
+    jmp halt
 
 foundKernel:
     
@@ -224,44 +217,42 @@ loadKernelLoop:
     add bx, [bdb_bytes_per_sector] ; Increment kernel offset to load the next cluster
 
     ; Find next pointer in FAT
-    MOV ax, [kernel_cluster] ; (kernel cluster * 3)/2
-    MOV cx, 3
-    MUL cx
-    MOV cx, 2
-    DIV cx
+    mov ax, [kernel_cluster] ; (kernel cluster * 3)/2
+    mov cx, 3
+    mul cx
+    mov cx, 2
+    div cx
 
-    MOV si, buffer
-    ADD si, ax
-    MOV ax, [ds:si]
+    mov si, buffer
+    add si, ax
+    mov ax, [ds:si]
 
-    OR dx,dx
-    JZ even
+    or dx,dx
+    jz even
 
 odd:
-    SHR ax,4
-    JMP nextClusterAfter
+    shr ax,4
+    jmp nextClusterAfter
 even:
-    AND ax, 0x0FFF
+    and ax, 0x0FFF
 
 nextClusterAfter:
-    CMP ax, 0x0FF8
-    JAE readFinish
+    cmp ax, 0x0FF8
+    jae readFinish
 
-    MOV [kernel_cluster], ax
-    JMP loadKernelLoop
+    mov [kernel_cluster], ax
+    jmp loadKernelLoop
 
 readFinish:
-    MOV dl, [ebr_drive_number]
-    MOV ax, kernel_load_segment
-    MOV ds,ax
-    MOV es,ax
-
-    JMP kernel_load_segment:kernel_load_offset
-
-    HLT
+    mov dl, [ebr_drive_number]
+    mov ax, kernel_load_segment
+    mov ds,ax
+    mov es,ax
+    jmp kernel_load_segment:kernel_load_offset
 
 halt:
-    JMP halt
+    hlt
+    jmp halt
     
 
 read_failure:           DB "Failed to read disk!", 0x0D, 0x0A, 0x00
