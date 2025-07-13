@@ -1,9 +1,11 @@
 ; ==============================| Disk stuff |============================== 
 
 ; Input: AH = sectors to read; AL = LBA, BX = memo address to dump disk read
+; Output: AH = status ; AL = sectors read; CF = 0 on success, 1 on error
 disk_read:
-    push dx                                   ; Will be using dx for division for now
+    push dx                                   ; Will be using dx for division => preserve old value
     push di                                   ; Will be using di for a counterdisk re-try counter
+    push cx                                   ; Will be 
     push ax                                   ; Preserve AH with sectors_to_read, last since will be popped first
 
     mov ah, 0                                 ; Remove sectors to read from ax register
@@ -26,12 +28,15 @@ disk_read:
     mov si, read_failure
     call print
     jmp halt
+
 .doneRead:
     mov si, disk_read_sucessfully
     call print
+    pop cx
     pop di
     pop dx
     ret
+
 .diskReset:
     pusha                                     ; Save all general registers
     mov ah, 0x00                              ; BIOS Reset Disk

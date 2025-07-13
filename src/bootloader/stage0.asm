@@ -56,8 +56,8 @@ rootDirAfter:
     mov bx, buffer                            ; ES:BX is where our stuff will be dumped
     call disk_read
 
-    xor bx,bx
-    mov di, buffer
+    xor bx,bx                                 ; Clean bx from address where you dumped root directory
+    mov di, buffer                            ; Set di to address of dumped root directory
 
 searchStage1:
     mov si, file_stage_1                      ; move stage1 bin file name into si
@@ -89,14 +89,16 @@ searchStage1:
     ; Load FAT table into memory
     mov si, msg_moving_fat_to_ram
     call print
-    mov ax, [bdb_reserved_sectors] ; Starting LBA of a FAT table
-    mov cl, [bdb_sectors_per_fat]  ; Sectors to read
+    mov bx, buffer
+    mov al, [bdb_reserved_sectors] ; Starting LBA of a FAT table
+    mov ah, [bdb_sectors_per_fat]  ; Sectors to read (TAT table length)
     call disk_read
 
     ; Set up memory to load kernel clusters
     mov bx, stage1_load_segment
     mov es, bx
     mov bx, stage1_load_offset
+    jmp halt
 
 ; loadKernelLoop:
     
