@@ -34,32 +34,59 @@ sector              :       DB 0
 sectors_to_read     :       DB 1
 
 main:
-    mov ax, 0                                 ; Get 0 into ax to later use as memory segment number
+    
+    ; Set up all segments
+    mov ax, 0                                 
     mov ds, ax                                ; Pick first memory segment for data
     mov es, ax                                ; Pick first memory segment for extra segment also
     mov ss, ax                                ; Pick first memory segment for stack segment also
     mov sp, 0x7C00                            ; Make stack occupy memory above bootloader code
     mov [ebr_drive_number], dl                ; Save device that had bootloader (0x00 floppy, 0x80 HHD) BIOS sets dl automatically
     xor dx, dx                                ; Clean dl
-    call compute_root_dir_stuff               ; WIP: computing root start, length and offset to the first data segment
-    jmp halt
 
-lba_to_chs:
-    mov ax, [bdb_heads]                       ; Get number of heads
-    mul WORD [bdb_sectors_per_track]          ; Get total sectors in a cylinder
-    mov BYTE [sectors_in_cylinder], al        ; Save value
-    xor ax, ax
-    mov al, [LBA]                             ; Get LBA
-    div BYTE [sectors_in_cylinder]            ; Get cylinder
-    mov BYTE [cylinder], al       
-    xor al, al
-    mov al, ah                                ; Get remainder as sector number
-    inc al                                    ; Get the sector number in a head
-    xor ah, ah
-    div WORD [bdb_sectors_per_track]          ; Find the number of tracks
-    mov [head], al
-    mov [sector], dl                          ; Save sectors and fall through to disk_read
-    ret
+    ; Find LBA of root directory
+    mov ax, [bdb_sectors_per_fat]             ; Get number of sectors each FAT table takes
+    mov bl, [bdb_fat_count]                   ; Get total sectors all FAT tables take 
+    mul bx                                    ;  
+    add ax, [bdb_reserved_sectors]            ; Add reserved sectors before FATs
+    push ax                                   ; LBA of a root directory
+ 
+    ; Find length of root directory
+    mov ax, [bdb_dir_entries_count] 
+    shl ax, 5                                 ; max_num_of_files * 32 bits/file = total byte size of root dir
+    div WORD [bdb_bytes_per_sector]           ; Lenght of root dir in sectors
+    test dx, dx                               ; Check if remainder = 0
+    je rootDirAfter
+    inc al                                    ; Length of the root directory
+
+rootDirAfter:
+    mov cl, al
+    mov al, 0
+    mov [LBA], al
+    mov [sectors_to_read], al
+    mov [sectors_to_read], cl
+    pop ax
+    mov [LBA], al
+    mov dl, [ebr_drive_number]
+    mov bx, buffer
+    call disk_read
+
+    xor bx,bx
+    mov di, buffer
+
+searchStage1:
+    mov si, file_stage_1                      ; move kernel bin file name into si
+    mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
+    push di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
+    REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
+    pop di                                    ; Restore original di
+    je foundStage1                            ; ZF = 1 if a match is found. di will contain address of first character in the name
+
+    add di, 32                                ; Go to next record in root folder (+32 bytes) 
+    inc bx                                    ; Save the number of records that were searched 
+    cmp bx, [bdb_dir_entries_count]           ; If all record search then print that kernel wasn't found
+    jl searchStage1
+    jmp stage1NotFound
 
 disk_read:
     call lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
@@ -107,75 +134,22 @@ retry:
     popa                                      ; Get back all general registers (no need to clean registers beforehand)
     ret
 
-print:
-    push si                                   ; Preserve 
-    push ax                                   ; Preserve
-    push bx                                   ; Preserve bx and fall trhough to code below
-
-print_loop:
-    lodsb                                     ; Load DS:SI byte to al, then increment SI
-    or al, al                                 ; Hacky way to avoid CMP al, 0x00
-    jz done_print                             ; Finish printing if zero
-    mov ah, 0x0E                              ; Set ah to 0x0E to access BIOS teletype print
-    mov bh, 0                                 ; Set page number to 0
-    int 0x10                                  ; Call BIOS interrup
-    jmp print_loop
-
-done_print:
-    pop bx                                    ; Get bx value from before print loop
-    pop ax                                    ; Get ax value from before print loop
-    pop si                                    ; Get si value from before print loop
-    ret
-
-compute_root_dir_stuff:
-    xor al, al
-    xor bh, bh
-
-    mov ax, [bdb_sectors_per_fat]             ; Get number of sectors each FAT table takes
-    mov bl, [bdb_fat_count]                   ; Get total sectors all FAT tables take 
-    mul bx                                    ;  
-    add ax, [bdb_reserved_sectors]            ; Add reserved sectors before FATs
-    push ax                                   ; LBA of a root directory
-
-    xor bx, bx
+lba_to_chs:
+    mov ax, [bdb_heads]                       ; Get number of heads
+    mul WORD [bdb_sectors_per_track]          ; Get total sectors in a cylinder
+    mov BYTE [sectors_in_cylinder], al        ; Save value
     xor ax, ax
-    xor dx, dx                                ; Remainder after multiplying is in dx 
-    mov ax, [bdb_dir_entries_count] 
-    shl ax, 5                                 ; max_num_of_files * 32 bits/file = total byte size of root dir
-    div WORD [bdb_bytes_per_sector]           ; Lenght of root dir in sectors
-    test dx, dx                               ; Check if remainder = 0
-    je rootDirAfter
-    inc al                                    ; Length of the root directory
-
-; WIP, make sure to rewrite LBA and sectors_to_read from memo
-rootDirAfter:
-    mov cl, al
-    mov al, 0
-    mov [LBA], al
-    mov [sectors_to_read], al
-    mov [sectors_to_read], cl
-    pop ax
-    mov [LBA], al
-    mov dl, [ebr_drive_number]
-    mov bx, buffer
-    call disk_read
-
-    xor bx,bx
-    mov di, buffer
-
-searchStage1:
-    mov si, file_stage_1                      ; move kernel bin file name into si
-    mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
-    push di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
-    REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
-    pop di                                    ; Restore original di
-    je foundStage1                            ; ZF = 1 if a match is found. di will contain address of first character in the name
-
-    add di, 32                                ; Go to next record in root folder (+32 bytes) 
-    inc bx                                    ; Save the number of records that were searched 
-    cmp bx, [bdb_dir_entries_count]           ; If all record search then print that kernel wasn't found
-    jl searchStage1
-    jmp stage1NotFound
+    mov al, [LBA]                             ; Get LBA
+    div BYTE [sectors_in_cylinder]            ; Get cylinder
+    mov BYTE [cylinder], al       
+    xor al, al
+    mov al, ah                                ; Get remainder as sector number
+    inc al                                    ; Get the sector number in a head
+    xor ah, ah
+    div WORD [bdb_sectors_per_track]          ; Find the number of tracks
+    mov [head], al
+    mov [sector], dl                          ; Save sectors and fall through to disk_read
+    ret
 
 stage1NotFound:
     mov si, msg_stage1_not_found
@@ -251,6 +225,26 @@ foundStage1:
 ;     mov ds,ax
 ;     mov es,ax
 ;     jmp stage1_load_segment:stage1_load_offset
+
+print:
+    push si                                   ; Preserve 
+    push ax                                   ; Preserve
+    push bx                                   ; Preserve bx and fall trhough to code below
+
+print_loop:
+    lodsb                                     ; Load DS:SI byte to al, then increment SI
+    or al, al                                 ; Hacky way to avoid CMP al, 0x00
+    jz done_print                             ; Finish printing if zero
+    mov ah, 0x0E                              ; Set ah to 0x0E to access BIOS teletype print
+    mov bh, 0                                 ; Set page number to 0
+    int 0x10                                  ; Call BIOS interrup
+    jmp print_loop
+
+done_print:
+    pop bx                                    ; Get bx value from before print loop
+    pop ax                                    ; Get ax value from before print loop
+    pop si                                    ; Get si value from before print loop
+    ret
 
 halt:
     hlt
