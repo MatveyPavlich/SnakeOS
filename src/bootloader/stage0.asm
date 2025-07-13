@@ -34,14 +34,14 @@ main:
     mov ss, ax                                
     mov sp, 0x7C00                            ; Grow stack below above the code
 
-    ; Find LBA of root directory
+    ; Calculate LBA of root directory
     mov ax, [bdb_sectors_per_fat]             ; Get number of sectors each FAT table takes
     mov bl, [bdb_fat_count]                   ; Get total sectors all FAT tables take 
     mul bx                                    ;  
     add ax, [bdb_reserved_sectors]            ; Add reserved sectors before FATs
-    push ax                                   ; LBA of a root directory
+    push ax                                   ; Save LBA of a root directory
  
-    ; Find length of root directory
+    ; Calculate length of root directory
     mov ax, [bdb_dir_entries_count] 
     shl ax, 5                                 ; max_files * 32 bits/file = total size of root dir
     div WORD [bdb_bytes_per_sector]           ; Lenght of root dir in sectors
@@ -51,7 +51,8 @@ main:
 
 rootDirAfter:
     mov cl, al                                ; Store root dir length in cl
-    pop ax                                    ; Starting LBA
+    pop ax                                    ; Retreive starting LBA of a root directory
+    mov ah, cl                                ; AH = sectors to read; AL - LBA
     mov bx, buffer                            ; ES:BX is where our stuff will be dumped
     call disk_read
 
@@ -64,21 +65,20 @@ searchStage1:
     push di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
     REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
     pop di                                    ; Restore original di
-    je foundStage1                            ; ZF = 1 if a match is found. di will contain address of first character in the name
+    je .foundStage1                            ; ZF = 1 if a match is found. di will contain address of first character in the name
 
     add di, 32                                ; Go to next record in root folder (+32 bytes) 
     inc bx                                    ; Save the number of records that were searched 
     cmp bx, [bdb_dir_entries_count]           ; If all record search then print that kernel wasn't found
     jl searchStage1
-    jmp stage1NotFound
+    jmp .stage1NotFound
 
-
-stage1NotFound:
+.stage1NotFound:
     mov si, msg_stage1_not_found
     call print
     jmp halt
 
-foundStage1:
+.foundStage1:
     
     ; Save starting stage1 cluster found from root directory
     mov si, msg_stage1_found

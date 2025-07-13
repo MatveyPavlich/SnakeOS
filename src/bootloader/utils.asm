@@ -1,21 +1,26 @@
 ; ==============================| Disk stuff |============================== 
-disk_read:
-    push cx
-    call lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
-    pop cx
-    mov al, cl
-    mov ah, 0x2
-    mov di, 3                                 ; Ste counter for disk re-tries
 
-retry:
-    mov ah, 2                                 ; Get disk read interrupt
+; Input: AH = sectors to read; AL = LBA, BX = memo address to dump disk read
+disk_read:
+    push dx                                   ; Will be using dx for division for now
+    push di                                   ; Will be using di for a counterdisk re-try counter
+    push ax                                   ; Preserve AH with sectors_to_read, last since will be popped first
+
+    mov ah, 0                                 ; Remove sectors to read from ax register
+    call lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
+    pop ax
+    shr ax, 8                                 ; Move sectors_to_read from AH to AL
+    mov di, 3                                 ; Ste counter for disk re-tries and drop through to try_again
+
+.try_again:
+    mov ah, 0x2                               ; Get disk read interrupt
     stc                                       ; Set carry flag before INT 13h (BIOS uses this)
     int 0x13                                  ; BIOS disk read
     jnc .doneRead                             ; Jump if Carry flag not set
     dec di                                    ; Retry counter -= 1
     test di, di                               ; Is it zero yet?
-    jnz retry                                 ; If not, retry
-    call .diskReset                           ; If read failed, try to reset disk and retry
+    jnz .try_again                            ; If not, try_again
+    call .diskReset                           ; If read failed, try to reset disk and try_again
 
 .failDiskRead:
     mov si, read_failure
@@ -24,6 +29,8 @@ retry:
 .doneRead:
     mov si, disk_read_sucessfully
     call print
+    pop di
+    pop dx
     ret
 .diskReset:
     pusha                                     ; Save all general registers
@@ -35,8 +42,7 @@ retry:
     ret
 
 ; Input: AX = LBA
-; Output: AL = sectors_to_read, CL = sector (!!!0-5 bits), CH = cylinder (!!!6-15), DH = head, DL = drive number
-; Sectors to read will be 1 always
+; Output: CL = sector (!!!0-5 bits), CH = cylinder (!!!6-15), DH = head, DL = drive number
 lba_to_chs:
     xor cx, cx
     xor dx, dx                                ; Clean dx to be used for div remainder
@@ -44,9 +50,9 @@ lba_to_chs:
     inc dx                                    ; Sector
     mov cx, dx                                ; Save sectors into cx
     xor dx,dx                                 ; Prep dx for division
-    DIV word [bdb_heads]                      ; dx = (LBA / sectors_per_track) % heads, ax = (LBA / sectors_per_track) / heads
+    div WORD [bdb_heads]                      ; dx = (LBA / sectors_per_track) % heads, ax = (LBA / sectors_per_track) / heads
     mov dh, dl                                ; Head
-    mov dh, [ebr_drive_number]                ; Load the drive number
+    mov dl, [ebr_drive_number]                ; Load the drive number
     mov ch, al                                ; Move cylinder to ch
     shl ah, 6                                 ; See int 13,2 page (bottom)
     or cl, ah                                 ; Cylinder
