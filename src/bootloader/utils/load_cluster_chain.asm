@@ -4,7 +4,7 @@ load_cluster_chain:
     
     ; Load stage1 cluster into RAM
     mov ax, [stage1_cluster]
-    add ax, 31                     ; Cluster number -> LBA conversion
+    add ax, 31                     ; Cluster number -> LBA conversion for floppy
     mov ah, 1                      ; Number of sectors we'll read
     call disk_read
     add bx, [bdb_bytes_per_sector] ; Increment offset to load the next cluster (gdb 0x7ccb)

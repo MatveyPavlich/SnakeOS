@@ -4,10 +4,12 @@
 ;   - AL = LBA
 ;   - BX = memo address to dump disk read
 ;   - ES = Segment for disk read dump
-; Output:
+; Output (success):
 ;   - AH = status
 ;   - AL = sectors read
 ;   - CF = 0 on success, 1 on error
+; Output (fail):
+;   - Will halt the whole system
 ; ==========================================================================
 ; DS:offset of 0x0000:0x7C00 is used for disk labels (e.g.,11th byte is bytes per sector)
 

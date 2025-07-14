@@ -54,7 +54,7 @@ rootDirAfter:
     pop ax                                    ; Retreive starting LBA of a root directory
     mov ah, cl                                ; AH = sectors to read; AL - LBA
     mov bx, buffer                            ; ES:BX is where our stuff will be dumped
-    call disk_read
+    call disk_read                            ; AH = sectors to read; AL - LBA; ES:BX - memo to dump
 
     xor bx,bx                                 ; Clean bx from address where you dumped root directory
     mov di, buffer                            ; Set di to address of dumped root directory
