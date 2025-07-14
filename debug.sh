@@ -1,5 +1,5 @@
 #!/bin/bash
-PROJECT_DIR=~/repos/MatthewOS
+PROJECT_DIR=~/repos/SnakeOS
 QEMU_BIN=~/qemu-patched/bin/qemu-system-i386
 
 # Move terminal window and QEMU into workspace 4
