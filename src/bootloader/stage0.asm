@@ -99,9 +99,9 @@ searchStage1:
     mov es, bx
     mov bx, stage1_load_offset ; (0x7cbd in gdb)
 
-%include "./src/bootloader/get_fat_cluster_chain.asm"
-%include "./src/bootloader/read_disk.asm"
-%include "./src/bootloader/utils.asm"
+%include "./src/bootloader/utils/load_cluster_chain.asm"
+%include "./src/bootloader/utils/disk_read.asm"
+%include "./src/bootloader/utils/utils.asm"
 
 read_failure:           DB "Failed to read disk!", 0x0D, 0x0A, 0x00
 disk_read_sucessfully:  DB "Disk read successful", 0x0D, 0x0A, 0x00

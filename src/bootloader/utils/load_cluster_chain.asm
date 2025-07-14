@@ -1,6 +1,6 @@
 ; ==============================| Load stage 1 into RAM |============================== 
 
-loadKernelLoop:
+load_cluster_chain:
     
     ; Load stage1 cluster into RAM
     mov ax, [stage1_cluster]
@@ -34,7 +34,7 @@ nextClusterAfter:
     jae readFinish
 
     mov [stage1_cluster], ax
-    jmp loadKernelLoop
+    jmp load_cluster_chain
 
 readFinish:
     mov dl, [ebr_drive_number]

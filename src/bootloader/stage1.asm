@@ -9,7 +9,7 @@ main:
     call print
     jmp halt
 
-%include "./src/bootloader/utils.asm"
+%include "./src/bootloader/utils/utils.asm"
 
 
 stage1_message:  DB "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
