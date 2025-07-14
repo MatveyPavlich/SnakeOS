@@ -97,56 +97,10 @@ searchStage1:
     ; Set up memory to load kernel clusters
     mov bx, stage1_load_segment
     mov es, bx
-    mov bx, stage1_load_offset
-    jmp halt
+    mov bx, stage1_load_offset ; (0x7cbd in gdb)
 
-; loadKernelLoop:
-    
-;     ; Load starting kernel cluster into RAM
-;     mov ax, [stage1_cluster]
-;     mov [LBA], al                  ; Load into memo
-;     add ax, 31                     ; Cluster number -> LBA conversion
-;     mov cl, 1                      ; Number of sectors we'll read
-;     mov [sectors_to_read], cl      ; Read one sector (since cluster is 1 sector)
-;     mov dl, [ebr_drive_number]
-;     call lba_to_chs
-;     call disk_read
-;     add bx, [bdb_bytes_per_sector] ; Increment kernel offset to load the next cluster
-
-;     ; Find next pointer in FAT
-;     mov ax, [stage1_cluster] ; (kernel cluster * 3)/2
-;     mov cx, 3
-;     mul cx
-;     mov cx, 2
-;     div cx
-
-;     mov si, buffer
-;     add si, ax
-;     mov ax, [ds:si]
-
-;     or dx,dx
-;     jz even
-
-; odd:
-;     shr ax,4
-;     jmp nextClusterAfter
-; even:
-;     and ax, 0x0FFF
-
-; nextClusterAfter:
-;     cmp ax, 0x0FF8
-;     jae readFinish
-
-;     mov [stage1_cluster], ax
-;     jmp loadKernelLoop
-
-; readFinish:
-;     mov dl, [ebr_drive_number]
-;     mov ax, stage1_load_segment
-;     mov ds,ax
-;     mov es,ax
-;     jmp stage1_load_segment:stage1_load_offset
-
+%include "./src/bootloader/get_fat_cluster_chain.asm"
+%include "./src/bootloader/read_disk.asm"
 %include "./src/bootloader/utils.asm"
 
 read_failure:           DB "Failed to read disk!", 0x0D, 0x0A, 0x00
@@ -157,7 +111,7 @@ msg_stage1_found:       DB "STAGE1.BIN found!", 0x0D, 0x0A, 0x00
 msg_moving_fat_to_ram:  DB "Moving FAT12", 0x0D, 0x0A, 0x00
 stage1_cluster:         DW 0
 
-stage1_load_segment     EQU 0x7E00
+stage1_load_segment     EQU 0x9000
 stage1_load_offset      EQU 0
 
 TIMES 510-($-$$) DB 0
