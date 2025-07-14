@@ -60,8 +60,10 @@ disk_read:
     popa                                      ; Get back all general registers (no need to clean registers beforehand)
     ret
 
+; -----------------------------------------------------------------------------------------
 ; Input: AX = LBA
 ; Output: CL = sector (!!!0-5 bits), CH = cylinder (!!!6-15), DH = head, DL = drive number
+; -----------------------------------------------------------------------------------------
 lba_to_chs:
     xor cx, cx
     xor dx, dx                                ; Clean dx to be used for div remainder
