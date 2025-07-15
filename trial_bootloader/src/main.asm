@@ -1,33 +1,53 @@
-[org 0x7C00] ; bootloader offset
+[org 0x7C00]
 [bits 16]
 
 main:
-    mov ax, 0
+    xor ax, ax
     mov ds, ax
     mov es, ax
     mov ss, ax
 
     mov si, MSG_REAL_MODE
     call print
-
     call check_a20
     call enable_a20_fast
     call check_a20
+
     hlt
     jmp $
 
+; -------------------------
 check_a20:
-    ; See if a20 is enabled
+    ; Set up memory segments
     xor ax, ax
-    xor bx, bx
-    mov si, 0x7DFE          ; Boot signature (0xAA55)
-    mov di, 0x10FDE         ; 0xFFFF0 + 0x7DFE = 0x10FDE (1MB more)
-    mov ax, [ds:si]         ; Read from 0x0000:0x7DFE = 0x07DFE
-    mov bx, [es:si]         ; Read from 0xFFFF:0x7DFE = 0x10FDE
-    cmp al, bl
+    mov ds, ax
+    mov di, 0x0500
+    mov ax, 0xFFFF ; 0xFFFF:0x0510 would map to 0x0000:0x0500 if a20 disabled
+    mov es, ax
+    xor ax, ax
+    mov si, 0x0510
+
+    ; Save original values
+    mov al, [ds:di]
+    mov ah, [es:si]
+
+    ; Write test values
+    mov byte [ds:di], 0x00
+    mov byte [es:si], 0xFF
+
+    ; Compare
+    mov bl, [ds:di]
+    cmp bl, [es:si]
+
+    ; Restore originals
+    mov [ds:di], al
+    mov [es:si], ah
+
+    ; ZF = 0 if different (A20 enabled)
     jne switch_to_pm
     ret
 
+; -------------------------
 enable_a20_fast:
     in al, 0x92
     or al, 0x02
