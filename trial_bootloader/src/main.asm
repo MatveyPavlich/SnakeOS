@@ -8,10 +8,39 @@ main:
     mov ss, ax
 
     mov si, MSG_REAL_MODE
-    call print ; This will be written after the BIOS messages
+    call print
 
-    call switch_to_pm
-    jmp $ ; this will actually never be executed
+    call check_a20
+    call enable_a20_fast
+    call check_a20
+    hlt
+    jmp $
+
+check_a20:
+    ; See if a20 is enabled
+    xor ax, ax
+    xor bx, bx
+    mov si, 0x7DFE          ; Boot signature (0xAA55)
+    mov di, 0x10FDE         ; 0xFFFF0 + 0x7DFE = 0x10FDE (1MB more)
+    mov ax, [ds:si]         ; Read from 0x0000:0x7DFE = 0x07DFE
+    mov bx, [es:si]         ; Read from 0xFFFF:0x7DFE = 0x10FDE
+    cmp al, bl
+    jne switch_to_pm
+    ret
+
+enable_a20_fast:
+    in al, 0x92
+    or al, 0x02
+    out 0x92, al
+    ret
+
+switch_to_pm:
+    cli                        ; Disable BIOS interrupts
+    lgdt [gdt_descriptor]      ; Load the GDT descriptor
+    mov eax, cr0
+    or eax, 0x1                ; Set 32-bit mode bit in cr0
+    mov cr0, eax
+    jmp dword CODE_SEG:start_pm ; 4. far jump by using a different segment
 
 %include "./src/utils/boot_sect_print.asm"
 MSG_REAL_MODE db "Started in 16-bit real mode", 0xD, 0xA, 0x00
@@ -50,15 +79,7 @@ gdt_descriptor:
 CODE_SEG equ code_descriptor - gdt_start
 DATA_SEG equ data_descriptor - gdt_start
 
-
-switch_to_pm:
-    cli ; 1. disable interrupts
-    lgdt [gdt_descriptor] ; 2. load the GDT descriptor
-    mov eax, cr0
-    or eax, 0x1 ; 3. set 32-bit mode bit in cr0
-    mov cr0, eax
-    jmp dword CODE_SEG:start_pm ; 4. far jump by using a different segment
-
+; =================================================================
 bits 32
 start_pm:
     mov al, 'A'
@@ -66,18 +87,18 @@ start_pm:
     mov [0xb8000], ax
 
     jmp $
-; init_pm: ; we are now using 32-bit instructions
-;     mov ax, DATA_SEG ; 5. update the segment registers
-;     mov ds, ax
-;     mov ss, ax
-;     mov es, ax
-;     mov fs, ax
-;     mov gs, ax
 
-;     mov ebp, 0x90000 ; 6. update the stack right at the top of the free space
-;     mov esp, ebp
+    ; mov ax, DATA_SEG ; 5. update the segment registers
+    ; mov ds, ax
+    ; mov ss, ax
+    ; mov es, ax
+    ; mov fs, ax
+    ; mov gs, ax
 
-;     call BEGIN_PM ; 7. Call a well-known label with useful code
+    ; mov ebp, 0x90000 ; 6. update the stack right at the top of the free space
+    ; mov esp, ebp
+
+    ; call BEGIN_PM ; 7. Call a well-known label with useful code
 ; ; =========================
 
 ; [bits 32]
