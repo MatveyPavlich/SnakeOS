@@ -11,6 +11,9 @@ ensure_a20:
     ret
 
 check_a20:
+    push es
+    push ds
+
     ; Set up memory segments
     cli
     mov ax, 0x0000
@@ -36,9 +39,9 @@ check_a20:
     ; Restore originals
     mov [ds:di], al
     mov [es:si], ah
-
-    sti 
-    jne switch_to_pm             ; ZF != 0 if different (A20 enabled)
+    pop ds
+    pop es
+    sti             ; ZF != 0 if different (A20 enabled)
     ret
 
 ; -------------------------
