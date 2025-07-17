@@ -10,7 +10,7 @@ $(BUILD_DIR)/main.img: stage0 stage1 kernel                                     
 	mkfs.fat -F 12 -n "SNAKEOS" $(BUILD_DIR)/main.img
 	dd if=$(BUILD_DIR)/stage0.bin of=$(BUILD_DIR)/main.img conv=notrunc
 	mcopy -i $(BUILD_DIR)/main.img $(BUILD_DIR)/stage1.bin "::stage1.bin"
-	mcopy -i $(BUILD_DIR)/main.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
+	mcopy -i $(BUILD_DIR)/main.img $(BUILD_DIR)/kernel_entry.bin "::kernel.bin"
  
 # Bootloader 
 stage0: $(BUILD_DIR)/stage0.bin 											      # Alias for commandline (i.e., make bootloader)
@@ -24,9 +24,9 @@ $(BUILD_DIR)/stage1.bin:
 
 
 # Kernel 
-kernel: $(BUILD_DIR)/kernel.bin                                                       # Alias for commandline (i.e., make kernel)
-$(BUILD_DIR)/kernel.bin:                                                              # Target
-	$(ASM) $(SRC_DIR)/kernel/main.asm -f bin -o $(BUILD_DIR)/kernel.bin
+kernel: $(BUILD_DIR)/kernel_entry.bin                                                       # Alias for commandline (i.e., make kernel)
+$(BUILD_DIR)/kernel_entry.bin:                                                              # Target
+	$(ASM) $(SRC_DIR)/kernel/kernel_entry.asm -f bin -o $(BUILD_DIR)/kernel_entry.bin
 
 # Run OS without gdb debug
 run:

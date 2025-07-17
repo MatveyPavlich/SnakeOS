@@ -13,6 +13,10 @@ main:
     jmp halt                    ; In theory should never reach here
 
 switch_to_pm:
+    mov ah, 0x00
+    mov al, 0x3
+    int 0x10                    ; Clear te screen 
+
     cli                         ; Disable BIOS interrupts (0x9000e in gdb)
     lgdt [gdt_descriptor]       ; Load the GDT descriptor
     mov eax, cr0
