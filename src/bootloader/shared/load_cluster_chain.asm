@@ -1,8 +1,11 @@
-; ==============================| Load stage 1 into RAM |============================== 
+; ==============================| Load cluster chain |============================== 
 ; Input:
-; AX = starting cluster
-
+;   AX = starting cluster
+;   ES:BX = destination buffer
+; Clobbers: AX, BX, CX, DX, SI
+; ================================================================================
 load_cluster_chain:
+.load_next:
     ; Load the cluster into RAM (starting cluster if it is start of the loop)
     mov ax, [stage1_cluster]
     add ax, 31                     ; Cluster number -> LBA conversion for floppy
@@ -23,20 +26,21 @@ load_cluster_chain:
 
     ; Determine if the FAT entry offset is even or odd
     or dx,dx                       ; dx stores the remaider from division => hacky way of doing cmp dx, 0 
-    jz even
+    jz .even
 
-odd:
+.odd:
     shr ax, 4                    ; Get upper 12 bits (i.e., shift right)
-    jmp nextClusterAfter
-even:
+    jmp .interpret_chain_marker
+
+.even:
     and ax, 0x0FFF               ; Get lower 12 bits
 
-nextClusterAfter:
+.interpret_chain_marker:
     cmp ax, 0x0FF8               ; Check for end-of-chain marker (0xFF8-0xFFF)
     jae .read_finished
 
     mov [stage1_cluster], ax     ; Store new cluster and repeat!
-    jmp load_cluster_chain
+    jmp .load_next
 
 .read_finished:
     ret

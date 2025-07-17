@@ -37,7 +37,6 @@ main:
 
     ; Search for the kernel file
     mov si, file_kernel                       ; move stage1 bin file name into si
-    mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
     call search_file
     mov [kernel_cluster], ax
 
@@ -45,7 +44,6 @@ main:
     xor bx, bx                                ; 0x7c59 gdb
     mov di, buffer                            ; Move starting location of the root directory into di
     mov si, file_stage_1                      ; Move stage1 bin file name into si
-    mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
     call search_file
     mov [stage1_cluster], ax
 

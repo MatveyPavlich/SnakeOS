@@ -34,7 +34,6 @@ load_root_dir_to_memo:
 ; Input:
 ; - SI = address of a file name (e.g., "STAGE1  BIN")
 ; - DI = addres of the root directory (e.g. , 0x7E00)
-; - CX = length of a file name (should be 11 with FAT12)
 ; - BX = 0 which will be used as a loop counter (i.e. comparing to bdb_dir_entries_count)
 ;
 ; Output:
@@ -43,6 +42,7 @@ load_root_dir_to_memo:
 search_file:
     push di                                   ; Preserve di since cmpsb auto incremetns both (si & di)
     push si
+    mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
     REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
     pop si
     pop di                                    ; Restore original di
