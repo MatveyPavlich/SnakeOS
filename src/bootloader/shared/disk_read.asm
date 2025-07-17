@@ -1,13 +1,28 @@
-; ==============================| Disk stuff |============================== 
+; ==============================| disk_read |============================== 
+; Input:
+;   - AH = sectors to read
+;   - AL = LBA
+;   - BX = memo address to dump disk read
+;   - ES = Segment for disk read dump
+; Output (success):
+;   - AH = status
+;   - AL = sectors read
+;   - CF = 0 on success, 1 on error
+; Output (fail):
+;   - Will halt the whole system
+; ==========================================================================
+; DS:offset of 0x0000:0x7C00 is used for disk labels (e.g.,11th byte is bytes per sector)
 
-; Input: AH = sectors to read; AL = LBA, BX = memo address to dump disk read
-; Output: AH = status ; AL = sectors read; CF = 0 on success, 1 on error
 disk_read:
-    push dx                                   ; Will be using dx for division => preserve old value
-    push di                                   ; Will be using di for a counterdisk re-try counter
-    push cx                                   ; Will be 
-    push ax                                   ; Preserve AH with sectors_to_read, last since will be popped first
-
+    
+    ; Preserve registers that are not params, but are still used within disk_read
+    push si                                   ; Will be used in print
+    push dx                                   ; Will be used for division
+    push di                                   ; Will be used as counter for disk re-try counter
+    push cx                                   ; Will be used for lba_to_chs
+    
+    ; Prepare for disk read BIOS interrupt
+    push ax                                   ; Save AH with sectors_to_read (last to be popped first)
     mov ah, 0                                 ; Remove sectors to read from ax register
     call lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
     pop ax
@@ -27,7 +42,7 @@ disk_read:
 .failDiskRead:
     mov si, read_failure
     call print
-    jmp halt
+    jmp halt                                  ; If disk wasn't read we halt (and dont pop the stack)
 
 .doneRead:
     mov si, disk_read_sucessfully
@@ -35,6 +50,7 @@ disk_read:
     pop cx
     pop di
     pop dx
+    pop si
     ret
 
 .diskReset:
@@ -46,8 +62,10 @@ disk_read:
     popa                                      ; Get back all general registers (no need to clean registers beforehand)
     ret
 
+; -----------------------------------------------------------------------------------------
 ; Input: AX = LBA
 ; Output: CL = sector (!!!0-5 bits), CH = cylinder (!!!6-15), DH = head, DL = drive number
+; -----------------------------------------------------------------------------------------
 lba_to_chs:
     xor cx, cx
     xor dx, dx                                ; Clean dx to be used for div remainder
