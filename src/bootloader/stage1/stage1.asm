@@ -21,9 +21,9 @@ switch_to_pm:
     jmp dword CODE_SEG:start_pm ; far jump by using a different segment
 
 
-%include "./src/bootloader/utils/utils.asm"
-%include "./src/bootloader/utils/ensure_a20.asm"
-%include "./src/bootloader/utils/gdt.asm"
+%include "./src/bootloader/shared/utils.asm"
+%include "./src/bootloader/stage1/utils/ensure_a20.asm"
+%include "./src/bootloader/stage1/utils/gdt.asm"
 stage1_message:  db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 MSG_REAL_MODE db "Started in 16-bit real mode", 0xD, 0xA, 0x00
 A20_FAILED db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
@@ -46,5 +46,5 @@ start_pm:
     call print_string_pm
     jmp $
 
-%include "./src/bootloader/utils/32bit-print.asm"
+%include "./src/bootloader/stage1/utils/32bit-print.asm"
 MSG_PROT_MODE db "Loaded 32-bit protected mode", 0x00

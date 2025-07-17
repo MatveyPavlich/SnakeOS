@@ -7,7 +7,7 @@ BUILD_DIR=build
 floppy_image: $(BUILD_DIR)/main.img                                                   # Alias for commandline (i.e., make floppy_image)
 $(BUILD_DIR)/main.img: stage0 stage1 kernel                                              # Target
 	dd if=/dev/zero of=$(BUILD_DIR)/main.img bs=512 count=2880
-	mkfs.fat -F 12 -n "MATTHEWOS" $(BUILD_DIR)/main.img
+	mkfs.fat -F 12 -n "SNAKEOS" $(BUILD_DIR)/main.img
 	dd if=$(BUILD_DIR)/stage0.bin of=$(BUILD_DIR)/main.img conv=notrunc
 	mcopy -i $(BUILD_DIR)/main.img $(BUILD_DIR)/stage1.bin "::stage1.bin"
 	mcopy -i $(BUILD_DIR)/main.img $(BUILD_DIR)/kernel.bin "::kernel.bin"
@@ -15,12 +15,12 @@ $(BUILD_DIR)/main.img: stage0 stage1 kernel                                     
 # Bootloader 
 stage0: $(BUILD_DIR)/stage0.bin 											      # Alias for commandline (i.e., make bootloader)
 $(BUILD_DIR)/stage0.bin:                                                          # Target
-	$(ASM) $(SRC_DIR)/bootloader/stage0.asm -f bin -o $(BUILD_DIR)/stage0.bin 
+	$(ASM) $(SRC_DIR)/bootloader/stage0/stage0.asm -f bin -o $(BUILD_DIR)/stage0.bin 
 
 # Stage 1
 stage1: $(BUILD_DIR)/stage1.bin
 $(BUILD_DIR)/stage1.bin:
-	$(ASM) $(SRC_DIR)/bootloader/stage1.asm -f bin -o $(BUILD_DIR)/stage1.bin
+	$(ASM) $(SRC_DIR)/bootloader/stage1/stage1.asm -f bin -o $(BUILD_DIR)/stage1.bin
 
 
 # Kernel 
