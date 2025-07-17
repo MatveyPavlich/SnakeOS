@@ -34,6 +34,9 @@ main:
     mov ss, ax                                
     mov sp, 0x7C00                            ; Grow stack below above the code
 
+    call calc_root_dir_lba_and_len
+
+calc_root_dir_lba_and_len:
     ; Calculate LBA of root directory
     mov ax, [bdb_sectors_per_fat]             ; Get number of sectors each FAT table takes
     mov bl, [bdb_fat_count]                   ; Get total sectors all FAT tables take 
@@ -48,6 +51,16 @@ main:
     test dx, dx                               ; Check if remainder = 0
     je rootDirAfter
     inc al                                    ; Length of the root directory
+    
+    ; Calculate root dir length and starting LBA
+    ; Fall through to rootDirAfter
+    ; Read root directory from the disk to RAM
+    ; Find stage1.bin file in the root directory & save starting cluster
+    ; Find kernel.bin file in the root directory & save starting cluster
+    ; Read fat table from the disk to RAM
+    ; Read a cluster chain for stage1.bin
+
+
 
 rootDirAfter:
     mov cl, al                                ; Store root dir length in cl
@@ -74,14 +87,14 @@ searchStage1:
     jmp .stage1NotFound
 
 .stage1NotFound:
-    mov si, msg_stage1_not_found
+    mov si, msg_file_not_found
     call print
     jmp halt
 
 .foundStage1:
     
     ; Save starting stage1 cluster found from root directory
-    mov si, msg_stage1_found
+    mov si, msg_file_found
     call print
     mov ax, [di+26]                ; Get first logical cluster (LBA for the cluster)
     mov [stage1_cluster], ax       ; Save starting kernel cluster
@@ -103,18 +116,20 @@ searchStage1:
 %include "./src/bootloader/shared/disk_read.asm"
 %include "./src/bootloader/shared/utils.asm"
 
-read_failure:           DB "Failed to read disk!", 0x0D, 0x0A, 0x00
-disk_read_sucessfully:  DB "Disk read successful", 0x0D, 0x0A, 0x00
-file_stage_1:           DB "STAGE1  BIN", 0x0D, 0x0A, 0x00
-msg_stage1_not_found:   DB "STAGE1.BIN not found!", 0x0D, 0x0A, 0x00
-msg_stage1_found:       DB "STAGE1.BIN found!", 0x0D, 0x0A, 0x00
-msg_moving_fat_to_ram:  DB "Moving FAT12", 0x0D, 0x0A, 0x00
-stage1_cluster:         DW 0
+read_failure:           db "Disk read fail", 0x0D, 0x0A, 0x00
+disk_read_sucessfully:  db "Disk read done", 0x0D, 0x0A, 0x00
+file_stage_1:           db "STAGE1  BIN"
+file_kernel:            db "KERNEL  BIN"
+msg_file_not_found:     db "File not found", 0x0D, 0x0A, 0x00
+msg_file_found:         db "File found", 0x0D, 0x0A, 0x00
+msg_moving_fat_to_ram:  db "Get FAT12", 0x0D, 0x0A, 0x00
+stage1_cluster:         dw 0
 
-stage1_load_segment     EQU 0x9000
-stage1_load_offset      EQU 0
+stage1_load_segment     equ 0x9000
+stage1_load_offset      equ 0
 
 TIMES 510-($-$$) DB 0
-DW 0xAA55
+dw 0xAA55
 
+; 0x7E00 label
 buffer:
