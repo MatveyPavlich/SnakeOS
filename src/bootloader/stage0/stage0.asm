@@ -34,70 +34,18 @@ main:
     mov ss, ax                                
     mov sp, 0x7C00                            ; Grow stack below above the code
 
-    call calc_root_dir_lba_and_len
+    call load_root_dir_to_memo                ; Load root dir into mmemo
+    mov si, file_kernel                       ; move stage1 bin file name into si
+    mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
+    call search_file
+    mov [kernel_cluster], ax
 
-calc_root_dir_lba_and_len:
-    ; Calculate LBA of root directory
-    mov ax, [bdb_sectors_per_fat]             ; Get number of sectors each FAT table takes
-    mov bl, [bdb_fat_count]                   ; Get total sectors all FAT tables take 
-    mul bx                                    ;  
-    add ax, [bdb_reserved_sectors]            ; Add reserved sectors before FATs
-    push ax                                   ; Save LBA of a root directory
- 
-    ; Calculate length of root directory
-    mov ax, [bdb_dir_entries_count] 
-    shl ax, 5                                 ; max_files * 32 bits/file = total size of root dir
-    div WORD [bdb_bytes_per_sector]           ; Lenght of root dir in sectors
-    test dx, dx                               ; Check if remainder = 0
-    je rootDirAfter
-    inc al                                    ; Length of the root directory
-    
-    ; Calculate root dir length and starting LBA
-    ; Fall through to rootDirAfter
-    ; Read root directory from the disk to RAM
-    ; Find stage1.bin file in the root directory & save starting cluster
-    ; Find kernel.bin file in the root directory & save starting cluster
-    ; Read fat table from the disk to RAM
-    ; Read a cluster chain for stage1.bin
-
-
-
-rootDirAfter:
-    mov cl, al                                ; Store root dir length in cl
-    pop ax                                    ; Retreive starting LBA of a root directory
-    mov ah, cl                                ; AH = sectors to read; AL - LBA
-    mov bx, buffer                            ; ES:BX is where our stuff will be dumped
-    call disk_read                            ; AH = sectors to read; AL - LBA; ES:BX - memo to dump
-
-    xor bx,bx                                 ; Clean bx from address where you dumped root directory
-    mov di, buffer                            ; Set di to address of dumped root directory
-
-searchStage1:
+    xor bx, bx
+    mov di, buffer
     mov si, file_stage_1                      ; move stage1 bin file name into si
     mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
-    push di                                   ; Preserve di since cmpsb auto incremetns both (si & di) 
-    REPE CMPSB                                ; Compare exactly all 11 bytes at si:di
-    pop di                                    ; Restore original di
-    je .foundStage1                            ; ZF = 1 if a match is found. di will contain address of first character in the name
-
-    add di, 32                                ; Go to next record in root folder (+32 bytes) 
-    inc bx                                    ; Save the number of records that were searched 
-    cmp bx, [bdb_dir_entries_count]           ; If all record search then print that kernel wasn't found
-    jl searchStage1
-    jmp .stage1NotFound
-
-.stage1NotFound:
-    mov si, msg_file_not_found
-    call print
-    jmp halt
-
-.foundStage1:
-    
-    ; Save starting stage1 cluster found from root directory
-    mov si, msg_file_found
-    call print
-    mov ax, [di+26]                ; Get first logical cluster (LBA for the cluster)
-    mov [stage1_cluster], ax       ; Save starting kernel cluster
+    call search_file
+    mov [stage1_cluster], ax
 
     ; Load FAT table into memory
     mov si, msg_moving_fat_to_ram
@@ -105,13 +53,13 @@ searchStage1:
     mov bx, buffer
     mov al, [bdb_reserved_sectors] ; Starting LBA of a FAT table
     mov ah, [bdb_sectors_per_fat]  ; Sectors to read (TAT table length)
-    call disk_read
 
     ; Set up memory to load kernel clusters
     mov bx, stage1_load_segment
     mov es, bx
     mov bx, stage1_load_offset ; (0x7cbd in gdb)
 
+%include "./src/bootloader/stage0/utils/utils.asm"
 %include "./src/bootloader/shared/load_cluster_chain.asm"
 %include "./src/bootloader/shared/disk_read.asm"
 %include "./src/bootloader/shared/utils.asm"
@@ -124,6 +72,7 @@ msg_file_not_found:     db "File not found", 0x0D, 0x0A, 0x00
 msg_file_found:         db "File found", 0x0D, 0x0A, 0x00
 msg_moving_fat_to_ram:  db "Get FAT12", 0x0D, 0x0A, 0x00
 stage1_cluster:         dw 0
+kernel_cluster:         dw 0
 
 stage1_load_segment     equ 0x9000
 stage1_load_offset      equ 0

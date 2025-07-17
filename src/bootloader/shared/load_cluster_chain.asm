@@ -1,7 +1,8 @@
 ; ==============================| Load stage 1 into RAM |============================== 
+; Input:
+; AX = LBA of the starting cluster
 
 load_cluster_chain:
-    
     ; Load stage1 cluster into RAM
     mov ax, [stage1_cluster]
     add ax, 31                     ; Cluster number -> LBA conversion for floppy
