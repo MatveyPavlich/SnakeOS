@@ -27,22 +27,24 @@ ebr_system_id:              DB 'FAT12   '     ; Magical value that tells it is F
 
 main:
     
-    ; Set up all segments to the same 64kB chunk
+    ; Set up all segments to the same 64kB chunk & load the root directory
     mov ax, 0                                 
     mov ds, ax                                
     mov es, ax                                
     mov ss, ax                                
     mov sp, 0x7C00                            ; Grow stack below above the code
+    call load_root_dir_to_memo
 
-    call load_root_dir_to_memo                ; Load root dir into mmemo
+    ; Search for the kernel file
     mov si, file_kernel                       ; move stage1 bin file name into si
     mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
     call search_file
     mov [kernel_cluster], ax
 
-    xor bx, bx
-    mov di, buffer
-    mov si, file_stage_1                      ; move stage1 bin file name into si
+    ; Search for the stage1 file
+    xor bx, bx                                ; 0x7c59 gdb
+    mov di, buffer                            ; Move starting location of the root directory into di
+    mov si, file_stage_1                      ; Move stage1 bin file name into si
     mov cx, 11                                ; Set comparison counter to 11 bytes (filename (8 bytes) + file format (3 bytes))
     call search_file
     mov [stage1_cluster], ax
@@ -50,21 +52,29 @@ main:
     ; Load FAT table into memory
     mov si, msg_moving_fat_to_ram
     call print
-    mov bx, buffer
-    mov al, [bdb_reserved_sectors] ; Starting LBA of a FAT table
-    mov ah, [bdb_sectors_per_fat]  ; Sectors to read (TAT table length)
+    mov bx, buffer                            ; 0x7c70 gdb
+    mov al, [bdb_reserved_sectors]            ; Starting LBA of a FAT table
+    mov ah, [bdb_sectors_per_fat]             ; Sectors to read (TAT table length)
 
-    ; Set up memory to load kernel clusters
-    mov bx, stage1_load_segment
-    mov es, bx
-    mov bx, stage1_load_offset ; (0x7cbd in gdb)
+    ; Set up memory & load stage1 clusters
+    mov bx, stage1_load_segment               ; Move segment into bx since can't do it directly into es
+    mov es, bx                                ; Set es to the segment for stage1
+    mov bx, stage1_load_offset                ; Move offset into bx (since bx is used for disk_read memory offset to dump stuff)
+    call load_cluster_chain
+
+    ; Jump into stage1
+    mov dl, [ebr_drive_number]                ; Save the drive number
+    mov ax, stage1_load_segment               ; Move segment into bx since can't do it directly into ds & es
+    mov ds,ax                                 ; Set ds to the segment with stage1
+    mov es,ax                                 ; Set es to the segment with stage1
+    jmp stage1_load_segment:stage1_load_offset
 
 %include "./src/bootloader/stage0/utils/utils.asm"
 %include "./src/bootloader/shared/load_cluster_chain.asm"
 %include "./src/bootloader/shared/disk_read.asm"
 %include "./src/bootloader/shared/utils.asm"
 
-read_failure:           db "Disk read fail", 0x0D, 0x0A, 0x00
+read_failure:           db "Disk read failed", 0x0D, 0x0A, 0x00
 disk_read_sucessfully:  db "Disk read done", 0x0D, 0x0A, 0x00
 file_stage_1:           db "STAGE1  BIN"
 file_kernel:            db "KERNEL  BIN"
