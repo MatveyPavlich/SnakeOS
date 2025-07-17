@@ -53,11 +53,13 @@ main:
     mov bx, buffer                            ; 0x7c70 gdb
     mov al, [bdb_reserved_sectors]            ; Starting LBA of a FAT table
     mov ah, [bdb_sectors_per_fat]             ; Sectors to read (TAT table length)
+    call disk_read
 
     ; Set up memory & load stage1 clusters
-    mov bx, stage1_load_segment               ; Move segment into bx since can't do it directly into es
-    mov es, bx                                ; Set es to the segment for stage1
-    mov bx, stage1_load_offset                ; Move offset into bx (since bx is used for disk_read memory offset to dump stuff)
+    mov bx, stage1_load_segment               ; Move segment into bx since can't do it directly into ES
+    mov es, bx                                ; Set ES to the segment for stage1
+    mov bx, stage1_load_offset                ; Move offset into bx (since BX is used for disk_read memory offset to dump stuff)
+    mov ax, [stage1_cluster]                  ; Move the starting cluster for stage1 into AX
     call load_cluster_chain
 
     ; Jump into stage1
@@ -66,6 +68,8 @@ main:
     mov ds,ax                                 ; Set ds to the segment with stage1
     mov es,ax                                 ; Set es to the segment with stage1
     jmp stage1_load_segment:stage1_load_offset
+
+
 
 %include "./src/bootloader/stage0/utils/utils.asm"
 %include "./src/bootloader/shared/load_cluster_chain.asm"
