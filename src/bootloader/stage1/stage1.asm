@@ -25,7 +25,7 @@ switch_to_pm:
     jmp dword CODE_SEG:start_pm ; far jump by using a different segment
 
 
-%include "./src/bootloader/shared/utils.asm"
+%include "./src/bootloader/shared_utils.asm"
 %include "./src/bootloader/stage1/utils/ensure_a20.asm"
 %include "./src/bootloader/stage1/utils/gdt.asm"
 stage1_message:  db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
