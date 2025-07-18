@@ -71,6 +71,14 @@ main:
     mov si, buffer                            ; Move pointer to FAT12 into SI to be used by load_file
     call load_file                            ; AX = starting cluster; SI = pointer to FAT12; ES:BX = file destination
 
+    ; Load kernel.bin into memory
+    mov bx, kernel_load_segment               ; Move segment into bx since can't do it directly into ES
+    mov es, bx                                ; Set ES to the segment for stage1
+    mov bx, kernel_load_offset                ; Move offset into bx (since BX is used for disk_read dump memory offset)
+    mov ax, [kernel_cluster]                  ; Retrieve stage1.bin starting cluster to be used by load_file
+    mov si, buffer                            ; Move pointer to FAT12 into SI to be used by load_file
+    call load_file                            ; AX = starting cluster; SI = pointer to FAT12; ES:BX = file destination
+
     ; Jump into stage1.bin
     mov dl, [ebr_drive_number]                ; Save the drive number
     mov ax, stage1_load_segment               ; Move segment into bx since can't do it directly into ds & es
@@ -85,7 +93,7 @@ main:
 %include "./src/bootloader/shared/utils.asm"
 
 read_failure:           db "Read failed", 0x0D, 0x0A, 0x00
-disk_read_sucessfully:  db "Read done", 0x0D, 0x0A, 0x00
+disk_read_sucessfully:  db "Read finished", 0x0D, 0x0A, 0x00
 file_stage1:            db "STAGE1  BIN"
 file_kernel:            db "KERNEL  BIN"
 msg_file_not_found:     db "File not found", 0x0D, 0x0A, 0x00
@@ -94,8 +102,10 @@ msg_moving_fat_to_ram:  db "Load FAT12", 0x0D, 0x0A, 0x00
 stage1_cluster:         dw 0
 kernel_cluster:         dw 0
 
-stage1_load_segment     equ 0x9000
+stage1_load_segment     equ 0x8000
 stage1_load_offset      equ 0
+kernel_load_segment     equ 0x9000
+kernel_load_offset      equ 0
 
 TIMES 510-($-$$) DB 0
 dw 0xAA55
