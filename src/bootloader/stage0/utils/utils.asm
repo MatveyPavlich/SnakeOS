@@ -1,29 +1,33 @@
-load_root_dir_to_memo:
+;===============================| Load root directory |===============================
+; Input: void
+; Output:
+;   - Root directory will be loaded to 0x7E00 (i.e., address of the buffer label)
+
+load_root_dir:
     
     ; Calculate LBA of root directory
     mov ax, [bdb_sectors_per_fat]             ; Get number of sectors each FAT table takes
     mov bl, [bdb_fat_count]                   ; Get total sectors all FAT tables take 
     mul bx                                    ;  
     add ax, [bdb_reserved_sectors]            ; Add reserved sectors before FATs
-    push ax                                   ; Save LBA of a root directory
+    push ax                                   ; Preserve LBA of a root directory
  
     ; Calculate length of root directory
     mov ax, [bdb_dir_entries_count] 
     shl ax, 5                                 ; max_files * 32 bits/file = total size of root dir
     div WORD [bdb_bytes_per_sector]           ; Lenght of root dir in sectors
     test dx, dx                               ; Check if remainder = 0
-    je .get_root_dir
-    inc al                                    ; Length of the root directory
+    je .get_root_dir                          ; If no remainder then do a disk read
+    inc al                                    ; If there is a remainder increment length by 1 sector
 
 .get_root_dir:
     mov cl, al                                ; Store root dir length in cl
     pop ax                                    ; Retreive starting LBA of a root directory
     mov ah, cl                                ; AH = sectors to read; AL - LBA
-    mov bx, buffer                            ; ES:BX is where our stuff will be dumped
+    mov bx, buffer                            ; ES:BX is where root dir will be dumped
     call disk_read                            ; AH = sectors to read; AL - LBA; ES:BX - memo to dump
 
     xor bx,bx                                 ; Clean bx from address where you dumped root directory
-    mov di, buffer                            ; Set di to address of dumped root directory
 
 .done:
     ret

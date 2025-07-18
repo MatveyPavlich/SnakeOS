@@ -35,7 +35,7 @@ A20_FAILED db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
 
 ; ============================ Protected mode ==============================
 
-[bits 32]
+bits 32
 start_pm:
     ; Load data segment registers with correct GDT selector
     mov ax, DATA_SEG
