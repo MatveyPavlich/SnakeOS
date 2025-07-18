@@ -41,36 +41,36 @@ main:
     mov sp, 0x7C00                            ; Grow stack below above the code
     call load_root_dir
 
-    ; Search for the kernel file
+    ; Find kernel.bin starting cluster
     xor bx,bx                                 ; Clean bx from address where you dumped root directory
     mov si, file_kernel                       ; Move kernel file name into SI
     mov di, buffer                            ; Set DI to address of loaded root directory
     call search_file                          ; SI = file name, DI = start of root dir (buffer), BX = 0 for a loop
     mov [kernel_cluster], ax                  ; Save starting kernel cluster into memory (will be used in stage1)
 
-    ; Search for the stage1 file
+    ; Find stage1.bin starting cluster
     xor bx, bx                                ; Clean bx for the search_file function
     mov di, buffer                            ; Move starting location of the root directory into di
     mov si, file_stage1                       ; Move stage1 bin file name into si
     call search_file                          ; SI = file name, DI = start of root dir (buffer), BX = 0 for a loop
     mov [stage1_cluster], ax                  ; Save starting kernel cluster into memory (will be used later)
 
-    ; Load FAT table into memory
+    ; Load FAT12 table into memory
     mov si, msg_moving_fat_to_ram
     call print
-    mov bx, buffer                            ; 0x7c70 gdb
+    mov bx, buffer                            ; Load it to 0x7E00 since we no longer need a root directory
     mov al, [bdb_reserved_sectors]            ; Starting LBA of a FAT table
     mov ah, [bdb_sectors_per_fat]             ; Sectors to read (TAT table length)
-    call disk_read
+    call disk_read                            ; AH = num of sectors to read; AL - LBA; ES:BX - memo to dump
 
-    ; Set up memory & load stage1 clusters
+    ; Load stage1.bin into memory
     mov bx, stage1_load_segment               ; Move segment into bx since can't do it directly into ES
     mov es, bx                                ; Set ES to the segment for stage1
-    mov bx, stage1_load_offset                ; Move offset into bx (since BX is used for disk_read memory offset to dump stuff)
-    mov ax, [stage1_cluster]                  ; Move the starting cluster for stage1 into AX
-    call load_cluster_chain
+    mov bx, stage1_load_offset                ; Move offset into bx (since BX is used for disk_read dump memory offset)
+    mov ax, [stage1_cluster]                  ; Retrieve stage1.bin starting cluster
+    call load_file                            ; Need load_file function since stage1.bin might be >1 cluster
 
-    ; Jump into stage1
+    ; Jump into stage1.bin
     mov dl, [ebr_drive_number]                ; Save the drive number
     mov ax, stage1_load_segment               ; Move segment into bx since can't do it directly into ds & es
     mov ds,ax                                 ; Set ds to the segment with stage1
@@ -80,12 +80,12 @@ main:
 
 
 %include "./src/bootloader/stage0/utils/utils.asm"
-%include "./src/bootloader/shared/load_cluster_chain.asm"
+%include "./src/bootloader/shared/load_file.asm"
 %include "./src/bootloader/shared/disk_read.asm"
 %include "./src/bootloader/shared/utils.asm"
 
-read_failure:           db "Disk read failed", 0x0D, 0x0A, 0x00
-disk_read_sucessfully:  db "Disk read done", 0x0D, 0x0A, 0x00
+read_failure:           db "Read failed", 0x0D, 0x0A, 0x00
+disk_read_sucessfully:  db "Read done", 0x0D, 0x0A, 0x00
 file_stage1:            db "STAGE1  BIN"
 file_kernel:            db "KERNEL  BIN"
 msg_file_not_found:     db "File not found", 0x0D, 0x0A, 0x00

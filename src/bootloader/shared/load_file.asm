@@ -1,4 +1,4 @@
-; ==============================| Load cluster chain |============================== 
+; ==============================|    Load file   |===============================
 ; Input:
 ;   AX = starting cluster
 ;   ES:BX = destination buffer
@@ -6,7 +6,7 @@
 ; TODO: Confirm that looking at whether the offset is even/ odd (n*3/2) is the same as just n/2
 ; ================================================================================
 
-load_cluster_chain:
+load_file:
 .load_next:
     ; Load the cluster into RAM (starting cluster if it is start of the loop)
     push ax
@@ -32,16 +32,16 @@ load_cluster_chain:
     jz .even
 
 .odd:
-    shr ax, 4                    ; Get upper 12 bits (i.e., shift right)
+    shr ax, 4                      ; Get upper 12 bits (i.e., shift right)
     jmp .interpret_chain_marker
 
 .even:
-    and ax, 0x0FFF               ; Get lower 12 bits
+    and ax, 0x0FFF                 ; Get lower 12 bits
 
 .interpret_chain_marker:
-    cmp ax, 0x0FF8               ; Check for end-of-chain marker (0xFF8-0xFFF)
+    cmp ax, 0x0FF8                 ; Check for end-of-chain marker (0xFF8-0xFFF)
     jae .read_finished
-    jmp .load_next               ; Do the same for the cluster number in AX
+    jmp .load_next                 ; Do the same for the cluster number in AX
 
 .read_finished:
     ret

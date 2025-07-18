@@ -27,7 +27,7 @@ load_root_dir:
     pop ax                                    ; Retreive starting LBA of a root directory
     mov ah, cl                                ; AH = sectors to read; AL - LBA
     mov bx, buffer                            ; ES:BX is where root dir will be dumped
-    call disk_read                            ; AH = sectors to read; AL - LBA; ES:BX - memo to dump
+    call disk_read                            ; AH = num of sectors to read; AL - LBA; ES:BX - memo to dump
 
 .done:
     ret
