@@ -56,8 +56,8 @@ main:
     mov [stage1_cluster], ax                  ; Save starting kernel cluster into memory (will be used later)
 
     ; Load FAT12 table into memory
-    mov si, msg_moving_fat_to_ram
-    call print
+    mov si, msg_moving_fat_to_ram             ; Debugging
+    call print                                ; Debugging
     mov bx, buffer                            ; Load it to 0x7E00 since we no longer need a root directory
     mov al, [bdb_reserved_sectors]            ; Starting LBA of a FAT table
     mov ah, [bdb_sectors_per_fat]             ; Sectors to read (TAT table length)
@@ -67,20 +67,20 @@ main:
     mov bx, stage1_load_segment               ; Move segment into bx since can't do it directly into ES
     mov es, bx                                ; Set ES to the segment for stage1
     mov bx, stage1_load_offset                ; Move offset into bx (since BX is used for disk_read dump memory offset)
-    mov ax, [stage1_cluster]                  ; Retrieve stage1.bin starting cluster
-    call load_file                            ; Need load_file function since stage1.bin might be >1 cluster
+    mov ax, [stage1_cluster]                  ; Retrieve stage1.bin starting cluster to be used by load_file
+    mov si, buffer                            ; Move pointer to FAT12 into SI to be used by load_file
+    call load_file                            ; AX = starting cluster; SI = pointer to FAT12; ES:BX = file destination
 
     ; Jump into stage1.bin
     mov dl, [ebr_drive_number]                ; Save the drive number
     mov ax, stage1_load_segment               ; Move segment into bx since can't do it directly into ds & es
-    mov ds,ax                                 ; Set ds to the segment with stage1
-    mov es,ax                                 ; Set es to the segment with stage1
+    mov ds, ax                                ; Set ds to the segment with stage1
+    mov es, ax                                ; Set es to the segment with stage1
     jmp stage1_load_segment:stage1_load_offset
 
 
 
 %include "./src/bootloader/stage0/utils/utils.asm"
-%include "./src/bootloader/shared/load_file.asm"
 %include "./src/bootloader/shared/disk_read.asm"
 %include "./src/bootloader/shared/utils.asm"
 

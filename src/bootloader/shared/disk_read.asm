@@ -11,7 +11,6 @@
 ; Output (fail):
 ;   - Will halt the whole system
 ; ==========================================================================
-; DS:offset of 0x0000:0x7C00 is used for disk labels (e.g.,11th byte is bytes per sector)
 
 disk_read:
     
@@ -22,10 +21,10 @@ disk_read:
     push cx                                   ; Will be used for lba_to_chs
     
     ; Prepare for disk read BIOS interrupt
-    push ax                                   ; Save AH with sectors_to_read (last to be popped first)
+    push ax                                   ; Preserve AH with sectors_to_read (last to be popped first)
     mov ah, 0                                 ; Remove sectors to read from ax register
     call lba_to_chs                           ; Convert LBA to CHS to be able to use BIOS interrupt
-    pop ax
+    pop ax                                    ; Restore sectors to read into AX (will be located in AH)
     shr ax, 8                                 ; Move sectors_to_read from AH to AL
     mov di, 3                                 ; Ste counter for disk re-tries and drop through to try_again
 
@@ -33,33 +32,23 @@ disk_read:
     mov ah, 0x2                               ; Get disk read interrupt
     stc                                       ; Set carry flag before INT 13h (BIOS uses this)
     int 0x13                                  ; BIOS disk read
-    jnc .doneRead                             ; Jump if Carry flag not set
+    jnc .read_successful                      ; Jump if Carry flag not set
     dec di                                    ; Retry counter -= 1
     test di, di                               ; Is it zero yet?
-    jnz .try_again                            ; If not, try_again
-    call .diskReset                           ; If read failed, try to reset disk and try_again
+    jnz .try_again                            ; try_again if !=0, else fall through to .read_failed
 
-.failDiskRead:
+.read_failed:
     mov si, read_failure
     call print
-    jmp halt                                  ; If disk wasn't read we halt (and dont pop the stack)
+    jmp halt                                  ; Halt since either stage1 or kernel can't be read (stack not popped)
 
-.doneRead:
+.read_successful:
     mov si, disk_read_sucessfully
     call print
     pop cx
     pop di
     pop dx
     pop si
-    ret
-
-.diskReset:
-    pusha                                     ; Save all general registers
-    mov ah, 0x00                              ; BIOS Reset Disk
-    stc
-    int 0x13
-    jc .failDiskRead                          ; Still failing? Halt
-    popa                                      ; Get back all general registers (no need to clean registers beforehand)
     ret
 
 ; -----------------------------------------------------------------------------------------
@@ -77,6 +66,6 @@ lba_to_chs:
     mov dh, dl                                ; Head
     mov dl, [ebr_drive_number]                ; Load the drive number
     mov ch, al                                ; Move cylinder to ch
-    shl ah, 6                                 ; See int 13,2 page (bottom)
+    shl ah, 6                                 ; See int 13,2 bottom of the page
     or cl, ah                                 ; Cylinder
     ret
