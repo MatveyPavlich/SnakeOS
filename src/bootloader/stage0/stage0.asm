@@ -9,27 +9,27 @@ org 0x7C00                                    ; For assembler to organise the co
 bits 16                                       ; For assembler to know that should be in 16 bits
 jmp short main                                ; Jump to code in main (<127 bytes down in memo, so use SHORT)
 nop                                           ; Do nothing for 1 CPU cycle
-
-bdb_oem:                   db 'MSWIN4.1'     ; Tells what formatted the disk
-bdb_bytes_per_sector:      dw 512            ; 
-bdb_sectors_per_cluster:   db 1              ; FAT table has offsets to clusters, not sectors! This is why it is important
-bdb_reserved_sectors:      dw 1              ; Number of sectors before FAT sector including boot sector => 1 => no additional sectors
-bdb_fat_count:             db 2              ; Number of fat tables (one will be for a backup)
-bdb_dir_entries_count:     dw 0xE0           ; Max number of enteries in a root directory
-bdb_total_sectors:         dw 2880
-bdb_media_descriptor_type: db 0xF0           ; Tells 
-bdb_sectors_per_fat:       dw 9              ; Each FAT table will take 9 sectors
-bdb_sectors_per_track:     dw 18             ; Each track will have 18 sectors (ignore the fact that outer tracks are longer)
-bdb_heads:                 dw 2              ; Since we are on the floppy disk we will have 2 heads only
-bdb_hidden_sectors:        dd 0                
-bdb_large_sector_count:    dd 0
-
-ebr_drive_number:          db 0x00           ; Hardcoding that we are using a floppy disk
-                           db 0              ; Reserved, often used for "current head"
-ebr_signature:             db 0x29
-ebr_volume_id:             db 12h,34h,56h,78h
-ebr_volume_label:          db 'SnakeOS    '  ; Must be exactly 11 bytes
-ebr_system_id:             db 'FAT12   '     ; Magical value that tells it is FAT12 (must be 8 bytes)
+ 
+bdb_oem:                   db 'MSWIN4.1'      ; Tells what formatted the disk
+bdb_bytes_per_sector:      dw 512             ; 
+bdb_sectors_per_cluster:   db 1               ; FAT table has offsets to clusters, not sectors! This is why it is important
+bdb_reserved_sectors:      dw 1               ; Number of sectors before FAT sector including boot sector => 1 => no additional sectors
+bdb_fat_count:             db 2               ; Number of fat tables (one will be for a backup)
+bdb_dir_entries_count:     dw 0xE0            ; Max number of enteries in a root directory
+bdb_total_sectors:         dw 2880 
+bdb_media_descriptor_type: db 0xF0            ; Tells 
+bdb_sectors_per_fat:       dw 9               ; Each FAT table will take 9 sectors
+bdb_sectors_per_track:     dw 18              ; Each track will have 18 sectors (ignore the fact that outer tracks are longer)
+bdb_heads:                 dw 2               ; Since we are on the floppy disk we will have 2 heads only
+bdb_hidden_sectors:        dd 0                 
+bdb_large_sector_count:    dd 0 
+ 
+ebr_drive_number:          db 0x00            ; Hardcoding that we are using a floppy disk
+                           db 0               ; Reserved, often used for "current head"
+ebr_signature:             db 0x29 
+ebr_volume_id:             db 12h,34h,56h,78h 
+ebr_volume_label:          db 'SnakeOS    '   ; Must be exactly 11 bytes
+ebr_system_id:             db 'FAT12   '      ; Magical value that tells it is FAT12 (must be 8 bytes)
 
 main:
     
@@ -42,6 +42,7 @@ main:
     call load_root_dir
 
     ; Search for the kernel file
+    xor bx,bx                                 ; Clean bx from address where you dumped root directory
     mov si, file_kernel                       ; Move kernel file name into SI
     mov di, buffer                            ; Set DI to address of loaded root directory
     call search_file                          ; SI = file name, DI = start of root dir (buffer), BX = 0 for a loop
@@ -50,7 +51,7 @@ main:
     ; Search for the stage1 file
     xor bx, bx                                ; Clean bx for the search_file function
     mov di, buffer                            ; Move starting location of the root directory into di
-    mov si, file_stage1                      ; Move stage1 bin file name into si
+    mov si, file_stage1                       ; Move stage1 bin file name into si
     call search_file                          ; SI = file name, DI = start of root dir (buffer), BX = 0 for a loop
     mov [stage1_cluster], ax                  ; Save starting kernel cluster into memory (will be used later)
 
