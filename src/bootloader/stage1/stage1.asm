@@ -4,7 +4,7 @@ bits 16                                       ; For assembler to know that shoul
 ; Loaded at 0x8000:0000 in RAM. es = ds = 0x8000
 main:
     
-    ; Confirm stage1 is loaded
+    ; Inform stage1 is loaded
     mov si, MSG_STAGE1                        ; 0x80000 in gdb
     call print                                ; 0x80006 in gdb to skip the print
     
@@ -27,7 +27,7 @@ main:
 
 %include "./src/bootloader/shared_utils.asm"
 %include "./src/bootloader/stage1/utils.asm"
-MSG_STAGE1:    db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
+MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 
 
 ; ============================ Protected mode ==============================
@@ -46,10 +46,10 @@ start_pm:
     mov ebp, 0x80000                          ; Optional: reset stack pointer
     ; Not doing the thing above would mean es=ds=0x9000 => no such entry in GDT
     
-    ; Confirm protected mode is entered
+    ; Inform protected mode is entered
     mov esp, ebp
     mov esi, MSG_PROT_MODE
-    call print_string_pm
+    call print_32_bits
 
     ; Clean the screen from the message
     mov edi, 0xB8000                          ; Start of VGA text buffer

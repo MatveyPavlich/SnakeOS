@@ -7,7 +7,7 @@ bits 32
 
 main:
     mov esi, MSG_KERNEL
-    call print_string_pm
+    call print_32_bits
     hlt
     jmp $
 

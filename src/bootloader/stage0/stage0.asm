@@ -84,8 +84,8 @@ main:
     ; Jump into stage1.bin
     mov dl, [ebr_drive_number]                ; Save the drive number
     mov ax, stage1_load_segment               ; Move segment into bx since can't do it directly into ds & es
-    mov ds, ax                                ; Set ds to the segment with stage1
-    mov es, ax                                ; Set es to the segment with stage1
+    mov ds, ax                                ; Set ds to the same segment as the cs for stage1
+    mov es, ax                                ; Set es to the same segment as the cs for stage1 
     jmp stage1_load_segment:stage1_load_offset
 
 
@@ -103,9 +103,9 @@ msg_moving_fat_to_ram:  db "Load FAT12", 0x0D, 0x0A, 0x00
 stage1_cluster:         dw 0
 kernel_cluster:         dw 0
 
-stage1_load_segment     equ 0x8000
+stage1_load_segment     equ 0x8000              ; Load stage1 code at 0x8000:0x0000 => 0x80000
 stage1_load_offset      equ 0
-kernel_load_segment     equ 0x9000
+kernel_load_segment     equ 0x9000              ; Load kernel code at 0x9000:0x0000 => 0x90000
 kernel_load_offset      equ 0
 
 TIMES 510-($-$$) DB 0
