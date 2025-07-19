@@ -12,4 +12,4 @@ main:
     jmp $
 
 %include "./src/bootloader/stage1/utils/32bit-print.asm"
-MSG_KERNEL db "Kernel loaded", 0x00
+MSG_KERNEL db "Kernel loaded.", 0x00

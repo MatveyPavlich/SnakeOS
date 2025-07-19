@@ -1,11 +1,10 @@
-bits 32 ; using 32-bit protected mode
+bits 32                                       ; using 32-bit protected mode
 
-
-VIDEO_MEMORY equ 0xb8000 ; Video memory
-RED_ON_BLACK equ 0x0C    ; Color byte 
+VIDEO_MEMORY equ 0xb8000                      ; Video memory
+RED_ON_BLACK equ 0x0C                         ; Color byte 
 
 print_string_pm:
-    pusha
+    pusha                                     ; Preserve all registers
     mov edx, VIDEO_MEMORY
 
 print_string_pm_loop:

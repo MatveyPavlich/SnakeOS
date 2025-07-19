@@ -4,39 +4,39 @@ bits 16                                       ; For assembler to know that shoul
 ; Loaded at 0x8000:0000 in RAM
 ; es = ds = 0x8000
 ; bx = offset = 0x0000
-; TODO: Load the kernel!!!!
 main:
-    mov si, stage1_message      ; 0x80000 in gdb
-    call print                  ; 0x80006 in gdb to skip the print
-    call ensure_a20             ; Make sure A20 is enabled
-    call switch_to_pm           ; Switch to the protected mode
-    jmp halt                    ; In theory should never reach here
+    mov si, MSG_STAGE1                        ; 0x80000 in gdb
+    call print                                ; 0x80006 in gdb to skip the print
+    call ensure_a20                           ; Make sure A20 is enabled
+    call switch_to_pm                         ; Switch to the protected mode
+    jmp halt                                  ; In theory should never reach here
 
 switch_to_pm:
     mov ah, 0x00
     mov al, 0x3
-    int 0x10                    ; Clear te screen 
+    int 0x10                                  ; Clear the screen from stage0
 
-    cli                         ; Disable BIOS interrupts (0x9000e in gdb)
-    lgdt [gdt_descriptor]       ; Load the GDT descriptor
+    cli                                       ; Disable BIOS interrupts (0x9000e in gdb)
+    lgdt [gdt_descriptor]                     ; Load the GDT descriptor
     mov eax, cr0
-    or eax, 0x1                 ; Set 32-bit mode bit in cr0
+    or eax, 0x1                               ; Set 32-bit mode bit in cr0
     mov cr0, eax
-    jmp dword CODE_SEG:start_pm ; far jump by using a different segment
+    jmp dword CODE_SEG:start_pm               ; far jump by using a different segment
 
 
 %include "./src/bootloader/shared_utils.asm"
 %include "./src/bootloader/stage1/utils/ensure_a20.asm"
 %include "./src/bootloader/stage1/utils/gdt.asm"
-stage1_message:  db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
-MSG_REAL_MODE db "Started in 16-bit real mode", 0xD, 0xA, 0x00
-A20_FAILED db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
+MSG_STAGE1:    db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
+MSG_REAL_MODE: db "Started in 16-bit real mode", 0xD, 0xA, 0x00
+A20_FAILED:    db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
 
 
 ; ============================ Protected mode ==============================
 
 bits 32
 start_pm:
+    
     ; Load data segment registers with correct GDT selector
     mov ax, DATA_SEG
     mov ds, ax
@@ -59,6 +59,7 @@ clear_screen_pm:
     rep stosw                ; Fill ECX words (AX) into [EDI]
     ret
 
-kernel_load_offset equ 0x90000 
+
 %include "./src/bootloader/stage1/utils/32bit-print.asm"
 MSG_PROT_MODE db "Loaded 32-bit protected mode", 0x00
+kernel_load_offset equ 0x90000 
