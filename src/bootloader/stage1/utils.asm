@@ -81,7 +81,7 @@ gdt_start:
         dd 0x0                                ; 4 byte
         dd 0x0                                ; 4 byte
     
-    ; Code segment (bytes 8-15) TBD - actually find out what is it in memo
+    ; Code segment (bytes 8-15): BASE = 0x00000000 LIMIT = 0xfffff * ??? (find the granularity)
     .code_descriptor:
         dw 0xffff                             ; First 16 bits of limit 
         dw 0x0                                ; First 16 bits of the base
@@ -90,7 +90,7 @@ gdt_start:
         db 11001111b                          ; flags (4 bits) + last 4 bits of limit
         db 0x0                                ; segment base, bits 24-31
 
-    ; Data segment (bytes 16-23) TBD - actually find out what is it in memo
+    ; Data segment (bytes 16-23): BASE = 0x00000000 LIMIT = 0xfffff * ??? (find the granularity)
     .data_descriptor:
         dw 0xffff                             ; First 16 bits of limit 
         dw 0x0                                ; First 16 bits of the base
