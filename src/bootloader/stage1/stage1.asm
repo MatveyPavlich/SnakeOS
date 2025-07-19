@@ -1,21 +1,22 @@
 org 0x80000                                   ; For assembler to organise the code where first address is 0x7E00 (having on 0x0000 causes issues)
 bits 16                                       ; For assembler to know that should be in 16 bits
 
-; Loaded at 0x8000:0000 in RAM
-; es = ds = 0x8000
-; bx = offset = 0x0000
+; Loaded at 0x8000:0000 in RAM. es = ds = 0x8000
 main:
+    
+    ; Confirm stage1 is loaded
     mov si, MSG_STAGE1                        ; 0x80000 in gdb
     call print                                ; 0x80006 in gdb to skip the print
-    call ensure_a20                           ; Make sure A20 is enabled
-    call switch_to_pm                         ; Switch to the protected mode
-    jmp halt                                  ; In theory should never reach here
+    
+    ; Make sure A20 is enabled
+    call ensure_a20                           ; Input = void             
 
-switch_to_pm:
+    ; Clear the screen from stage0
     mov ah, 0x00
     mov al, 0x3
-    int 0x10                                  ; Clear the screen from stage0
+    int 0x10
 
+    ; Enter protected mode
     cli                                       ; Disable BIOS interrupts (0x9000e in gdb)
     lgdt [gdt_descriptor]                     ; Load the GDT descriptor
     mov eax, cr0
@@ -25,16 +26,16 @@ switch_to_pm:
 
 
 %include "./src/bootloader/shared_utils.asm"
-%include "./src/bootloader/stage1/utils/ensure_a20.asm"
-%include "./src/bootloader/stage1/utils/gdt.asm"
+%include "./src/bootloader/stage1/utils.asm"
 MSG_STAGE1:    db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
-MSG_REAL_MODE: db "Started in 16-bit real mode", 0xD, 0xA, 0x00
-A20_FAILED:    db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
 
 
 ; ============================ Protected mode ==============================
+; Enter protected mode and jump into kernel that was loaded by stage0
+; ==========================================================================
 
 bits 32
+
 start_pm:
     
     ; Load data segment registers with correct GDT selector
@@ -45,21 +46,21 @@ start_pm:
     mov ebp, 0x80000       ; Optional: reset stack pointer
     ; Not doing the thing above would mean es=ds=0x9000 => no such entry in GDT
     
+    ; Confirm protected mode is entered
     mov esp, ebp
     mov esi, MSG_PROT_MODE
     call print_string_pm
-    call clear_screen_pm
-    jmp kernel_load_offset              ; Jump to the kernel
 
-
-clear_screen_pm:
+    ; Clean the screen from the message
     mov edi, 0xB8000         ; Start of VGA text buffer
     mov ecx, 80 * 25         ; Number of characters on screen
     mov ax, 0x0720           ; ' ' (space) with gray-on-black attribute
     rep stosw                ; Fill ECX words (AX) into [EDI]
-    ret
+
+    ; Jump to the kernel
+    jmp kernel_load_offset
 
 
-%include "./src/bootloader/stage1/utils/32bit-print.asm"
+%include "./src/bootloader/stage1/print_32_bits.asm"
 MSG_PROT_MODE db "Loaded 32-bit protected mode", 0x00
 kernel_load_offset equ 0x90000 

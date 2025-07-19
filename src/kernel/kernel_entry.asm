@@ -11,5 +11,5 @@ main:
     hlt
     jmp $
 
-%include "./src/bootloader/stage1/utils/32bit-print.asm"
+%include "./src/bootloader/stage1/print_32_bits.asm"
 MSG_KERNEL db "Kernel loaded.", 0x00
