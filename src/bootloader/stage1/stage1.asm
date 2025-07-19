@@ -17,7 +17,7 @@ main:
     ; Make sure A20 is enabled
     call ensure_a20                           ; Input = void             
 
-    ; Clear the screen from stage0
+    ; Clear the screen from stage0 prints
     mov ah, 0x00
     mov al, 0x3
     int 0x10
@@ -34,6 +34,9 @@ main:
 %include "./src/bootloader/shared_utils.asm"
 %include "./src/bootloader/stage1/utils.asm"
 MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
+
+
+
 
 
 ; ============================ Protected mode ==============================

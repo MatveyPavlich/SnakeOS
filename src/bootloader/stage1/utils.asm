@@ -11,7 +11,7 @@ ensure_a20:
     jne .done                                  ; Successfully enabled
 
     ; Halt the system if A20 was not enabled
-    jmp .halt_with_failure                     ; Still not working
+    jmp .halt_with_failure
 
 .check_a20:
     ; Presever current es and ds segments
@@ -48,7 +48,6 @@ ensure_a20:
     sti                                       ; ZF != 0 if different (A20 enabled)
     ret
 
-; -------------------------
 .enable_a20_fast:
     in al, 0x92
     or al, 0x02
@@ -60,9 +59,8 @@ ensure_a20:
 
 .halt_with_failure:
     mov si, A20_FAILED
-    call print
-    hlt
-    jmp $
+    call print                                ; SI = string pointer; print is from utils_shared.asm
+    call halt                                 ; Input = void; halt is from utils_shared.asm.
 
 A20_FAILED:    db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
 
