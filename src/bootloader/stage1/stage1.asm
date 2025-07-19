@@ -43,7 +43,7 @@ start_pm:
     mov ds, ax
     mov es, ax
     mov ss, ax
-    mov ebp, 0x80000       ; Optional: reset stack pointer
+    mov ebp, 0x80000                          ; Optional: reset stack pointer
     ; Not doing the thing above would mean es=ds=0x9000 => no such entry in GDT
     
     ; Confirm protected mode is entered
@@ -52,10 +52,10 @@ start_pm:
     call print_string_pm
 
     ; Clean the screen from the message
-    mov edi, 0xB8000         ; Start of VGA text buffer
-    mov ecx, 80 * 25         ; Number of characters on screen
-    mov ax, 0x0720           ; ' ' (space) with gray-on-black attribute
-    rep stosw                ; Fill ECX words (AX) into [EDI]
+    mov edi, 0xB8000                          ; Start of VGA text buffer
+    mov ecx, 80 * 25                          ; Number of characters on screen
+    mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
+    rep stosw                                 ; Fill ECX words (AX) into [EDI]
 
     ; Jump to the kernel
     jmp kernel_load_offset
