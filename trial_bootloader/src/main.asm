@@ -44,6 +44,9 @@ start_pm:
     xor ecx, ecx
     xor edx, edx
     call check_CPUID                                ; Looks like cpuid is working (not 100% sure though due to gdb being in real mode)
+    call check_extended_functions
+    call check_long_mode_support
+    hlt
     jmp $                                           ; 0x7d07
 
 %include "./src/utils/32bit-print.asm"
