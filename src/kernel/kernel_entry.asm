@@ -7,9 +7,9 @@ bits 32
 
 main:
     mov esi, MSG_KERNEL
-    call print_string_pm
+    call print_32_bits
     hlt
     jmp $
 
-%include "./src/bootloader/stage1/utils/32bit-print.asm"
-MSG_KERNEL db "Kernel loaded", 0x00
+%include "./src/bootloader/stage1/print_32_bits.asm"
+MSG_KERNEL db "Kernel loaded.", 0x00

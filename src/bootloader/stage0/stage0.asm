@@ -1,8 +1,7 @@
 ;======================================================================================
-; This is stage0 of the bootloader that contains code to load sectors from disk,
-; finding files in the FAT12 file system and interpreting cluster chains for each file.
-; It does not switches to real mode, which will be done by stage1. BIOS Parameter
-; Block (BPB) is defined to describe the physical layout of the disk.
+; Bootloader for SnakeOS is speparated into stage0 and stage1. The former loads stage1 & 
+; kernel into memory and jumps to stage1. The latter jumps to protected mode through 
+; creating a GDT, enabling A20 line and doing a far jummp.
 ;======================================================================================
 
 org 0x7C00                                    ; For assembler to organise the code where first address is 0x7C00
@@ -10,6 +9,7 @@ bits 16                                       ; For assembler to know that shoul
 jmp short main                                ; Jump to code in main (<127 bytes down in memo, so use SHORT)
 nop                                           ; Do nothing for 1 CPU cycle
  
+; BIOS Paramenter Block to describe the physical layout of the disk
 bdb_oem:                   db 'MSWIN4.1'      ; Tells what formatted the disk
 bdb_bytes_per_sector:      dw 512             ; 
 bdb_sectors_per_cluster:   db 1               ; FAT table has offsets to clusters, not sectors! This is why it is important
@@ -33,57 +33,59 @@ ebr_system_id:             db 'FAT12   '      ; Magical value that tells it is F
 
 main:
     
-    ; Set data segments to the same 64kB chunk & load the root directory
+    ; Set data segments to the same 64kB chunk
     mov ax, 0                                 
     mov ds, ax                                
     mov es, ax                                
     mov ss, ax                                
-    mov sp, 0x7C00                            ; Grow stack below above the code
-    call load_root_dir
+    mov sp, 0x7C00                            ; Grow stack below the code
+
+    ; Load root directory into memory
+    call load_root_dir                        ; Input = void
 
     ; Find kernel.bin starting cluster
-    xor bx,bx                                 ; Clean bx from address where you dumped root directory
+    xor bx,bx                                 ; Clean BX from address where you dumped root directory (load_root_dir)
     mov si, file_kernel                       ; Move kernel file name into SI
     mov di, buffer                            ; Set DI to address of loaded root directory
     call search_file                          ; SI = file name, DI = start of root dir (buffer), BX = 0 for a loop
-    mov [kernel_cluster], ax                  ; Save starting kernel cluster into memory (will be used in stage1)
+    mov [kernel_cluster], ax                  ; Save starting cluster into memory (for later use)
 
     ; Find stage1.bin starting cluster
-    xor bx, bx                                ; Clean bx for the search_file function
-    mov di, buffer                            ; Move starting location of the root directory into di
-    mov si, file_stage1                       ; Move stage1 bin file name into si
+    xor bx, bx                                ; Clean BX for the search_file function
+    mov di, buffer                            ; Move starting location of the root directory into DI
+    mov si, file_stage1                       ; Move stage1 bin file name into SI
     call search_file                          ; SI = file name, DI = start of root dir (buffer), BX = 0 for a loop
-    mov [stage1_cluster], ax                  ; Save starting kernel cluster into memory (will be used later)
+    mov [stage1_cluster], ax                  ; Save starting cluster into memory (for later use)
 
     ; Load FAT12 table into memory
     mov si, msg_moving_fat_to_ram             ; Debugging
     call print                                ; Debugging
-    mov bx, buffer                            ; Load it to 0x7E00 since we no longer need a root directory
+    mov bx, buffer                            ; Load to 0x7E00 since we no longer need the root directory
     mov al, [bdb_reserved_sectors]            ; Starting LBA of a FAT table
-    mov ah, [bdb_sectors_per_fat]             ; Sectors to read (TAT table length)
+    mov ah, [bdb_sectors_per_fat]             ; Sectors to read (FAT table length)
     call disk_read                            ; AH = num of sectors to read; AL - LBA; ES:BX - memo to dump
 
     ; Load stage1.bin into memory
-    mov bx, stage1_load_segment               ; Move segment into bx since can't do it directly into ES
-    mov es, bx                                ; Set ES to the segment for stage1
-    mov bx, stage1_load_offset                ; Move offset into bx (since BX is used for disk_read dump memory offset)
-    mov ax, [stage1_cluster]                  ; Retrieve stage1.bin starting cluster to be used by load_file
+    mov bx, stage1_load_segment               ; Move segment into BX since can't do it directly into ES
+    mov es, bx                                ; Set ES to the segment where stage1 will be loaded
+    mov bx, stage1_load_offset                ; Move offset into BX (since BX is used for disk_read dump memory offset)
+    mov ax, [stage1_cluster]                  ; Retrieve starting cluster to be used by load_file
     mov si, buffer                            ; Move pointer to FAT12 into SI to be used by load_file
     call load_file                            ; AX = starting cluster; SI = pointer to FAT12; ES:BX = file destination
 
     ; Load kernel.bin into memory
-    mov bx, kernel_load_segment               ; Move segment into bx since can't do it directly into ES
-    mov es, bx                                ; Set ES to the segment for stage1
-    mov bx, kernel_load_offset                ; Move offset into bx (since BX is used for disk_read dump memory offset)
-    mov ax, [kernel_cluster]                  ; Retrieve stage1.bin starting cluster to be used by load_file
+    mov bx, kernel_load_segment               ; Move segment into BX since can't do it directly into ES
+    mov es, bx                                ; Set ES to the segment where kernel will be loaded
+    mov bx, kernel_load_offset                ; Move offset into BX (since BX is used for disk_read dump memory offset)
+    mov ax, [kernel_cluster]                  ; Retrieve starting cluster to be used by load_file
     mov si, buffer                            ; Move pointer to FAT12 into SI to be used by load_file
     call load_file                            ; AX = starting cluster; SI = pointer to FAT12; ES:BX = file destination
 
     ; Jump into stage1.bin
     mov dl, [ebr_drive_number]                ; Save the drive number
     mov ax, stage1_load_segment               ; Move segment into bx since can't do it directly into ds & es
-    mov ds, ax                                ; Set ds to the segment with stage1
-    mov es, ax                                ; Set es to the segment with stage1
+    mov ds, ax                                ; Set ds to the same segment as the cs for stage1
+    mov es, ax                                ; Set es to the same segment as the cs for stage1 
     jmp stage1_load_segment:stage1_load_offset
 
 
@@ -101,9 +103,9 @@ msg_moving_fat_to_ram:  db "Load FAT12", 0x0D, 0x0A, 0x00
 stage1_cluster:         dw 0
 kernel_cluster:         dw 0
 
-stage1_load_segment     equ 0x8000
+stage1_load_segment     equ 0x8000              ; Load stage1 code at 0x8000:0x0000 => 0x80000
 stage1_load_offset      equ 0
-kernel_load_segment     equ 0x9000
+kernel_load_segment     equ 0x9000              ; Load kernel code at 0x9000:0x0000 => 0x90000
 kernel_load_offset      equ 0
 
 TIMES 510-($-$$) DB 0
