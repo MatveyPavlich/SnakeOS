@@ -29,9 +29,10 @@ switch_to_pm:
 %include "./src/utils/boot_sect_print.asm"
 %include "./src/utils/ensure_a20.asm"
 %include "./src/utils/gdt.asm"
-MSG_REAL_MODE db "Started in 16-bit real mode", 0xD, 0xA, 0x00
-A20_FAILED db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
-
+; MSG_REAL_MODE db "Started in 16-bit real mode", 0xD, 0xA, 0x00
+; A20_FAILED db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
+MSG_REAL_MODE db "A", 0xD, 0xA, 0x00
+A20_FAILED db "B", 0xD, 0xA, 0x00
 
 ; ============================ Protected mode ==============================
 
@@ -39,19 +40,50 @@ A20_FAILED db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
 start_pm:
     mov esi, MSG_PROT_MODE                          ; 0x7cf6 in gdb
     call print_string_pm
-    xor eax, eax
-    xor ebx, ebx
-    xor ecx, ecx
-    xor edx, edx
-    call check_CPUID                                ; Looks like cpuid is working (not 100% sure though due to gdb being in real mode)
-    call check_extended_functions
-    call check_long_mode_support
-    hlt
-    jmp $                                           ; 0x7d07
+    ; xor eax, eax
+    ; xor ebx, ebx
+    ; xor ecx, ecx
+    ; xor edx, edx
+    call set_up_paging
+    ; call check_CPUID                                ; Looks like cpuid is working (not 100% sure though due to gdb being in real mode) (;Disable for now)
+    ; call check_extended_functions   ;Disable for now
+    ; call check_long_mode_support    ;Disable for now
+
+
+    lgdt [GDT.Pointer]
+    jmp GDT.Code:Realm64
 
 %include "./src/utils/32bit-print.asm"
-%include "./src/utils/cpuid.asm"
+%include "./src/utils/long_mode.asm"
+; %include "./src/utils/cpuid.asm"
 MSG_PROT_MODE db "Loaded 32-bit protected mode", 0x00
+
+
+
+bits 64
+
+VGA_TEXT_BUFFER_ADDR equ 0xb8000
+COLS equ 80
+ROWS equ 25
+BYTES_PER_CHARACTER equ 2
+VGA_TEXT_BUFFER_SIZE equ BYTES_PER_CHARACTER * COLS * ROWS
+
+Realm64:
+    cli                           ; the code would probably be more reliable if you did this
+                                  ; before even switching from real mode
+    mov ax, GDT.Data
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+    mov rdi, VGA_TEXT_BUFFER_ADDR
+    mov rax, 0
+    mov rcx, VGA_TEXT_BUFFER_SIZE / 8
+    rep stosq
+    hlt
+    jmp $
 
 times 510-($-$$) db 0
 dw 0xaa55
