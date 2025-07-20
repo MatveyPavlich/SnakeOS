@@ -1,64 +1,76 @@
-org 0x80000                                   ; For assembler to organise the code where first address is 0x7E00 (having on 0x0000 causes issues)
+;======================================================================================
+; Stage1 of the bootloader for SnakeOS is loaded at 0x8000:0000, with es = ds = 0x8000.
+; It enables A20 line and creats a Global Descriptor Table (GDT) to then enter the
+; protected mode. Once this is done a jump to the kernel that was loaded by stage0 to
+; 0x90000 is performed.
+;======================================================================================
+
+org 0x80000                                   ; For assembler to organise the code (0x0000 causes issues)
 bits 16                                       ; For assembler to know that should be in 16 bits
 
-; Loaded at 0x8000:0000 in RAM
-; es = ds = 0x8000
-; bx = offset = 0x0000
-; TODO: Load the kernel!!!!
 main:
-    mov si, stage1_message      ; 0x80000 in gdb
-    call print                  ; 0x80006 in gdb to skip the print
-    call ensure_a20             ; Make sure A20 is enabled
-    call switch_to_pm           ; Switch to the protected mode
-    jmp halt                    ; In theory should never reach here
+    
+    ; Inform stage1 is loaded
+    mov si, MSG_STAGE1                        ; 0x80000 in gdb
+    call print                                ; 0x80006 in gdb to skip the print
+    
+    ; Make sure A20 is enabled
+    call ensure_a20                           ; Input = void             
 
-switch_to_pm:
+    ; Clear the screen from stage0 prints
     mov ah, 0x00
     mov al, 0x3
-    int 0x10                    ; Clear te screen 
+    int 0x10
 
-    cli                         ; Disable BIOS interrupts (0x9000e in gdb)
-    lgdt [gdt_descriptor]       ; Load the GDT descriptor
+    ; Enter protected mode
+    cli                                       ; Disable BIOS interrupts (0x9000e in gdb)
+    lgdt [gdt_descriptor]                     ; Load the GDT descriptor
     mov eax, cr0
-    or eax, 0x1                 ; Set 32-bit mode bit in cr0
+    or eax, 0x1                               ; Set 32-bit mode bit in cr0
     mov cr0, eax
-    jmp dword CODE_SEG:start_pm ; far jump by using a different segment
+    jmp dword CODE_SEG:start_pm               ; far jump by using a different segment
 
 
 %include "./src/bootloader/shared_utils.asm"
-%include "./src/bootloader/stage1/utils/ensure_a20.asm"
-%include "./src/bootloader/stage1/utils/gdt.asm"
-stage1_message:  db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
-MSG_REAL_MODE db "Started in 16-bit real mode", 0xD, 0xA, 0x00
-A20_FAILED db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
+%include "./src/bootloader/stage1/utils.asm"
+MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
+
+
+
 
 
 ; ============================ Protected mode ==============================
+; Enter protected mode and jump into kernel that was loaded by stage0
+; ==========================================================================
 
 bits 32
+
 start_pm:
-    ; Load data segment registers with correct GDT selector
+    
+    ; Set segment registers to correct GDT index (ds=0x9000 => no such entry in GDT)
     mov ax, DATA_SEG
     mov ds, ax
     mov es, ax
     mov ss, ax
-    mov ebp, 0x80000       ; Optional: reset stack pointer
-    ; Not doing the thing above would mean es=ds=0x9000 => no such entry in GDT
-    
+
+    ; Reset stack to grow down before the code
+    mov ebp, 0x80000
     mov esp, ebp
+    
+    ; Inform protected mode is entered
     mov esi, MSG_PROT_MODE
-    call print_string_pm
-    call clear_screen_pm
-    jmp kernel_load_offset              ; Jump to the kernel
+    call print_32_bits                        ; ESI = pinter to the message
+
+    ; Clean the screen from the message
+    mov edi, 0xB8000                          ; Start of VGA text buffer
+    mov ecx, 80 * 25                          ; Number of characters on screen
+    mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
+    rep stosw                                 ; Fill ECX words (AX) into [EDI]
+
+    ; Jump to the kernel
+    jmp kernel_load_offset
 
 
-clear_screen_pm:
-    mov edi, 0xB8000         ; Start of VGA text buffer
-    mov ecx, 80 * 25         ; Number of characters on screen
-    mov ax, 0x0720           ; ' ' (space) with gray-on-black attribute
-    rep stosw                ; Fill ECX words (AX) into [EDI]
-    ret
-
-kernel_load_offset equ 0x90000 
-%include "./src/bootloader/stage1/utils/32bit-print.asm"
-MSG_PROT_MODE db "Loaded 32-bit protected mode", 0x00
+%include "./src/bootloader/stage1/print_32_bits.asm"
+MSG_PROT_MODE      db "Loaded 32-bit protected mode", 0x00
+kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset
