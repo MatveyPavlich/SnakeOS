@@ -9,32 +9,34 @@ EFLAGS_ID equ 1 << 21           ; if this bit can be flipped, the CPUID instruct
 ;   - EAX = 1 if cpuid is supported. 0 if not
 ; ===========================================================================================
 check_CPUID:
-    pushfd
-    pop eax
+    
+    ; Move EFLAGS to EAX, flip bit 21, load EFLAGS back to flags register 
+    pushfd                                        ; Save current EFLAGS onto the stack
+    pop eax                                       ; Move saved EFLAGS into EAX
+    mov ecx, eax                                  ; Save original EFLAGS in ECX for later comparison (+ restoration)
+    xor eax, EFLAGS_ID                            ; Flip bit 21 in EAX (i.e. EFLAGS)
+    push eax                                      ; Save the modified FLAGS value to the stack
+    popfd                                         ; Load that value into the actual FLAGS register
 
-    ; The original value should be saved for comparison and restoration later
-    mov ecx, eax
-    xor eax, EFLAGS_ID
+    ; Check if bit 21 was sucessfully flipped in EFLAGS
+    pushfd                                        ; Save the FLAGS register (to push into EAX)
+    pop eax                                       ; Load the possibly modified FLAGS back into EAX
 
-    ; storing the eflags and then retrieving it again will show whether or not
-    ; the bit could successfully be flipped
-    push eax                    ; save to eflags
-    popfd
-    pushfd                      ; restore from eflags
-    pop eax
-
-    ; Restore EFLAGS to its original value
+    ; Restore EFLAGS to its original value before comparing
     push ecx
     popfd
 
-    ; if the bit in eax was successfully flipped (eax != ecx), CPUID is supported.
-    xor eax, ecx
+    ; Compare old vs new flags
+    xor eax, ecx                                  ; EAX != ECX if the bit was successfully flipped. CPUID is supported.
     jnz .supported
-    .notSupported:
-        mov ax, 0
+
+    .not_supported:
+        xor eax, eax
+        mov al, 0
         ret
     .supported:
-        mov ax, 1
+        xor eax, eax
+        mov al, 1
         ret
 
 

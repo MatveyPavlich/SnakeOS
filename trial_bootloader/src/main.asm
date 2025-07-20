@@ -40,6 +40,9 @@ start_pm:
     mov esi, MSG_PROT_MODE                          ; 0x7cf6 in gdb
     call print_string_pm
     xor eax, eax
+    xor ebx, ebx
+    xor ecx, ecx
+    xor edx, edx
     call check_CPUID                                ; Looks like cpuid is working (not 100% sure though due to gdb being in real mode)
     jmp $                                           ; 0x7d07
 

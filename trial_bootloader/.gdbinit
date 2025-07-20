@@ -5,3 +5,11 @@ layout asm
 break *0x7c00
 continue
 stepi
+br* 0x7c17
+continue
+stepi
+stepi
+stepi
+stepi
+stepi
+stepi
