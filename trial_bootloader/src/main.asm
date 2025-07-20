@@ -18,7 +18,7 @@ main:
     jmp $
 
 switch_to_pm:
-    cli                         ; Disable BIOS interrupts
+    cli                         ; Disable BIOS interrupts (0x7c17)
     lgdt [gdt_descriptor]       ; Load the GDT descriptor
     mov eax, cr0
     or eax, 0x1                 ; Set 32-bit mode bit in cr0
@@ -37,11 +37,14 @@ A20_FAILED db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
 
 [bits 32]
 start_pm:
-    mov esi, MSG_PROT_MODE
+    mov esi, MSG_PROT_MODE                          ; 0x7cf6 in gdb
     call print_string_pm
-    jmp $
+    xor eax, eax
+    call check_CPUID                                ; Looks like cpuid is working (not 100% sure though due to gdb being in real mode)
+    jmp $                                           ; 0x7d07
 
 %include "./src/utils/32bit-print.asm"
+%include "./src/utils/cpuid.asm"
 MSG_PROT_MODE db "Loaded 32-bit protected mode", 0x00
 
 times 510-($-$$) db 0
