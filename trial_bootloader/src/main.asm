@@ -49,7 +49,7 @@ start_pm:
     ; call check_long_mode_support    ;Disable for now
     call set_up_paging
     call enable_paging
-    jmp Realm64
+    jmp dword CODE_SEG:Realm64
 
 %include "./src/utils/32bit-print.asm"
 %include "./src/utils/long_mode.asm"
@@ -67,20 +67,24 @@ BYTES_PER_CHARACTER equ 2
 VGA_TEXT_BUFFER_SIZE equ BYTES_PER_CHARACTER * COLS * ROWS
 
 Realm64:
-    ; cli
-    mov ax, 1
+    mov ax, DATA_SEG
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     mov ss, ax
 
-    mov rdi, VGA_TEXT_BUFFER_ADDR
-    mov rax, 0
-    mov rcx, VGA_TEXT_BUFFER_SIZE / 8
-    rep stosq
-    hlt
-    jmp $
+    mov byte [VGA_TEXT_BUFFER_ADDR], 0x36
+    mov byte [VGA_TEXT_BUFFER_ADDR + 1], 0x0C
+    mov byte [VGA_TEXT_BUFFER_ADDR + 2], 0x34
+    mov byte [VGA_TEXT_BUFFER_ADDR + 3], 0x0C
+
+    ; hlt
+    ; jmp $
+
+%include "./src/utils/64-bit-print.asm"
+str_hello db "Welcome to long mode, baby -_-!", 0
+
 
 times 510-($-$$) db 0
 dw 0xaa55
