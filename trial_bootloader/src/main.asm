@@ -44,10 +44,10 @@ start_pm:
     ; xor ebx, ebx
     ; xor ecx, ecx
     ; xor edx, edx
-    call set_up_paging
     ; call check_CPUID                                ; Looks like cpuid is working (not 100% sure though due to gdb being in real mode) (;Disable for now)
     ; call check_extended_functions   ;Disable for now
     ; call check_long_mode_support    ;Disable for now
+    call set_up_paging
 
 
     lgdt [GDT.Pointer]
@@ -69,8 +69,7 @@ BYTES_PER_CHARACTER equ 2
 VGA_TEXT_BUFFER_SIZE equ BYTES_PER_CHARACTER * COLS * ROWS
 
 Realm64:
-    cli                           ; the code would probably be more reliable if you did this
-                                  ; before even switching from real mode
+    ; cli
     mov ax, GDT.Data
     mov ds, ax
     mov es, ax
