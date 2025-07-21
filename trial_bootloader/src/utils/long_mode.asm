@@ -4,12 +4,15 @@ page_table_l4_address        equ 0x1000       ; Page Map Level 4 Table address
 page_table_l3_address        equ 0x2000       ; Page Directory Pointer Table address
 page_table_l2_address        equ 0x3000       ; Page Directory Table address
 page_table_l1_address        equ 0x4000       ; Page Table address
-PT_ADDR_MASK      equ 0xffffffffff000         ; Let last 12 bits be for flags
-PT_PRESENT        equ 1                       ; marks the entry as in use (i.e., 0b1)
-PT_READABLE       equ 2                       ; marks the entry as r/w    (i.e., 0b10)
-ENTRIES_PER_PT    equ 512                     ; Enteries in each table
-SIZEOF_PT_ENTRY   equ 8                       ; Size of each entery in a table
-PAGE_SIZE         equ 0x1000                  ; 4 KiB (each page)
+; PT_ADDR_MASK      equ 0xffffffffff000         ; Let last 12 bits be for flags
+; PT_PRESENT        equ 1                       ; marks the entry as in use (i.e., 0b1)
+; PT_READABLE       equ 2                       ; marks the entry as r/w    (i.e., 0b10)
+; ENTRIES_PER_PT    equ 512                     ; Enteries in each table
+; SIZEOF_PT_ENTRY   equ 8                       ; Size of each entery in a table
+; PAGE_SIZE         equ 0x1000                  ; 4 KiB (each page)
+
+
+; Identity mapping => match a physical address to the same virtual address (should be true for our l4 table since we are moving a pointer to it before paging was enabled)
 
 set_up_paging:
 
@@ -23,64 +26,51 @@ set_up_paging:
     rep stosd                                 ; writes page_table_size of eax value (i.e., page_table_size * 4 bytes)
     mov edi, cr3                              ; reset di back to the beginning of the page table
 
-    ; QWORD is not supported in 32 bits?!
-    mov dword [edi], PDPT_ADDR & PT_ADDR_MASK | PT_PRESENT | PT_READABLE
-    mov edi, PDPT_ADDR
-    mov dword [edi], PDT_ADDR & PT_ADDR_MASK | PT_PRESENT | PT_READABLE
-    mov edi, PDT_ADDR
-    mov dword [edi], PT_ADDR & PT_ADDR_MASK | PT_PRESENT | PT_READABLE
+    mov eax, page_table_l3_address
+    or eax, 0b11                              ; present and writable flags
+    mov [page_table_l4_address], eax
 
-    ; Prepare registers before the loop to fill the page table
-    mov edi, PT_ADDR
-    mov ebx, PT_PRESENT | PT_READABLE
-    mov ecx, ENTRIES_PER_PT      ; 1 full page table addresses 2MiB
-    jmp .set_entry
+    mov eax, page_table_l2_address
+    or eax, 0b11
+    mov [page_table_l3_address], eax
 
-    ; Enable paging 
+    mov ecx, 0
+    
+    .fill_l2_table_loop:
+        mov eax, 0x200000
+        mul ecx
+        or eax, 0b10000011
+        mov [page_table_l2_address + ecx * 8], eax
+
+        inc ecx
+        cmp ecx, 512
+        jne .fill_l2_table_loop 
+
+        ret
+
+
+enable_paging:
+    
+    ; Pass table location to the cpu
+    mov eax, page_table_l4_address
+    mov cr3, eax
+    
+    ; Enable PAE
     mov eax, cr4
     or eax, 1 << 5
     mov cr4, eax
 
-.set_entry:
-    mov [edi], ebx
-    add ebx, PAGE_SIZE
-    add edi, SIZEOF_PT_ENTRY
-    loop .set_entry               ; Set the next entry.
+    ; Enable long mode
+    mov ecx, 0xC0000080
+    rdmsr
+    or eax, 1 << 8
+    wrmsr
 
+    ; enable paging
+    mov eax, cr0
+    or eax, 1 << 31
+    mov cr0, eax
 
-
-; Access bits
-PRESENT        equ 1 << 7
-NOT_SYS        equ 1 << 4
-EXEC           equ 1 << 3
-DC             equ 1 << 2
-RW             equ 1 << 1
-ACCESSED       equ 1 << 0
-
-; Flags bits
-GRAN_4K       equ 1 << 7
-SZ_32         equ 1 << 6
-LONG_MODE     equ 1 << 5
-
-GDT:
-    .Null: equ $ - GDT
-        dq 0
-    .Code: equ $ - GDT
-        .Code.limit_lo: dw 0xffff
-        .Code.base_lo: dw 0
-        .Code.base_mid: db 0
-        .Code.access: db PRESENT | NOT_SYS | EXEC | RW
-        .Code.flags: db GRAN_4K | LONG_MODE | 0xF   ; Flags & Limit (high, bits 16-19)
-        .Code.base_hi: db 0
-    .Data: equ $ - GDT
-        .Data.limit_lo: dw 0xffff
-        .Data.base_lo: dw 0
-        .Data.base_mid: db 0
-        .Data.access: db PRESENT | NOT_SYS | RW
-        .Data.Flags: db GRAN_4K | SZ_32 | 0xF       ; Flags & Limit (high, bits 16-19)
-        .Data.base_hi: db 0
-    .Pointer:
-        dw $ - GDT - 1
-        dq GDT
+    ret
 
 

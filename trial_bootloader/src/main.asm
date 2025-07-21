@@ -48,10 +48,8 @@ start_pm:
     ; call check_extended_functions   ;Disable for now
     ; call check_long_mode_support    ;Disable for now
     call set_up_paging
-
-
-    lgdt [GDT.Pointer]
-    jmp GDT.Code:Realm64
+    call enable_paging
+    jmp Realm64
 
 %include "./src/utils/32bit-print.asm"
 %include "./src/utils/long_mode.asm"
@@ -70,7 +68,7 @@ VGA_TEXT_BUFFER_SIZE equ BYTES_PER_CHARACTER * COLS * ROWS
 
 Realm64:
     ; cli
-    mov ax, GDT.Data
+    mov ax, 1
     mov ds, ax
     mov es, ax
     mov fs, ax
