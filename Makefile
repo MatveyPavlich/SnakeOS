@@ -30,7 +30,7 @@ $(BUILD_DIR)/kernel_entry.bin:                                                  
 
 # Run OS without gdb debug
 run:
-	qemu-system-i386 -fda build/main.img
+	qemu-system-x86_64 -fda build/main.img
 
 # This one doesn't build .iso! Run chmod +x script.sh to give script premission to execute.
 debug:
