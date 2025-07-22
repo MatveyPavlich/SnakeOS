@@ -87,15 +87,12 @@ start_pm:
     ; ; jmp dword null_descriptor:start_lm ; Will not work
     hlt
     jmp $
-    ; Jump to the kernel
-    ; jmp kernel_load_offset
 
 
 %include "./src/bootloader/stage1/print_32_bits.asm"
 %include "./src/bootloader/stage1/long_mode.asm"
 %include "./src/bootloader/stage1/cpuid.asm"
 MSG_PROT_MODE      db "Loaded 32-bit protected mode", 0x00
-kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset
 
 
 bits 64
@@ -115,9 +112,15 @@ start_lm:
     mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
     rep stosw                                 ; Fill ECX words (AX) into [EDI]
 
-    ; mov si, str_hello                       ; Verbose debugging
-    ; call print_string_64                    ; Verbose debugging
-    mov word [VGA_TEXT_BUFFER_ADDR], 0x0C4C
-    mov word [VGA_TEXT_BUFFER_ADDR + 2], 0x0C4D
+    mov si, str_hello                       ; Verbose debugging
+    call print_string_64                    ; Verbose debugging
+    
+    ; Jump to the kernel
+    ; jmp kernel_load_offset
+
     hlt
     jmp $
+
+%include "./src/bootloader/stage1/64-bit-print.asm"
+str_hello db "Welcome to long mode", 0
+kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset ????
