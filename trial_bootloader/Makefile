@@ -15,7 +15,7 @@ $(BUILD_DIR)/main.bin: $(SRC_DIR)/main.asm
 
 # Run OS without GDB debug
 run: floppy_image
-	qemu-system-i386 -fda $(BUILD_DIR)/main.img
+	qemu-system-x86_64 -fda $(BUILD_DIR)/main.img
 
 debug:
 	./debug.sh

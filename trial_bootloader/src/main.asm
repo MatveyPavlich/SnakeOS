@@ -44,12 +44,13 @@ start_pm:
     ; xor ebx, ebx
     ; xor ecx, ecx
     ; xor edx, edx
-    ; call check_CPUID                                ; Looks like cpuid is working (not 100% sure though due to gdb being in real mode) (;Disable for now)
-    ; call check_extended_functions   ;Disable for now
-    ; call check_long_mode_support    ;Disable for now
+    ; call check_CPUID
+    ; call check_extended_functions
+    ; call check_long_mode_support 
     call set_up_paging
     call enable_paging
-    jmp dword CODE_SEG:Realm64
+    ; jmp dword CODE_SEG:Realm64
+    jmp dword LONG_CODE_SEG:Realm64
 
 %include "./src/utils/32bit-print.asm"
 %include "./src/utils/long_mode.asm"
@@ -61,13 +62,9 @@ MSG_PROT_MODE db "Loaded 32-bit protected mode", 0x00
 bits 64
 
 VGA_TEXT_BUFFER_ADDR equ 0xb8000
-COLS equ 80
-ROWS equ 25
-BYTES_PER_CHARACTER equ 2
-VGA_TEXT_BUFFER_SIZE equ BYTES_PER_CHARACTER * COLS * ROWS
 
 Realm64:
-    mov ax, DATA_SEG
+    mov ax, 0
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -79,11 +76,11 @@ Realm64:
     mov byte [VGA_TEXT_BUFFER_ADDR + 2], 0x34
     mov byte [VGA_TEXT_BUFFER_ADDR + 3], 0x0C
 
-    ; hlt
-    ; jmp $
+    hlt
+    jmp $
 
-%include "./src/utils/64-bit-print.asm"
-str_hello db "Welcome to long mode, baby -_-!", 0
+; %include "./src/utils/64-bit-print.asm"
+; str_hello db "Welcome to long mode, baby -_-!", 0
 
 
 times 510-($-$$) db 0
