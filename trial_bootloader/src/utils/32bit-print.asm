@@ -1,4 +1,4 @@
-[bits 32] ; using 32-bit protected mode
+bits 32 ; using 32-bit protected mode
 
 
 VIDEO_MEMORY equ 0xb8000 ; Video memory

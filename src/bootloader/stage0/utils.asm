@@ -102,6 +102,7 @@ load_file:
 .load_next_cluster:
     
     ; Load the cluster into memory (starting cluster if its the first time)
+    push si                                   ; Preserve SI in case we'll need chain marker for other cluster
     push ax                                   ; Preserve cluster number to calculate offset to its FAT12 record
     add ax, 31                                ; Cluster number -> LBA conversion for floppy
     mov ah, 1                                 ; Number of sectors we'll read (since 1 cluster = 1 sector)
@@ -132,6 +133,7 @@ load_file:
 
 .interpret_chain_marker:
     cmp ax, 0x0FF8                 ; Check for end-of-chain marker (0xFF8-0xFFF)
+    pop si
     jae .read_finished
     jmp .load_next_cluster         ; Do the same for the cluster number in AX
 
