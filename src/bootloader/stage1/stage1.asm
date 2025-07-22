@@ -112,11 +112,11 @@ start_lm:
     mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
     rep stosw                                 ; Fill ECX words (AX) into [EDI]
 
-    mov si, str_hello                       ; Verbose debugging
-    call print_string_64                    ; Verbose debugging
+    mov si, str_hello                        ; Verbose debugging
+    call print_string_64                     ; Verbose debugging
     
     ; Jump to the kernel
-    ; jmp kernel_load_offset
+    jmp kernel_load_offset
 
     hlt
     jmp $
