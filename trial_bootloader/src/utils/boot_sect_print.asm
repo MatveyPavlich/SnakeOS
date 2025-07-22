@@ -14,3 +14,7 @@ start:
 done:
     popa
     ret
+
+halt:
+    hlt
+    jmp halt

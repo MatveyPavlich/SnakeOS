@@ -1,6 +1,6 @@
 ;============================ GDT ;============================
-; 32 bit GDT!
-; don't remove labels, they're needed to compute sizes and jumps
+; Don't remove labels, they're needed to compute sizes and jumps
+; Add an entry for the 64-bit mode
 gdt_start:
 
 null_descriptor:
