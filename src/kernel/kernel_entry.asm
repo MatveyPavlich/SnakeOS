@@ -19,4 +19,5 @@ kernel_entry:
 
 ; %include "./src/bootloader/stage1/64-bit-print.asm"
 %include "./src/bootloader/stage1/utils_long_mode.asm"
-MSG_KERNEL db "Kernel loaded (long mode)", 0x00
+; MSG_KERNEL db "Kernel loaded (long mode)", 0x00
+MSG_KERNEL db "123456789-123456789-1234567890-123456789-123456789-123456789-123456789-123456789-123456789-123456789-", 0x00

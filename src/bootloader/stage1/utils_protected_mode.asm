@@ -1,18 +1,20 @@
 ; ===========================| Print_32_bits |============================
 ; Input:
-;   -  
+;   - ESI = pointer to the string
+; Output:
+;   - Save next address to print the string into PRINT_STRING_POSSITION
+;   - ESI is cleaned to 0. Everything else in untouched
 ; ==============================================================
 
-VIDEO_MEMORY equ 0xb8000                      ; Video memory
-RED_ON_BLACK equ 0x0c                         ; Color byte 
-
 print_32_bits:
-    pusha                                     ; Preserve all general registers
-    mov edx, VIDEO_MEMORY                     ; Move video memory into edx
+    push eax
+    push edx
+    xor eax, edx
+    mov edx, PRINT_STRING_POSSITION           ; Video memory position
 
 .print_string_pm_loop:
     mov al, [esi]                             ; [ebx] is the address of our character
-    mov ah, RED_ON_BLACK
+    mov ah, 0x0C                              ; Add red on black colour
     cmp al, 0                                 ; check if end of string
     je .print_string_pm_done
 
@@ -23,7 +25,13 @@ print_32_bits:
     jmp .print_string_pm_loop
 
 .print_string_pm_done:
-    popa
+    add edx, 180                              ; Increment video memory to the next line
+    mov [PRINT_STRING_POSSITION], edx         ; Save next string position
+    xor edx, edx
+    xor esi, esi
+    xor eax, eax
+    pop edx
+    pop eax
     ret
 
 

@@ -74,10 +74,8 @@ start_pm:
     call print_32_bits                        ; ESI = pinter to the message
 
     ; Clean general purpose registers from print_string_pm
-    xor eax, eax
     xor ebx, ebx
     xor ecx, ecx
-    xor edx, edx
 
     ; Check  if long mode is supported
     call check_CPUID                          ; Esure CPUID instruction is supported
@@ -98,6 +96,7 @@ start_pm:
 
 %include "./src/bootloader/stage1/utils_protected_mode.asm"
 MSG_PROT_MODE      db "Loaded 32-bit protected mode", 0x00
+PRINT_STRING_POSSITION dd 0xb8000
 
 
 bits 64
