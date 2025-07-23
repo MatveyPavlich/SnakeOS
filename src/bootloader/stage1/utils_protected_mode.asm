@@ -35,31 +35,6 @@ print_32_bits:
     pop eax
     ret
 
-; VIDEO_MEMORY equ 0xb8000                      ; Video memory
-; RED_ON_BLACK equ 0x0c                         ; Color byte 
-
-; print_32_bits:
-;     pusha                                     ; Preserve all general registers
-;     mov edx, VIDEO_MEMORY                     ; Move video memory into edx
-
-; .print_string_pm_loop:
-;     mov al, [esi]                             ; [ebx] is the address of our character
-;     mov ah, RED_ON_BLACK
-;     cmp al, 0                                 ; check if end of string
-;     je .print_string_pm_done
-
-;     mov [edx], ax                             ; store character + attribute in video memory
-;     add esi, 1                                ; next char
-;     add edx, 2                                ; next video memory position
-
-;     jmp .print_string_pm_loop
-
-; .print_string_pm_done:
-;     popa
-;     ret
-
-
-
 
 
 
@@ -183,7 +158,7 @@ check_CPUID:
     popfd
 
     ; Compare old vs new flags
-    xor eax, ecx                                  ; EAX != ECX if the bit was successfully flipped. CPUID is supported.
+    xor eax, ecx                                  ; EAX != ECX if the bit was SUCCESSFULfully flipped. CPUID is supported.
     jnz .supported
 
     .not_supported:
@@ -197,7 +172,7 @@ check_CPUID:
         call print_32_bits
         ret
 
-    MSG_CPUID_SUPP db "SUCCESS: CPUID supported. Checking extended functions support...", 0x00
+    MSG_CPUID_SUPP db "SUCCESSFUL: CPUID supported. Checking extended functions support...", 0x00
     MSG_CPUID_NOT_SUPP db "ERROR: CPUID not supported. Can't check long mode support. System halted.", 0x00
 
 
@@ -235,7 +210,7 @@ check_extended_functions:
         hlt
         jmp $
 
-    MSG_EXT_FUNC_SUPP db "SUCCESS: CPUID supports extended functions. Checking long mode support...", 0x00
+    MSG_EXT_FUNC_SUPP db "SUCCESSFUL: CPUID supports extended functions. Checking long mode support...", 0x00
     MSG_EXT_FUNC_NOT_SUPP db "ERROR: Extended functions not supported by CPUID. Can't check long mode support. System halted.", 0x00
 
 
@@ -270,5 +245,5 @@ check_long_mode_support:
         hlt
         jmp $
 
-    MSG_LONG_SUPP db "SUCCESS: Long mode supported. Setting up paging...", 0x00
+    MSG_LONG_SUPP db "SUCCESSFUL: Long mode supported. Setting up paging...", 0x00
     MSG_LONG_NOT_SUPP db "ERROR: Long mode not supported. System halted.", 0x00

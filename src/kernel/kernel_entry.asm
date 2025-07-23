@@ -6,15 +6,13 @@ global print_string_64
 extern main
 
 kernel_entry:
-    mov [PRINT_STRING_POSSITION], rax
+    mov [PRINT_STRING_POSSITION], rax                    ; Save line 
     mov esi, MSG_KERNEL
     call print_string_64
     ; call main
     hlt
     jmp $
 
-; %include "./src/bootloader/stage1/64-bit-print.asm"
 %include "./src/bootloader/stage1/utils_long_mode.asm"
-MSG_KERNEL db "SUCCESS: Kernel loaded.", 0x00
-; MSG_KERNEL db "123456789-123456789-1234567890-123456789-123456789-123456789-123456789-123456789-123456789-123456789-", 0x00
+MSG_KERNEL db "SUCCESSFUL: Kernel entry loaded. Loading the kernel...", 0x00
 PRINT_STRING_POSSITION dw 0
