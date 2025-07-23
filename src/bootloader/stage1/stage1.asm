@@ -86,7 +86,7 @@ start_pm:
     call set_up_paging                        ; Create page tables
     call enable_paging                        ; Enable long mode
     mov eax, [PRINT_STRING_POSSITION]
-    jmp dword LONG_CODE_SEG:start_lm          ; You must have a far jump for some reason...
+    jmp dword LONG_CODE_SEG:start_lm          ; You must have a far jump for some reason... (0x80143)
     hlt
     jmp $
 
@@ -119,7 +119,7 @@ start_lm:
     ; mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
     ; rep stosw                                 ; Fill ECX words (AX) into [EDI]
 
-    mov si, str_hello                        ; Verbose debugging
+    mov esi, str_hello                        ; Verbose debugging
     call print_string_64                     ; Verbose debugging
     
     ; Jump to the kernel
