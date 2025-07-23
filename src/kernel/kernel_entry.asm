@@ -18,5 +18,5 @@ kernel_entry:
     jmp $
 
 ; %include "./src/bootloader/stage1/64-bit-print.asm"
-%include "./src/bootloader/stage1/lm_utils.asm"
+%include "./src/bootloader/stage1/utils_long_mode.asm"
 MSG_KERNEL db "Kernel loaded (long mode)", 0x00

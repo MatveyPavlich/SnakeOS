@@ -35,7 +35,7 @@ main:
 
 
 %include "./src/bootloader/shared_utils.asm"
-%include "./src/bootloader/stage1/rm_utils.asm"
+%include "./src/bootloader/stage1/utils_real_mode.asm"
 MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 
 
@@ -59,7 +59,7 @@ bits 32
 
 start_pm:
     
-    ; Set segment registers to correct GDT index (ds=0x8000 => no such entry in GDT)
+    ; Move correct GDT index into segment registers (ds=0x8000 => no such entry in GDT)
     mov ax, DATA_SEG
     mov ds, ax
     mov es, ax
@@ -68,12 +68,6 @@ start_pm:
     ; Reset stack to grow down before the code
     mov ebp, 0x80000
     mov esp, ebp
-
-    ; Clean the screen from the message
-    mov edi, 0xB8000                          ; Start of VGA text buffer
-    mov ecx, 80 * 25                          ; Number of characters on screen
-    mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
-    rep stosw                                 ; Fill ECX words (AX) into [EDI]
 
     ; Inform protected mode is entered
     mov esi, MSG_PROT_MODE
@@ -102,10 +96,7 @@ start_pm:
     ; jmp dword null_descriptor:start_lm      ; Will not work
 
 
-; %include "./src/bootloader/stage1/print_32_bits.asm"
-; %include "./src/bootloader/stage1/long_mode.asm"
-; %include "./src/bootloader/stage1/cpuid.asm"
-%include "./src/bootloader/stage1/pm_utils.asm"
+%include "./src/bootloader/stage1/utils_protected_mode.asm"
 MSG_PROT_MODE      db "Loaded 32-bit protected mode", 0x00
 
 
@@ -123,6 +114,7 @@ start_lm:
     mov gs, ax
     mov ss, ax
 
+    ; Clear the screen
     mov edi, 0xB8000                          ; Start of VGA text buffer
     mov ecx, 80 * 25                          ; Number of characters on screen
     mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
@@ -137,7 +129,6 @@ start_lm:
     hlt
     jmp $
 
-; %include "./src/bootloader/stage1/64-bit-print.asm"
-%include "./src/bootloader/stage1/lm_utils.asm"
+%include "./src/bootloader/stage1/utils_long_mode.asm"
 str_hello db "Welcome to long mode", 0
 kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset ????

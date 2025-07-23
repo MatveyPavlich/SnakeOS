@@ -2,6 +2,10 @@
 ; Input:
 ;   -  
 ; ==============================================================
+
+VIDEO_MEMORY equ 0xb8000                      ; Video memory
+RED_ON_BLACK equ 0x0c                         ; Color byte 
+
 print_32_bits:
     pusha                                     ; Preserve all general registers
     mov edx, VIDEO_MEMORY                     ; Move video memory into edx
@@ -23,26 +27,20 @@ print_32_bits:
     ret
 
 
-VIDEO_MEMORY equ 0xb8000                      ; Video memory
-RED_ON_BLACK equ 0x0c                         ; Color byte 
+
+; ===========================| set_up_paging |============================
+; - Input: void
+; - Output:
+;   - x, y, z registers are clobbered
+; ========================================================================
 
 
 ; Each table is 4 KiB in size (512 * 8 byte entries)
 page_table_size              equ 4096         ; Size of each table (4KiB size, 0x1000 in hex)
-page_table_l4_address        equ 0x1000       ; Page Map Level 4 Table address (4 KiB aligned)
-; I.e., when paging is enabled it doesn't span 2 pages and starts at page start = 0
-page_table_l3_address        equ 0x2000       ; Page Directory Pointer Table address
-page_table_l2_address        equ 0x3000       ; Page Directory Table address
-page_table_l1_address        equ 0x4000       ; Page Table address
-; PT_ADDR_MASK      equ 0xffffffffff000         ; Let last 12 bits be for flags
-; PT_PRESENT        equ 1                       ; marks the entry as in use (i.e., 0b1)
-; PT_READABLE       equ 2                       ; marks the entry as r/w    (i.e., 0b10)
-; ENTRIES_PER_PT    equ 512                     ; Enteries in each table
-; SIZEOF_PT_ENTRY   equ 8                       ; Size of each entery in a table
-; PAGE_SIZE         equ 0x1000                  ; 4 KiB (each page)
-
-
-; Identity mapping => match a physical address to the same virtual address (should be true for our l4 table since we are moving a pointer to it before paging was enabled)
+page_table_l4_address        equ 0x1000       ; L4 table address (4 KiB aligned, meaning starts at a multiple of 4 KiB
+                                              ; which ensures table starts at the beginning of the page and spans 1 page)
+page_table_l3_address        equ 0x2000       ; L3 table address (4 KiB aligned)
+page_table_l2_address        equ 0x3000       ; L2 table address (4 KiB aligned)
 
 set_up_paging:
 
@@ -68,6 +66,7 @@ set_up_paging:
 
     ; Fill l2 table with 512 pages of 2 MiB each
     mov ecx, 0
+    
     .fill_l2_table_loop:
         mov eax, 0x200000                     ; 2 MiB page
         mul ecx                               ; Find physical address for page start
