@@ -197,7 +197,7 @@ check_CPUID:
         call print_32_bits
         ret
 
-    MSG_CPUID_SUPP db "SUCCESS: CPUID supported. Checking extended functions support.", 0x00
+    MSG_CPUID_SUPP db "SUCCESS: CPUID supported. Checking extended functions support...", 0x00
     MSG_CPUID_NOT_SUPP db "ERROR: CPUID not supported. Can't check long mode support. System halted.", 0x00
 
 
@@ -235,7 +235,7 @@ check_extended_functions:
         hlt
         jmp $
 
-    MSG_EXT_FUNC_SUPP db "SUCCESS: Extended functions supported by CPUID. Checking long mode support.", 0x00
+    MSG_EXT_FUNC_SUPP db "SUCCESS: CPUID supports extended functions. Checking long mode support...", 0x00
     MSG_EXT_FUNC_NOT_SUPP db "ERROR: Extended functions not supported by CPUID. Can't check long mode support. System halted.", 0x00
 
 
@@ -270,5 +270,5 @@ check_long_mode_support:
         hlt
         jmp $
 
-    MSG_LONG_SUPP db "SUCCESS: Long mode supported. Setting up paging.", 0x00
+    MSG_LONG_SUPP db "SUCCESS: Long mode supported. Setting up paging...", 0x00
     MSG_LONG_NOT_SUPP db "ERROR: Long mode not supported. System halted.", 0x00

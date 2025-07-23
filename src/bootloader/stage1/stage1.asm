@@ -96,7 +96,7 @@ start_pm:
 
 
 %include "./src/bootloader/stage1/utils_protected_mode.asm"
-MSG_PROT_MODE      db "Loaded 32-bit protected mode", 0x00
+MSG_PROT_MODE      db "MODE ENTERED: Protected", 0x00
 PRINT_STRING_POSSITION dd 0xb8000
 
 
@@ -130,5 +130,5 @@ start_lm:
     jmp $
 
 %include "./src/bootloader/stage1/utils_long_mode.asm"
-str_hello db "Welcome to long mode", 0
+str_hello db "MODE ENTERED: Long", 0
 kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset ????
