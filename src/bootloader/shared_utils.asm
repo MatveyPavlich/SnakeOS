@@ -1,3 +1,6 @@
+; Real mode subroutines used in stage0 and stage1 
+
+
 ; ==============================| Print stuff |============================== 
 
 print:
