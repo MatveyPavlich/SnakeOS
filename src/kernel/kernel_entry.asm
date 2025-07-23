@@ -1,8 +1,11 @@
 org 0x90000
 bits 64
+
+global kernel_entry
+global print_string_64
 extern main
 
-main:
+kernel_entry:
     mov edi, 0xB8000                          ; Start of VGA text buffer
     mov ecx, 80 * 25                          ; Number of characters on screen
     mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute

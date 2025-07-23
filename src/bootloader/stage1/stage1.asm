@@ -1,8 +1,11 @@
 ;======================================================================================
 ; Stage1 of the bootloader for SnakeOS is loaded at 0x8000:0000, with es = ds = 0x8000.
-; It enables A20 line and creats a Global Descriptor Table (GDT) to then enter the
-; protected mode. Once this is done a jump to the kernel that was loaded by stage0 to
-; 0x90000 is performed.
+; It enables A20 line and creats the Global Descriptor Table (GDT) to then enter the
+; protected mode. Once this is done checks for long mode availability are made. If it  
+; is not supported the the system is halted. If it is, then paging is enabled and 
+; long mode is entered. After that, jump is made to the kernel.bin loaded by stage0.
+; This jump works since first 1 GiB of virtual addresses mapped to exactly the same
+; physical addresses.
 ;======================================================================================
 
 org 0x80000                                   ; For assembler to organise the code (0x0000 causes issues)
@@ -28,7 +31,7 @@ main:
     mov eax, cr0
     or eax, 0x1                               ; Set 32-bit mode bit in cr0
     mov cr0, eax
-    jmp dword CODE_SEG:start_pm               ; far jump by using a different segment
+    jmp dword CODE_SEG:start_pm               ; Far jump by using the segment from GDT
 
 
 %include "./src/bootloader/shared_utils.asm"
@@ -40,14 +43,16 @@ MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 
 
 ; ============================ Protected mode ==============================
-; Enter protected mode and jump into kernel that was loaded by stage0
+; - Check long mode support
+; - Set up and enable paging
+; - Enter long mode
 ; ==========================================================================
 
 bits 32
 
 start_pm:
     
-    ; Set segment registers to correct GDT index (ds=0x9000 => no such entry in GDT)
+    ; Set segment registers to correct GDT index (ds=0x8000 => no such entry in GDT)
     mov ax, DATA_SEG
     mov ds, ax
     mov es, ax
@@ -73,18 +78,18 @@ start_pm:
     xor ecx, ecx
     xor edx, edx
 
-    ; See if long mode supported
-    call check_CPUID
-    call check_extended_functions
-    call check_long_mode_support 
+    ; Check  if long mode is supported
+    call check_CPUID                          ; Esure CPUID instruction is supported
+    call check_extended_functions             ; Esure extended functions are supported
+    call check_long_mode_support              ; Ensure long mode is supported via extended function
 
     ; Enable long mode
-    call set_up_paging
-    call enable_paging
-    jmp dword LONG_CODE_SEG:start_lm   ; You must have a far jump for some reason...
-    ; ; jmp start_lm                     ; Will not work ???
-    ; ; jmp dword CODE_SEG:start_lm      ; Will not work ???
-    ; ; jmp dword null_descriptor:start_lm ; Will not work
+    call set_up_paging                        ; Create page tables
+    call enable_paging                        ; Enable long mode
+    jmp dword LONG_CODE_SEG:start_lm          ; You must have a far jump for some reason...
+    ; jmp start_lm                            ; Will not work ???
+    ; jmp dword CODE_SEG:start_lm             ; Will not work ???
+    ; jmp dword null_descriptor:start_lm      ; Will not work
     hlt
     jmp $
 
