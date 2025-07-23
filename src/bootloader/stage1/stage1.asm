@@ -35,7 +35,7 @@ main:
 
 
 %include "./src/bootloader/shared_utils.asm"
-%include "./src/bootloader/stage1/utils.asm"
+%include "./src/bootloader/stage1/rm_utils.asm"
 MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 
 
@@ -47,6 +47,13 @@ MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 ; - Set up and enable paging
 ; - Enter long mode
 ; ==========================================================================
+
+;
+;
+;
+;
+;
+;
 
 bits 32
 
@@ -87,16 +94,18 @@ start_pm:
     call set_up_paging                        ; Create page tables
     call enable_paging                        ; Enable long mode
     jmp dword LONG_CODE_SEG:start_lm          ; You must have a far jump for some reason...
-    ; jmp start_lm                            ; Will not work ???
-    ; jmp dword CODE_SEG:start_lm             ; Will not work ???
-    ; jmp dword null_descriptor:start_lm      ; Will not work
     hlt
     jmp $
 
+    ; jmp start_lm                            ; Will not work ???
+    ; jmp dword CODE_SEG:start_lm             ; Will not work ???
+    ; jmp dword null_descriptor:start_lm      ; Will not work
 
-%include "./src/bootloader/stage1/print_32_bits.asm"
-%include "./src/bootloader/stage1/long_mode.asm"
-%include "./src/bootloader/stage1/cpuid.asm"
+
+; %include "./src/bootloader/stage1/print_32_bits.asm"
+; %include "./src/bootloader/stage1/long_mode.asm"
+; %include "./src/bootloader/stage1/cpuid.asm"
+%include "./src/bootloader/stage1/pm_utils.asm"
 MSG_PROT_MODE      db "Loaded 32-bit protected mode", 0x00
 
 
@@ -105,12 +114,14 @@ bits 64
 VGA_TEXT_BUFFER_ADDR equ 0xb8000
 
 start_lm:
-    ; mov ax, 0
-    ; mov ds, ax
-    ; mov es, ax
-    ; mov fs, ax
-    ; mov gs, ax
-    ; mov ss, ax
+    
+    ; Set segments to zero to make sure when they are used they don't have garbage 
+    mov ax, 0
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
 
     mov edi, 0xB8000                          ; Start of VGA text buffer
     mov ecx, 80 * 25                          ; Number of characters on screen
@@ -126,6 +137,7 @@ start_lm:
     hlt
     jmp $
 
-%include "./src/bootloader/stage1/64-bit-print.asm"
+; %include "./src/bootloader/stage1/64-bit-print.asm"
+%include "./src/bootloader/stage1/lm_utils.asm"
 str_hello db "Welcome to long mode", 0
 kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset ????
