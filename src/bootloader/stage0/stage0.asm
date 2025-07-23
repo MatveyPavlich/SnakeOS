@@ -1,7 +1,8 @@
 ;======================================================================================
 ; Bootloader for SnakeOS is speparated into stage0 and stage1. The former loads stage1 & 
 ; kernel into memory and jumps to stage1. The latter jumps to protected mode through 
-; creating a GDT, enabling A20 line and doing a far jummp.
+; creating a GDT, enabling A20 line and doing a far jummp. Then, paging is enabled and
+; long mode is entered.
 ;======================================================================================
 
 org 0x7C00                                    ; For assembler to organise the code where first address is 0x7C00
@@ -9,7 +10,7 @@ bits 16                                       ; For assembler to know that shoul
 jmp short main                                ; Jump to code in main (<127 bytes down in memo, so use SHORT)
 nop                                           ; Do nothing for 1 CPU cycle
  
-; BIOS Paramenter Block to describe the physical layout of the disk
+; Describe disk layout with BIOS Paramenter Block 
 bdb_oem:                   db 'MSWIN4.1'      ; Tells what formatted the disk
 bdb_bytes_per_sector:      dw 512             ; 
 bdb_sectors_per_cluster:   db 1               ; FAT table has offsets to clusters, not sectors! This is why it is important
@@ -33,12 +34,12 @@ ebr_system_id:             db 'FAT12   '      ; Magical value that tells it is F
 
 main:
     
-    ; Set data segments to the same 64kB chunk
+    ; Set data segments to the same 64 KiB chunk
     mov ax, 0                                 
     mov ds, ax                                
     mov es, ax                                
     mov ss, ax                                
-    mov sp, 0x7C00                            ; Grow stack below the code
+    mov sp, 0x7C00                            ; Grow stack downwards below the code start
 
     ; Load root directory into memory
     call load_root_dir                        ; Input = void

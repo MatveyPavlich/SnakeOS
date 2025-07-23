@@ -1,14 +1,17 @@
 ;======================================================================================
 ; Stage1 of the bootloader for SnakeOS is loaded at 0x8000:0000, with es = ds = 0x8000.
-; It enables A20 line and creats a Global Descriptor Table (GDT) to then enter the
-; protected mode. Once this is done a jump to the kernel that was loaded by stage0 to
-; 0x90000 is performed.
+; It enables A20 line and creats the Global Descriptor Table (GDT) to then enter the
+; protected mode. Once this is done, it checks for the long mode availability. If it  
+; is not supported the the system is halted. If it is, then paging is enabled and 
+; long mode is entered. After that, jump is made to the kernel.bin loaded by stage0.
+; This jump works since first 1 GiB of virtual addresses mapped to exactly the same
+; physical addresses.
 ;======================================================================================
 
-org 0x80000                                   ; For assembler to organise the code (0x0000 causes issues)
+org 0x80000                                   ; For assembler to organise the code
 bits 16                                       ; For assembler to know that should be in 16 bits
 
-main:
+enter_stage1:
     
     ; Inform stage1 is loaded
     mov si, MSG_STAGE1                        ; 0x80000 in gdb
@@ -28,11 +31,11 @@ main:
     mov eax, cr0
     or eax, 0x1                               ; Set 32-bit mode bit in cr0
     mov cr0, eax
-    jmp dword CODE_SEG:start_pm               ; far jump by using a different segment
+    jmp dword CODE_SEG:start_protected_mode   ; Far jump by using the segment from GDT
 
 
 %include "./src/bootloader/shared_utils.asm"
-%include "./src/bootloader/stage1/utils.asm"
+%include "./src/bootloader/stage1/utils_real_mode.asm"
 MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 
 
@@ -40,15 +43,17 @@ MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 
 
 ; ============================ Protected mode ==============================
-; Enter protected mode and jump into kernel that was loaded by stage0
+; - Check long mode support
+; - Set up and enable paging
+; - Enter long mode
 ; ==========================================================================
 
 bits 32
 
-start_pm:
+start_protected_mode:
     
-    ; Set segment registers to correct GDT index (ds=0x9000 => no such entry in GDT)
-    mov ax, DATA_SEG
+    ; Move correct GDT index into segment registers (ds=0x8000 => no such entry in GDT)
+    mov ax, DATA_SEG ; 0x8010f
     mov ds, ax
     mov es, ax
     mov ss, ax
@@ -57,70 +62,62 @@ start_pm:
     mov ebp, 0x80000
     mov esp, ebp
 
-    ; Clean the screen from the message
-    mov edi, 0xB8000                          ; Start of VGA text buffer
-    mov ecx, 80 * 25                          ; Number of characters on screen
-    mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
-    rep stosw                                 ; Fill ECX words (AX) into [EDI]
-
     ; Inform protected mode is entered
     mov esi, MSG_PROT_MODE
     call print_32_bits                        ; ESI = pinter to the message
 
     ; Clean general purpose registers from print_string_pm
-    xor eax, eax
     xor ebx, ebx
     xor ecx, ecx
-    xor edx, edx
 
-    ; See if long mode supported
-    call check_CPUID
-    call check_extended_functions
-    call check_long_mode_support 
+    ; Check if long mode is supported
+    call check_CPUID                          ; Esure CPUID instruction is supported
+    call check_extended_functions             ; Esure extended functions are supported
+    call check_long_mode_support              ; Ensure long mode is supported via extended function
 
     ; Enable long mode
-    call set_up_paging
-    call enable_paging
-    jmp dword LONG_CODE_SEG:start_lm   ; You must have a far jump for some reason...
-    ; ; jmp start_lm                     ; Will not work ???
-    ; ; jmp dword CODE_SEG:start_lm      ; Will not work ???
-    ; ; jmp dword null_descriptor:start_lm ; Will not work
+    call set_up_paging                        ; Create page tables
+    call enable_paging                        ; Enable long mode
+    mov eax, [PRINT_STRING_POSSITION]
+    jmp dword LONG_CODE_SEG:start_long_mode   ; You must have a far jump for some reason... (0x80143)
     hlt
     jmp $
 
+    ; jmp start_lm                            ; Will not work ???
+    ; jmp dword CODE_SEG:start_lm             ; Will not work ???
+    ; jmp dword null_descriptor:start_lm      ; Will not work
 
-%include "./src/bootloader/stage1/print_32_bits.asm"
-%include "./src/bootloader/stage1/long_mode.asm"
-%include "./src/bootloader/stage1/cpuid.asm"
-MSG_PROT_MODE      db "Loaded 32-bit protected mode", 0x00
+
+%include "./src/bootloader/stage1/utils_protected_mode.asm"
+MSG_PROT_MODE          db "MODE ENTERED: Protected", 0x00
+PRINT_STRING_POSSITION dd 0xb8000
 
 
 bits 64
 
-VGA_TEXT_BUFFER_ADDR equ 0xb8000
-
-start_lm:
-    ; mov ax, 0
-    ; mov ds, ax
-    ; mov es, ax
-    ; mov fs, ax
-    ; mov gs, ax
-    ; mov ss, ax
-
-    mov edi, 0xB8000                          ; Start of VGA text buffer
-    mov ecx, 80 * 25                          ; Number of characters on screen
-    mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
-    rep stosw                                 ; Fill ECX words (AX) into [EDI]
-
-    mov si, str_hello                        ; Verbose debugging
-    call print_string_64                     ; Verbose debugging
+start_long_mode:
     
-    ; Jump to the kernel
+    ; Set segments to zero to make sure when they are used they don't have garbage 
+    mov [PRINT_STRING_POSSITION], eax
+    mov ax, 0
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+
+    ; Inform long mode was entabled
+    mov esi, long_mode_enabled
+    call print_string_64
+    
+    ; Jump to the kernel_entry.asm
+    mov rax, [PRINT_STRING_POSSITION]         ; Save print string position into RAX
     jmp kernel_load_offset
 
     hlt
     jmp $
 
-%include "./src/bootloader/stage1/64-bit-print.asm"
-str_hello db "Welcome to long mode", 0
-kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset ????
+%include "./src/bootloader/stage1/utils_long_mode.asm"
+long_mode_enabled db "MODE ENTERED: Long", 0
+kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset (stayed the same since)
+                                              ; first 1 GiB was identity mapped (physical = virtual address)
