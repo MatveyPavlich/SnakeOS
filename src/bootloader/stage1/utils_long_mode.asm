@@ -8,8 +8,10 @@ print_string_64:
     push rdi
     push rsi
     push rax
+    xor rax, rax
+    xor rdi, rdi
 
-    mov rdi, VIDEO_MEMORY         ; Start writing at top-left corner of screen
+    mov edi, [PRINT_STRING_POSSITION]         ; Start writing at top-left corner of screen (0x80280)
 
 .print_loop:
     mov al, [rsi]                 ; Load next character
@@ -23,6 +25,8 @@ print_string_64:
     jmp .print_loop
 
 .done:
+    add rdi, 180
+    mov [PRINT_STRING_POSSITION], rdi
     pop rax
     pop rsi
     pop rdi

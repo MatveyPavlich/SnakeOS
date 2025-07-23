@@ -60,7 +60,7 @@ bits 32
 start_pm:
     
     ; Move correct GDT index into segment registers (ds=0x8000 => no such entry in GDT)
-    mov ax, DATA_SEG
+    mov ax, DATA_SEG ; 0x8010f
     mov ds, ax
     mov es, ax
     mov ss, ax
@@ -85,6 +85,7 @@ start_pm:
     ; Enable long mode
     call set_up_paging                        ; Create page tables
     call enable_paging                        ; Enable long mode
+    mov eax, [PRINT_STRING_POSSITION]
     jmp dword LONG_CODE_SEG:start_lm          ; You must have a far jump for some reason...
     hlt
     jmp $
@@ -106,6 +107,7 @@ VGA_TEXT_BUFFER_ADDR equ 0xb8000
 start_lm:
     
     ; Set segments to zero to make sure when they are used they don't have garbage 
+    mov [PRINT_STRING_POSSITION], eax
     mov ax, 0
     mov ds, ax
     mov es, ax
@@ -114,15 +116,16 @@ start_lm:
     mov ss, ax
 
     ; Clear the screen
-    mov edi, 0xB8000                          ; Start of VGA text buffer
-    mov ecx, 80 * 25                          ; Number of characters on screen
-    mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
-    rep stosw                                 ; Fill ECX words (AX) into [EDI]
+    ; mov edi, 0xB8000                          ; Start of VGA text buffer
+    ; mov ecx, 80 * 25                          ; Number of characters on screen
+    ; mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
+    ; rep stosw                                 ; Fill ECX words (AX) into [EDI]
 
     mov si, str_hello                        ; Verbose debugging
     call print_string_64                     ; Verbose debugging
     
     ; Jump to the kernel
+    mov rax, [PRINT_STRING_POSSITION]
     jmp kernel_load_offset
 
     hlt
