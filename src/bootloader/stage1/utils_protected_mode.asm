@@ -8,10 +8,10 @@
 
 print_32_bits:
     push eax
-    push edx
     xor eax, eax
     xor edx, edx
     mov edx, [PRINT_STRING_POSSITION]         ; Video memory position
+    push edx
 
 .print_string_pm_loop:
     mov al, [esi]                             ; [ebx] is the address of our character
@@ -26,12 +26,12 @@ print_32_bits:
     jmp .print_string_pm_loop
 
 .print_string_pm_done:
-    add edx, 180                              ; Increment video memory to the next line
+    pop edx
+    add edx, 160                              ; Increment video memory to the next line
     mov [PRINT_STRING_POSSITION], edx         ; Save next string position
     xor edx, edx
     xor esi, esi
     xor eax, eax
-    pop edx
     pop eax
     ret
 

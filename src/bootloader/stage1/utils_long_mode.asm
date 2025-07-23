@@ -1,6 +1,5 @@
 bits 64
 
-VIDEO_MEMORY    equ 0xb8000
 RED_ON_BLACK    equ 0x0C
 BYTES_PER_CHAR  equ 2
 
@@ -10,8 +9,8 @@ print_string_64:
     push rax
     xor rax, rax
     xor rdi, rdi
-
     mov edi, [PRINT_STRING_POSSITION]         ; Start writing at top-left corner of screen (0x80280)
+    push rdi
 
 .print_loop:
     mov al, [rsi]                 ; Load next character
@@ -25,7 +24,8 @@ print_string_64:
     jmp .print_loop
 
 .done:
-    add rdi, 180
+    pop rdi
+    add rdi, 160
     mov [PRINT_STRING_POSSITION], rdi
     pop rax
     pop rsi
