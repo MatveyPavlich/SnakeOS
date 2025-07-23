@@ -11,7 +11,7 @@
 org 0x80000                                   ; For assembler to organise the code (0x0000 causes issues)
 bits 16                                       ; For assembler to know that should be in 16 bits
 
-main:
+start_stage1_rm:
     
     ; Inform stage1 is loaded
     mov si, MSG_STAGE1                        ; 0x80000 in gdb

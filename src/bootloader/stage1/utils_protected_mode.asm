@@ -28,19 +28,22 @@ print_32_bits:
 
 
 
+
+
+
 ; ===========================| set_up_paging |============================
+; Each table is 4 KiB in size (512 * 8 byte entries) located at a multiple
+; of 4 KiB (i.e., 0x1000) so that each table would start at offset 0 on each
+; page and prevent them spanning > 1 page.
 ; - Input: void
 ; - Output:
 ;   - x, y, z registers are clobbered
 ; ========================================================================
 
-
-; Each table is 4 KiB in size (512 * 8 byte entries)
-page_table_size              equ 4096         ; Size of each table (4KiB size, 0x1000 in hex)
-page_table_l4_address        equ 0x1000       ; L4 table address (4 KiB aligned, meaning starts at a multiple of 4 KiB
-                                              ; which ensures table starts at the beginning of the page and spans 1 page)
-page_table_l3_address        equ 0x2000       ; L3 table address (4 KiB aligned)
-page_table_l2_address        equ 0x3000       ; L2 table address (4 KiB aligned)
+page_table_size              equ 4096         ; Size of each table (= 4KiB = 0x1000)
+page_table_l4_address        equ 0x1000
+page_table_l3_address        equ 0x2000
+page_table_l2_address        equ 0x3000
 
 set_up_paging:
 
@@ -80,6 +83,15 @@ set_up_paging:
         ret
 
 
+
+
+
+; ===========================| enable_paging |============================
+; - Input: void
+; - Output:
+;   - x, y, z registers are clobbered
+; ========================================================================
+
 enable_paging:
     
     ; Pass table location to the cpu
@@ -105,7 +117,7 @@ enable_paging:
     ret
 
 
-; Code adopted from: osdev.org, Setting Up Long Mode, link: https://wiki.osdev.org/Setting_Up_Long_Mode
+
 
 
 ; ===================================| check_CPUID |=========================================
@@ -114,6 +126,7 @@ enable_paging:
 ; Input: void
 ; Output:
 ;   - EAX = 1 if cpuid is supported. 0 if not.
+; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
 ; ===========================================================================================
 
 EFLAGS_ID equ 1 << 21           ; if this bit can be flipped, the CPUID instruction is available
@@ -151,12 +164,17 @@ check_CPUID:
         ret
 
 
+
+
+
+
 ; ============================| check_extended_functions |===================================
 ; Check if CPUID supports extended functions (that detect the presence of long mode). If not,
 ; then CPU likaly does not support the long mode since it can't report on its support
 ; Input: void
 ; Output:
 ;   - EAX = 1 if CPUID supports extended functions. 0 if not.
+; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
 ; ===========================================================================================
 
 CPUID_EXTENSIONS equ 0x80000000 ; returns the maximum extended requests for cpuid
@@ -178,9 +196,19 @@ check_extended_functions:
         xor eax, eax
         mov eax, 0
         ret
-    
 
 
+
+
+
+
+; ============================| check_long_mode_support |===================================
+; Check if CPU supports long mode using extended functions of the cpuid instruction.
+; Input: void
+; Output:
+;   - EAX = 1 if CPUID supports extended functions. 0 if not.
+; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
+; ===========================================================================================
 
 CPUID_EDX_EXT_FEAT_LM equ 1 << 29   ; if this is set, the CPU supports long mode
 
@@ -193,11 +221,11 @@ check_long_mode_support:
 
     .long_mode_supported:
         xor eax, eax
-        mov eax, 1
+        mov eax, 1                ; Return 1 if long mode not supported
         ret
     
     .long_mode_not_supported:
         xor eax, eax
-        mov eax, 0
+        mov eax, 0                ; Return zero if long mode not supported
         ret
 
