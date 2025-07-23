@@ -187,14 +187,18 @@ check_CPUID:
     jnz .supported
 
     .not_supported:
-        xor eax, eax
-        mov al, 0
-        ret
+        mov esi, MSG_CPUID_NOT_SUPP
+        call print_32_bits
+        hlt
+        jmp $
 
     .supported:
-        xor eax, eax
-        mov al, 1
+        mov esi, MSG_CPUID_SUPP
+        call print_32_bits
         ret
+
+    MSG_CPUID_SUPP db "SUCCESS: CPUID supported. Checking extended functions support.", 0x00
+    MSG_CPUID_NOT_SUPP db "ERROR: CPUID not supported. Can't check long mode support. System halted.", 0x00
 
 
 
@@ -221,15 +225,18 @@ check_extended_functions:
     jb .extended_functions_not_supported             
 
     .extended_functions_supported:
-        xor eax, eax
-        mov eax, 1
+        mov esi, MSG_EXT_FUNC_SUPP
+        call print_32_bits
         ret
     
     .extended_functions_not_supported:
-        xor eax, eax
-        mov eax, 0
-        ret
+        mov esi, MSG_EXT_FUNC_NOT_SUPP
+        call print_32_bits
+        hlt
+        jmp $
 
+    MSG_EXT_FUNC_SUPP db "SUCCESS: Extended functions supported by CPUID. Checking long mode support.", 0x00
+    MSG_EXT_FUNC_NOT_SUPP db "ERROR: Extended functions not supported by CPUID. Can't check long mode support. System halted.", 0x00
 
 
 
