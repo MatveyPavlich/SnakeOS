@@ -253,12 +253,15 @@ check_long_mode_support:
     jz .long_mode_not_supported
 
     .long_mode_supported:
-        xor eax, eax
-        mov eax, 1                ; Return 1 if long mode not supported
+        mov esi, MSG_LONG_SUPP
+        call print_32_bits
         ret
     
     .long_mode_not_supported:
-        xor eax, eax
-        mov eax, 0                ; Return zero if long mode not supported
-        ret
+        mov esi, MSG_LONG_NOT_SUPP
+        call print_32_bits
+        hlt
+        jmp $
 
+    MSG_LONG_SUPP db "SUCCESS: Long mode supported. Setting up paging.", 0x00
+    MSG_LONG_NOT_SUPP db "ERROR: Long mode not supported. System halted.", 0x00

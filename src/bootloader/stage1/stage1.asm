@@ -102,8 +102,6 @@ PRINT_STRING_POSSITION dd 0xb8000
 
 bits 64
 
-VGA_TEXT_BUFFER_ADDR equ 0xb8000
-
 start_lm:
     
     ; Set segments to zero to make sure when they are used they don't have garbage 
