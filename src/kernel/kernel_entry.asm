@@ -8,7 +8,7 @@ extern main
 kernel_entry:
     mov [PRINT_STRING_POSSITION], rax                    ; Save line 
     mov esi, MSG_KERNEL
-    call print_string_64
+    call print_64_bits
     ; call main
     hlt
     jmp $

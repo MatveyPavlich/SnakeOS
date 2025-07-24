@@ -64,7 +64,7 @@ start_protected_mode:
 
     ; Inform protected mode is entered
     mov esi, MSG_PROT_MODE
-    call print_32_bits                        ; ESI = pinter to the message
+    call print_32_bits                        ; ESI = pointer to the message; PRINT_STRING_POSSITION = video memory address
 
     ; Clean general purpose registers from print_string_pm
     xor ebx, ebx
@@ -107,12 +107,12 @@ start_long_mode:
     mov ss, ax
 
     ; Inform long mode was entabled
-    mov esi, long_mode_enabled
-    call print_string_64
+    mov rsi, long_mode_enabled
+    call print_64_bits                        ; RSI = string address; PRINT_STRING_POSSITION = video memory address
     
     ; Jump to the kernel_entry.asm
-    mov rax, [PRINT_STRING_POSSITION]         ; Save print string position into RAX
-    jmp kernel_load_offset
+    mov eax, [PRINT_STRING_POSSITION]         ; Save print string position into RAX (was initiated in protected mode => 32 bits, must use eax)
+    jmp kernel_load_offset                    ; Jump to the keranel loaded by stage1. Address is the same since first 1 GiB was identity mapped (physical = virtual address)
 
     hlt
     jmp $
@@ -120,4 +120,4 @@ start_long_mode:
 %include "./src/bootloader/stage1/utils_long_mode.asm"
 long_mode_enabled db "MODE ENTERED: Long", 0
 kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset (stayed the same since)
-                                              ; first 1 GiB was identity mapped (physical = virtual address)
+                                              
