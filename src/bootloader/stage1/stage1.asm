@@ -67,8 +67,8 @@ start_protected_mode:
     call print_32_bits                        ; ESI = pointer to the message; PRINT_STRING_POSSITION = video memory address
 
     ; Clean general purpose registers from print_string_pm
-    xor ebx, ebx
-    xor ecx, ecx
+    ; xor ebx, ebx
+    ; xor ecx, ecx
 
     ; Check if long mode is supported
     call check_CPUID                          ; Esure CPUID instruction is supported

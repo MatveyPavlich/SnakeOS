@@ -1,27 +1,32 @@
-; ===========================| Print_32_bits |============================
+; ===========================| Print_64_bits |============================
 ; Input:
 ;   - ESI = pointer to the string
+;   - PRINT_STRING_POSSITION = byte for the string start (will be moved to RDI)
 ; Output:
 ;   - Save next address to print the string into PRINT_STRING_POSSITION
 ;   - ESI is cleaned to 0. Everything else in untouched
 ; ==============================================================
 
+RED_ON_BLACK    equ 0x0C
+BYTES_PER_CHAR  equ 2
+
 print_32_bits:
     push eax
+    push edx
     xor eax, eax
     xor edx, edx
     mov edx, [PRINT_STRING_POSSITION]         ; Video memory position
-    push edx
+    push edx                                  ; Save original PRINT_STRING_POSSITION to add +160 for printing on the next line
 
 .print_string_pm_loop:
     mov al, [esi]                             ; [ebx] is the address of our character
-    mov ah, 0x0C                              ; Add red on black colour
+    mov ah, RED_ON_BLACK                      ; Add red on black colour
     cmp al, 0                                 ; check if end of string
     je .print_string_pm_done
 
     mov [edx], ax                             ; store character + attribute in video memory
-    add esi, 1                                ; next char
-    add edx, 2                                ; next video memory position
+    add esi, 1                                ; Move to the next character to print in the string
+    add edx, BYTES_PER_CHAR                   ; Move to the next video memory position
 
     jmp .print_string_pm_loop
 
@@ -32,8 +37,134 @@ print_32_bits:
     xor edx, edx
     xor esi, esi
     xor eax, eax
+    pop edx
     pop eax
     ret
+
+
+
+
+
+; ===================================| check_CPUID |=========================================
+; Checks if CPUID is supported by attempting to flip the ID bit (bit 21) in the EFLAGS
+; register. If it can be flipped then CPUID is available.
+; Input: void
+; Output:
+;   - Print 'SUCCESS' message if supported. 'FAIL' message + halt if not.
+; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
+; ===========================================================================================
+
+EFLAGS_ID equ 1 << 21           ; if this bit can be flipped, the CPUID instruction is available
+
+check_CPUID:
+    
+    ; Move EFLAGS to EAX, flip bit 21, load EFLAGS back to flags register 
+    pushfd                                        ; Save current EFLAGS onto the stack
+    pop eax                                       ; Move saved EFLAGS into EAX
+    mov ecx, eax                                  ; Save original EFLAGS in ECX for later comparison (+ restoration)
+    xor eax, EFLAGS_ID                            ; Flip bit 21 in EAX (i.e. EFLAGS)
+    push eax                                      ; Save the modified FLAGS value to the stack
+    popfd                                         ; Load that value into the actual FLAGS register
+
+    ; Check if bit 21 was sucessfully flipped in EFLAGS
+    pushfd                                        ; Save the FLAGS register (to push into EAX)
+    pop eax                                       ; Load the possibly modified FLAGS back into EAX
+
+    ; Restore EFLAGS to its original value before comparing
+    push ecx
+    popfd
+
+    ; Compare old vs new flags
+    xor eax, ecx                                  ; EAX != ECX if the bit was SUCCESSFULfully flipped. CPUID is supported.
+    jnz .supported
+
+    .not_supported:
+        mov esi, MSG_CPUID_NOT_SUPP
+        call print_32_bits
+        hlt
+        jmp $
+
+    .supported:
+        mov esi, MSG_CPUID_SUPP
+        call print_32_bits
+        ret
+
+    MSG_CPUID_SUPP db "SUCCESSFUL: CPUID supported. Checking extended functions support...", 0x00
+    MSG_CPUID_NOT_SUPP db "ERROR: CPUID not supported. Can't check long mode support. System halted.", 0x00
+
+
+
+
+
+
+; ============================| check_extended_functions |===================================
+; Check if CPUID supports extended functions (that detect the presence of long mode). If not,
+; then CPU likaly does not support the long mode since it can't report on its support
+; Input: void
+; Output:
+;   - Print 'SUCCESS' message if supported. 'FAIL' message + halt if not.
+; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
+; ===========================================================================================
+
+CPUID_EXTENSIONS equ 0x80000000 ; returns the maximum extended requests for cpuid
+CPUID_EXT_FEATURES equ 0x80000001 ; returns flags containing long mode support among other things
+
+check_extended_functions:
+
+    mov eax, CPUID_EXTENSIONS
+    cpuid
+    cmp eax, CPUID_EXT_FEATURES
+    jb .extended_functions_not_supported             
+
+    .extended_functions_supported:
+        mov esi, MSG_EXT_FUNC_SUPP
+        call print_32_bits
+        ret
+    
+    .extended_functions_not_supported:
+        mov esi, MSG_EXT_FUNC_NOT_SUPP
+        call print_32_bits
+        hlt
+        jmp $
+
+    MSG_EXT_FUNC_SUPP db "SUCCESSFUL: CPUID supports extended functions. Checking long mode support...", 0x00
+    MSG_EXT_FUNC_NOT_SUPP db "ERROR: Extended functions not supported by CPUID. Can't check long mode support. System halted.", 0x00
+
+
+
+
+
+; ============================| check_long_mode_support |===================================
+; Check if CPU supports long mode using extended functions of the cpuid instruction.
+; Input: void
+; Output:
+;   - Print 'SUCCESS' message if supported. 'FAIL' message + halt if not.
+; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
+; ===========================================================================================
+
+CPUID_EDX_EXT_FEAT_LM equ 1 << 29   ; if this is set, the CPU supports long mode
+
+check_long_mode_support:
+
+    mov eax, CPUID_EXT_FEATURES
+    cpuid
+    test edx, CPUID_EDX_EXT_FEAT_LM
+    jz .long_mode_not_supported
+
+    .long_mode_supported:
+        mov esi, MSG_LONG_SUPP
+        call print_32_bits
+        ret
+    
+    .long_mode_not_supported:
+        mov esi, MSG_LONG_NOT_SUPP
+        call print_32_bits
+        hlt
+        jmp $
+
+    MSG_LONG_SUPP db "SUCCESSFUL: Long mode supported. Setting up paging...", 0x00
+    MSG_LONG_NOT_SUPP db "ERROR: Long mode not supported. System halted.", 0x00
+
 
 
 
@@ -123,127 +254,3 @@ enable_paging:
     mov cr0, eax
 
     ret
-
-
-
-
-
-; ===================================| check_CPUID |=========================================
-; Checks if CPUID is supported by attempting to flip the ID bit (bit 21) in the EFLAGS
-; register. If it can be flipped then CPUID is available.
-; Input: void
-; Output:
-;   - EAX = 1 if cpuid is supported. 0 if not.
-; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
-; ===========================================================================================
-
-EFLAGS_ID equ 1 << 21           ; if this bit can be flipped, the CPUID instruction is available
-
-check_CPUID:
-    
-    ; Move EFLAGS to EAX, flip bit 21, load EFLAGS back to flags register 
-    pushfd                                        ; Save current EFLAGS onto the stack
-    pop eax                                       ; Move saved EFLAGS into EAX
-    mov ecx, eax                                  ; Save original EFLAGS in ECX for later comparison (+ restoration)
-    xor eax, EFLAGS_ID                            ; Flip bit 21 in EAX (i.e. EFLAGS)
-    push eax                                      ; Save the modified FLAGS value to the stack
-    popfd                                         ; Load that value into the actual FLAGS register
-
-    ; Check if bit 21 was sucessfully flipped in EFLAGS
-    pushfd                                        ; Save the FLAGS register (to push into EAX)
-    pop eax                                       ; Load the possibly modified FLAGS back into EAX
-
-    ; Restore EFLAGS to its original value before comparing
-    push ecx
-    popfd
-
-    ; Compare old vs new flags
-    xor eax, ecx                                  ; EAX != ECX if the bit was SUCCESSFULfully flipped. CPUID is supported.
-    jnz .supported
-
-    .not_supported:
-        mov esi, MSG_CPUID_NOT_SUPP
-        call print_32_bits
-        hlt
-        jmp $
-
-    .supported:
-        mov esi, MSG_CPUID_SUPP
-        call print_32_bits
-        ret
-
-    MSG_CPUID_SUPP db "SUCCESSFUL: CPUID supported. Checking extended functions support...", 0x00
-    MSG_CPUID_NOT_SUPP db "ERROR: CPUID not supported. Can't check long mode support. System halted.", 0x00
-
-
-
-
-
-
-; ============================| check_extended_functions |===================================
-; Check if CPUID supports extended functions (that detect the presence of long mode). If not,
-; then CPU likaly does not support the long mode since it can't report on its support
-; Input: void
-; Output:
-;   - EAX = 1 if CPUID supports extended functions. 0 if not.
-; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
-; ===========================================================================================
-
-CPUID_EXTENSIONS equ 0x80000000 ; returns the maximum extended requests for cpuid
-CPUID_EXT_FEATURES equ 0x80000001 ; returns flags containing long mode support among other things
-
-check_extended_functions:
-
-    mov eax, CPUID_EXTENSIONS
-    cpuid
-    cmp eax, CPUID_EXT_FEATURES
-    jb .extended_functions_not_supported             
-
-    .extended_functions_supported:
-        mov esi, MSG_EXT_FUNC_SUPP
-        call print_32_bits
-        ret
-    
-    .extended_functions_not_supported:
-        mov esi, MSG_EXT_FUNC_NOT_SUPP
-        call print_32_bits
-        hlt
-        jmp $
-
-    MSG_EXT_FUNC_SUPP db "SUCCESSFUL: CPUID supports extended functions. Checking long mode support...", 0x00
-    MSG_EXT_FUNC_NOT_SUPP db "ERROR: Extended functions not supported by CPUID. Can't check long mode support. System halted.", 0x00
-
-
-
-
-
-; ============================| check_long_mode_support |===================================
-; Check if CPU supports long mode using extended functions of the cpuid instruction.
-; Input: void
-; Output:
-;   - EAX = 1 if CPUID supports extended functions. 0 if not.
-; Adopted from: osdev.org, Setting Up Long Mode, https://wiki.osdev.org/Setting_Up_Long_Mode
-; ===========================================================================================
-
-CPUID_EDX_EXT_FEAT_LM equ 1 << 29   ; if this is set, the CPU supports long mode
-
-check_long_mode_support:
-
-    mov eax, CPUID_EXT_FEATURES
-    cpuid
-    test edx, CPUID_EDX_EXT_FEAT_LM
-    jz .long_mode_not_supported
-
-    .long_mode_supported:
-        mov esi, MSG_LONG_SUPP
-        call print_32_bits
-        ret
-    
-    .long_mode_not_supported:
-        mov esi, MSG_LONG_NOT_SUPP
-        call print_32_bits
-        hlt
-        jmp $
-
-    MSG_LONG_SUPP db "SUCCESSFUL: Long mode supported. Setting up paging...", 0x00
-    MSG_LONG_NOT_SUPP db "ERROR: Long mode not supported. System halted.", 0x00

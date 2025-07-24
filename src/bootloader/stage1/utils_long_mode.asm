@@ -1,6 +1,6 @@
 ; ===========================| Print_64_bits |============================
 ; Input:
-;   - ESI = pointer to the string
+;   - RSI = pointer to the string (should be 64 bits register since paging is on)
 ;   - PRINT_STRING_POSSITION = byte for the string start (will be moved to RDI)
 ; Output:
 ;   - Save next address to print the string into PRINT_STRING_POSSITION
