@@ -1,18 +1,19 @@
-org 0x90000
+; org 0x90000
 bits 64
 
 global kernel_entry
-global print_string_64
+global print_64_bits
 extern main
+
+PRINT_STRING_POSSITION dq 0                              ; Position for the next string                              
 
 kernel_entry:
     mov [PRINT_STRING_POSSITION], rax                    ; Save line 
-    mov esi, MSG_KERNEL
+    mov rdi, MSG_KERNEL
     call print_64_bits
-    ; call main
+    call main
     hlt
     jmp $
 
 %include "./src/bootloader/stage1/utils_long_mode.asm"
 MSG_KERNEL db "SUCCESSFUL: Kernel entry loaded. Loading the kernel...", 0x00
-PRINT_STRING_POSSITION dw 0

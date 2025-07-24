@@ -103,7 +103,7 @@ start_long_mode:
     mov ss, ax
 
     ; Inform long mode was entabled
-    mov rsi, long_mode_enabled
+    mov rdi, long_mode_enabled
     call print_64_bits                        ; RSI = string address; PRINT_STRING_POSSITION = video memory address
     
     ; Jump to the kernel_entry.asm
