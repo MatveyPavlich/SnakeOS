@@ -53,7 +53,7 @@ bits 32
 start_protected_mode:
     
     ; Move correct GDT index into segment registers (ds=0x8000 => no such entry in GDT)
-    mov ax, DATA_SEG ; 0x8010f
+    mov ax, DATA_SEG                          ; 0x8010f
     mov ds, ax
     mov es, ax
     mov ss, ax
@@ -65,10 +65,6 @@ start_protected_mode:
     ; Inform protected mode is entered
     mov esi, MSG_PROT_MODE
     call print_32_bits                        ; ESI = pointer to the message; PRINT_STRING_POSSITION = video memory address
-
-    ; Clean general purpose registers from print_string_pm
-    ; xor ebx, ebx
-    ; xor ecx, ecx
 
     ; Check if long mode is supported
     call check_CPUID                          ; Esure CPUID instruction is supported
