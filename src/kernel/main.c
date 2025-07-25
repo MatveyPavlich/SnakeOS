@@ -1,11 +1,13 @@
 // main.c
-void print_string_64(const char* str);
+/*
+    With -m64 gcc flag, function arguments are as follows:
+    (1) RDI (2) RSI (3) RDX (4) RCX (5) R8 (6) R9
 
-void kernel_main() {
-    print_string_64("Hello from C kernel!\0");
+*/
 
-    // Halt forever
-    while (1) {
-        __asm__ __volatile__("hlt");
-    }
+extern void print_64_bits(const char* str);
+
+void main() {
+    print_64_bits("Hello from C!\0");
+    while (1) __asm__("hlt");
 }

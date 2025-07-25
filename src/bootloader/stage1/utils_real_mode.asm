@@ -102,13 +102,13 @@ gdt_start:
         db 11001111b                          ; flags (4 bits) + last 4 bits of limit
         db 0x0                                ; segment base, bits 24-31
 
-    ; LIMIT = BASE = 0 since ignored
+    ; LIMIT = BASE = 0 since ignored.
     .long_mode_code_descriptor:
         dw 0x0000                             ; Limit (ignored)
         dw 0x0000                             ; Base[15:0]
         db 0x00                               ; Base[23:16]
         db 10011010b                          ; Access: exec/read, present
-        db 00100000b                          ; Flags: L=1, D=0
+        db 00100000b                          ; Have a flag for a 64-bit mode
         db 0x00                               ; Base[31:24]
 
     CODE_SEG equ .code_descriptor - gdt_start ; Offset to the code segment (will be 8 bytes)    
