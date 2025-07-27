@@ -4,8 +4,8 @@ LD=ld
 SRC_DIR=src
 BUILD_DIR=build
 
-CFLAGS=-ffreestanding -m64 -nostdlib -O2 -Wall
-LDFLAGS=-T $(SRC_DIR)/kernel/kernel.ld -nostdlib -z max-page-size=0x1000
+CFLAGS = -ffreestanding -m64 -nostdlib -O2 -Wall -Isrc/kernel/intf
+LDFLAGS=-T $(SRC_DIR)/kernel/impl/kernel.ld -nostdlib -z max-page-size=0x1000
 
 # Floppy disk
 floppy_image: $(BUILD_DIR)/main.img
@@ -28,14 +28,18 @@ $(BUILD_DIR)/stage1.bin:
 
 # Kernel
 kernel: $(BUILD_DIR)/kernel.bin
-$(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/main.o $(SRC_DIR)/kernel/kernel.ld
-	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/kernel.bin $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/main.o
+$(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/main.o $(BUILD_DIR)/print.o $(SRC_DIR)/kernel/impl/kernel.ld
+	$(LD) $(LDFLAGS) -o $(BUILD_DIR)/kernel.bin $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/main.o $(BUILD_DIR)/print.o
 
-$(BUILD_DIR)/kernel_entry.o: $(SRC_DIR)/kernel/kernel_entry.asm
+$(BUILD_DIR)/kernel_entry.o: $(SRC_DIR)/kernel/impl/kernel_entry.asm
 	$(ASM) -f elf64 $< -o $@
 
-$(BUILD_DIR)/main.o: $(SRC_DIR)/kernel/main.c
+$(BUILD_DIR)/main.o: $(SRC_DIR)/kernel/impl/main.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/print.o: $(SRC_DIR)/kernel/impl/print.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 
 # Run
 run:
