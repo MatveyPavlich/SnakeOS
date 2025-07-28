@@ -11,6 +11,6 @@ extern void print_64_bits(const char* str);
 
 void main() {
     print_64_bits("Hello from C!\0");
-    print_clear();
+    print_clear();            // Broken
     while (1) __asm__("hlt");
 }
