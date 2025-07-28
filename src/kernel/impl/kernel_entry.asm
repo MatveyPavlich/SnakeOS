@@ -1,9 +1,9 @@
-; org 0x90000
+; Loaded at 0x90000
 bits 64
 
 global kernel_entry
 global print_64_bits
-extern main
+extern kmain
 
 PRINT_STRING_POSSITION dq 0                              ; Position for the next string                              
 
@@ -11,7 +11,7 @@ kernel_entry:
     mov [PRINT_STRING_POSSITION], rax                    ; Save line 
     mov rdi, MSG_KERNEL
     call print_64_bits
-    call main
+    call kmain
     hlt
     jmp $
 

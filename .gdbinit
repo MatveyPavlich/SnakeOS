@@ -7,6 +7,8 @@ layout asm
 break *0x7c00
 continue
 stepi
+br* kmain
+continue
 
 define restart
     disconnect
