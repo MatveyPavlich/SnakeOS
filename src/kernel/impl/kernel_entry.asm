@@ -8,10 +8,17 @@ extern kmain
 PRINT_STRING_POSSITION dq 0                              ; Position for the next string                              
 
 kernel_entry:
+    
+    ; Inform kerenel entry is entered
     mov [PRINT_STRING_POSSITION], rax                    ; Save line 
+    xor eax, eax
     mov rdi, MSG_KERNEL
     call print_64_bits
+    
+    ; Jump into C
     call kmain
+    
+    ; Fall through to halt (should never reach it)
     hlt
     jmp $
 
