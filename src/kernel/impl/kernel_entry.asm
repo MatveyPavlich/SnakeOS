@@ -16,7 +16,7 @@ kernel_entry:
     call print_64_bits
     
     ; Jump into C
-    call kmain
+    jmp kmain                                            ; Don't use CALL cause it will save return address on the stack => stack will start in the different place for kmain
     
     ; Fall through to halt (should never reach it)
     hlt
