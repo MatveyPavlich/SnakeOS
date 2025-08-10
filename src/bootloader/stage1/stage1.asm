@@ -65,6 +65,7 @@ start_protected_mode:
     ; Inform protected mode is entered
     mov esi, MSG_PROT_MODE
     call print_32_bits                        ; ESI = pointer to the message; PRINT_STRING_POSSITION = video memory address
+    xor esi, esi
 
     ; Check if long mode is supported
     call check_CPUID                          ; Esure CPUID instruction is supported
@@ -75,6 +76,7 @@ start_protected_mode:
     call set_up_paging                        ; Create page tables
     call enable_paging                        ; Enable long mode
     mov eax, [PRINT_STRING_POSSITION]
+    xor ecx, ecx                              ; Garbaging ecx somewhere 
     jmp dword LONG_CODE_SEG:start_long_mode   ; You must have a far jump for some reason... (0x80143)
     hlt
     jmp $
@@ -104,7 +106,7 @@ start_long_mode:
 
     ; Inform long mode was entabled
     mov rdi, long_mode_enabled
-    call print_64_bits                        ; RSI = string address; PRINT_STRING_POSSITION = video memory address
+    call print_64_bits                        ; RDI = string address; PRINT_STRING_POSSITION = video memory address
     
     ; Jump to the kernel_entry.asm
     mov eax, [PRINT_STRING_POSSITION]         ; Save print string position into RAX (was initiated in protected mode => 32 bits, must use eax)

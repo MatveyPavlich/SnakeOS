@@ -1,17 +1,24 @@
-; org 0x90000
+; Loaded at 0x90000
 bits 64
 
 global kernel_entry
 global print_64_bits
-extern main
+extern kmain
 
 PRINT_STRING_POSSITION dq 0                              ; Position for the next string                              
 
 kernel_entry:
+    
+    ; Inform kerenel entry is entered
     mov [PRINT_STRING_POSSITION], rax                    ; Save line 
+    xor eax, eax
     mov rdi, MSG_KERNEL
     call print_64_bits
-    call main
+    
+    ; Jump into C
+    jmp kmain                                            ; Don't use CALL cause it will save return address on the stack => stack will start in the different place for kmain
+    
+    ; Fall through to halt (should never reach it)
     hlt
     jmp $
 
