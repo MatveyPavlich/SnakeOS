@@ -4,6 +4,12 @@
 3. Link together - WIP
 
 New plan (enter long mode):
-1. Detect the presence of the long mode
-2. Set up paging
-3. Enter long mode
+1. Detect the presence of the long mode - done
+2. Set up paging - done
+3. Enter long mode - done
+
+Plan for C:
+1. Create IDT
+2. Create file system drivers to be able to read from disk
+3. Set up graphics card
+4. Do double buffering
