@@ -7,6 +7,7 @@ BUILD_DIR=build
 
 CFLAGS = -ffreestanding -m64 -nostdlib -O0 -Wall -g -Isrc/kernel/intf
 # Note! -O0 removes optimisations to easier debug
+# Commit a4214a854972e04ffb38ac2af53b898a47688990: code breaks with "-O2" flag (i.e., when compiler starts to optimise the code) 
 LDFLAGS=-T $(SRC_DIR)/kernel/impl/kernel.ld -nostdlib -z max-page-size=0x200000
 
 # === Phony targets ===
