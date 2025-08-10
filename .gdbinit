@@ -9,6 +9,7 @@ continue
 stepi
 br* kmain
 continue
+layout split
 
 define restart
     disconnect

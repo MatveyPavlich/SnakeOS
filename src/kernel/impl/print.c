@@ -1,5 +1,4 @@
 // print.c
-
 #include "print.h"
 #include "stdint.h"
 #include "stddef.h"
@@ -7,18 +6,18 @@
 const static size_t NUM_COLS = 80;
 const static size_t NUM_ROWS = 25;
 
-struct Char {
+typedef struct {
     uint8_t character;
     uint8_t color;
-};
+} Char;
 
-struct Char* buffer = (struct Char*) 0xb8000;
+Char* buffer = (Char*) 0xb8000;
 size_t col = 0;
 size_t row = 0;
 uint8_t color = PRINT_COLOR_WHITE | PRINT_COLOR_BLACK << 4;
 
 void clear_row(size_t row) {
-    struct Char empty = (struct Char) {
+    Char empty = (Char) {
         character: ' ',
         color: color,
     };
@@ -45,7 +44,7 @@ void print_newline() {
 
     for (size_t row = 1; row < NUM_ROWS; row++) {
         for (size_t col = 0; col < NUM_COLS; col++) {
-            struct Char character = buffer[col + NUM_COLS * row];
+            Char character = buffer[col + NUM_COLS * row];
             buffer[col + NUM_COLS * (row - 1)] = character;
         }
     }
@@ -63,7 +62,7 @@ void print_char(char character) {
         print_newline();
     }
 
-    buffer[col + NUM_COLS * row] = (struct Char) {
+    buffer[col + NUM_COLS * row] = (Char) {
         character: (uint8_t) character,
         color: color,
     };

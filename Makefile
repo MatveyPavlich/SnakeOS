@@ -5,7 +5,7 @@ LD=ld
 SRC_DIR=src
 BUILD_DIR=build
 
-CFLAGS = -ffreestanding -m64 -nostdlib -O0 -O2 -Wall -g -Isrc/kernel/intf
+CFLAGS = -ffreestanding -m64 -nostdlib -O0 -Wall -g -Isrc/kernel/intf
 # Note! -O0 removes optimisations to easier debug
 LDFLAGS=-T $(SRC_DIR)/kernel/impl/kernel.ld -nostdlib -z max-page-size=0x200000
 
