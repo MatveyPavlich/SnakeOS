@@ -1,25 +1,29 @@
 // print.c
-#include "print.h"
 #include "stdint.h"
 #include "stddef.h"
+
+enum {
+    PRINT_COLOUR_BLACK = 0,
+	PRINT_COLOUR_WHITE = 15,
+};
 
 const static size_t NUM_COLS = 80;
 const static size_t NUM_ROWS = 25;
 
 typedef struct {
     uint8_t character;
-    uint8_t color;
+    uint8_t colour;
 } Char;
 
 Char* buffer = (Char*) 0xb8000;
 size_t col = 0;
 size_t row = 0;
-uint8_t color = PRINT_COLOR_WHITE | PRINT_COLOR_BLACK << 4;
+uint8_t colour = PRINT_COLOUR_WHITE | PRINT_COLOUR_BLACK << 4;
 
 void clear_row(size_t row) {
     Char empty = (Char) {
         character: ' ',
-        color: color,
+        colour: colour,
     };
 
     for (size_t col = 0; col < NUM_COLS; col++) {
@@ -64,7 +68,7 @@ void print_char(char character) {
 
     buffer[col + NUM_COLS * row] = (Char) {
         character: (uint8_t) character,
-        color: color,
+        colour: colour,
     };
 
     col++;
@@ -80,8 +84,4 @@ void print_str(char* str) {
 
         print_char(character);
     }
-}
-
-void print_set_color(uint8_t foreground, uint8_t background) {
-    color = foreground + (background << 4);
 }

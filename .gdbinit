@@ -6,4 +6,13 @@ add-symbol-file build/kernel.elf 0x90000
 layout asm
 break *0x7c00
 continue
+stepi
+br* kmain
+continue
+layout split
 
+define restart
+    disconnect
+    shell pkill -f qemu-system-x86_64
+    shell sleep 0.5 && ./debug.sh
+end
