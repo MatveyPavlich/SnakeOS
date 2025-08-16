@@ -29,9 +29,9 @@ main:
 
 
 
-%include "./src/utils/boot_sect_print.asm"
-%include "./src/utils/ensure_a20.asm"
-%include "./src/utils/gdt.asm"
+%include "./src/bootloader/utils/boot_sect_print.asm"
+%include "./src/bootloader/utils/ensure_a20.asm"
+%include "./src/bootloader/utils/gdt.asm"
 MSG_REAL_MODE db "RM", 0xD, 0xA, 0x00
 
 
@@ -69,8 +69,8 @@ start_pm:
     ; ; jmp dword CODE_SEG:start_lm      ; Will not work ???
     ; ; jmp dword null_descriptor:start_lm ; Will not work
 
-%include "./src/utils/long_mode.asm"
-%include "./src/utils/cpuid.asm"
+%include "./src/bootloader/utils/long_mode.asm"
+%include "./src/bootloader/utils/cpuid.asm"
 
 ; Verbose debugging
 ; %include "./src/utils/32bit-print.asm"
