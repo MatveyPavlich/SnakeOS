@@ -1,7 +1,7 @@
 #!/bin/bash
-PROJECT_DIR=~/repos/SnakeOS/trial_bootloader
-# QEMU_BIN=~/qemu-patched/bin/qemu-system-i386 # For real mode debugging (make sure to adjust gdb "set architecture" line)
-QEMU_BIN=qemu-system-i386                      # For protected mode debuggin (not patched, meaning no segment:offset)
+PROJECT_DIR=~/repos/SnakeOS/mini-os
+QEMU_BIN=~/qemu-patched/bin/qemu-system-i386 # For real mode debugging (make sure to adjust gdb "set architecture" line)
+# QEMU_BIN=qemu-system-i386                      # For protected mode debuggin (not patched, meaning no segment:offset)
 # QEMU_BIN=qemu-system-x86_64                  # For long mode (x86_64 architecture)
 
 # Move terminal window and QEMU into workspace 4

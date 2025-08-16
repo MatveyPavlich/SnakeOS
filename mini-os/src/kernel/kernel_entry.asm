@@ -1,0 +1,24 @@
+; Loaded at 0x80000
+bits 64
+
+global kernel_entry
+global print_string_64
+; extern kmain
+
+PRINT_STRING_POSSITION dq 0                              ; Position for the next string                              
+
+kernel_entry:
+    
+    ; Inform kerenel entry is entered
+    mov rsi, MSG_KERNEL
+    call print_string_64
+    
+    ; Jump into C
+    ; jmp kmain                                            ; Don't use CALL cause it will save return address on the stack => stack will start in the different place for kmain
+    
+    ; Fall through to halt (should never reach it)
+    hlt
+    jmp $
+
+%include "./src/bootloader/stage1/utils_long_mode.asm"
+MSG_KERNEL db "SUCCESSFUL: Kernel entry loaded. Loading the kernel...", 0x00

@@ -11,11 +11,13 @@ main:
     mov ds, ax
     mov es, ax
     mov ss, ax
+    mov sp, 0x7C00
 
     ; Debug message
     mov si, MSG_REAL_MODE
     call print
-    call ensure_a20                           ; Make sure A20 is enabled
+    ; call ensure_a20                           ; Make sure A20 is enabled (removed to save some space)
+    call disk_read
 
     ; Switch to protected mode
     cli                                       ; Disable BIOS interrupts (0x7c17)
@@ -27,10 +29,8 @@ main:
     hlt                                       ; In theory should never reach here
     jmp $
 
-
-
-%include "./src/bootloader/utils/boot_sect_print.asm"
-%include "./src/bootloader/utils/ensure_a20.asm"
+%include "./src/bootloader/utils/16-bit-utils.asm"
+; %include "./src/bootloader/utils/ensure_a20.asm"
 %include "./src/bootloader/utils/gdt.asm"
 MSG_REAL_MODE db "RM", 0xD, 0xA, 0x00
 
@@ -56,10 +56,10 @@ start_pm:
     xor ecx, ecx
     xor edx, edx
 
-    ; See if long mode supported
-    call check_CPUID
-    call check_extended_functions
-    call check_long_mode_support 
+    ; ; See if long mode supported (Commented out due to not enough space)
+    ; call check_CPUID
+    ; call check_extended_functions
+    ; call check_long_mode_support 
 
     ; Enable long mode
     call set_up_paging
@@ -70,7 +70,7 @@ start_pm:
     ; ; jmp dword null_descriptor:start_lm ; Will not work
 
 %include "./src/bootloader/utils/long_mode.asm"
-%include "./src/bootloader/utils/cpuid.asm"
+; %include "./src/bootloader/utils/cpuid.asm"
 
 ; Verbose debugging
 ; %include "./src/utils/32bit-print.asm"
@@ -79,6 +79,7 @@ start_pm:
 
 bits 64
 
+%define KERNEL_LOAD_OFFSET 0x90000
 VGA_TEXT_BUFFER_ADDR equ 0xb8000
 
 start_lm:
@@ -98,6 +99,8 @@ start_lm:
     ; call print_string_64                    ; Verbose debugging
     mov word [VGA_TEXT_BUFFER_ADDR], 0x0C4C
     mov word [VGA_TEXT_BUFFER_ADDR + 2], 0x0C4D
+    mov rsp, 0x90000                          ; Set stack to grow below the code
+    jmp KERNEL_LOAD_OFFSET
     hlt
     jmp $
 
@@ -105,5 +108,5 @@ start_lm:
 ; str_hello db "Long mode", 0
 
 
-times 510-($-$$) db 0
-dw 0xaa55
+TIMES 510-($-$$) db 0
+dw 0xAA55

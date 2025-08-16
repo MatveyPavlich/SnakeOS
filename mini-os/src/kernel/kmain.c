@@ -1,23 +1,13 @@
-#include <stdio.h>
-#include <stddef.h>
-#include <stdint.h>
+// main.c
+/*
+    With -m64 gcc flag, function arguments are as follows:
+    (1) RDI (2) RSI (3) RDX (4) RCX (5) R8 (6) R9
 
-// gcc -ffreestanding -m64 -nostdlib -Wall -c trial_kernel/kmain.c -o trial_kernel/build/kmain.o
-// gcc trial_kernel/kmain.c -o trial_kernel/build/kmain
-// ./trial_kernel/build/kmain
+*/
 
-int main() {
+extern void print_64_bits(const char* str);
 
-    // For x86_64 / AMD64
-    printf("sizeof(size_t): %zu bytes\n", sizeof(size_t));       // 8 byte
-    printf("sizeof(int8_t): %zu bytes\n", sizeof(int8_t));       // 1 byte
-    printf("sizeof(uint8_t): %zu bytes\n", sizeof(uint8_t));     // 1 byte
-    printf("sizeof(int16_t): %zu bytes\n", sizeof(int16_t));     // 2 bytes
-    printf("sizeof(uint16_t): %zu bytes\n", sizeof(uint16_t));   // 2 bytes
-    printf("sizeof(int32_t): %zu bytes\n", sizeof(int32_t));     // 4 bytes
-    printf("sizeof(uint32_t): %zu bytes\n", sizeof(uint32_t));   // 4 bytes
-    printf("sizeof(int64_t): %zu bytes\n", sizeof(int64_t));     // 8 bytes
-    printf("sizeof(uint64_t): %zu bytes\n", sizeof(uint64_t));   // 8 bytes
-    printf("sizeof(intptr_t): %zu bytes\n", sizeof(intptr_t));   // 8 bytes
-    printf("sizeof(uintptr_t): %zu bytes\n", sizeof(uintptr_t)); // 8 bytes
+void kmain() {
+    print_64_bits("Hello from C!\0");
+    while (1) __asm__("hlt");
 }
