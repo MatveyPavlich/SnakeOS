@@ -95,7 +95,7 @@ start_lm:
     mov ax, 0x0720                            ; ' ' (space) with gray-on-black attribute
     rep stosw                                 ; Fill ECX words (AX) into [EDI]
 
-    ; mov si, str_hello                       ; Verbose debugging
+    ; mov di, str_hello                       ; Verbose debugging
     ; call print_string_64                    ; Verbose debugging
     mov word [VGA_TEXT_BUFFER_ADDR], 0x0C4C
     mov word [VGA_TEXT_BUFFER_ADDR + 2], 0x0C4D

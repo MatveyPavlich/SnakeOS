@@ -10,7 +10,7 @@ org 0x90000
 kernel_entry:
     
     ; Inform kerenel entry is entered
-    mov rsi, MSG_KERNEL
+    mov rdi, MSG_KERNEL
     call print_string_64
     
     ; Jump into C
