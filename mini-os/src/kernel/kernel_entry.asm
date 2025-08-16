@@ -1,11 +1,11 @@
-; Loaded at 0x80000
+; Loaded at 0x90000
 bits 64
+org 0x90000
 
-global kernel_entry
-global print_string_64
+; global kernel_entry
+; global print_string_64
 ; extern kmain
-
-PRINT_STRING_POSSITION dq 0                              ; Position for the next string                              
+                          
 
 kernel_entry:
     
@@ -20,5 +20,5 @@ kernel_entry:
     hlt
     jmp $
 
-%include "./src/bootloader/stage1/utils_long_mode.asm"
+%include "./src/bootloader/utils/64-bit-print.asm"
 MSG_KERNEL db "SUCCESSFUL: Kernel entry loaded. Loading the kernel...", 0x00

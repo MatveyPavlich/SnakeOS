@@ -25,14 +25,17 @@ disk_read:
     ; but works with the values (sector should be only 6 bits)
     mov ch, 0                                 ; CH = track/cylinder number
     mov dh, 0                                 ; DH = head number
-    mov cl, 1                                 ; CL = sector number (1 since 0 is bootloader)
+    mov cl, 2                                 ; CL = sector number (1 since 0 is bootloader)
     mov dl, 0                                 ; DL = drive number
-    mov bx, 0x9000                            ; Load at ES:BX => 0x90000
+    mov bx, 0x9000                            
+    mov es, bx                                ; Load at ES:BX => 0x90000
+    xor bx, bx 
+    mov bx, 0
     mov di, 3                                 ; Try 3 times to read the disk
 
     .try_again:
-        mov ah, 0x2                               ; AH = 02 => access disk read interrupt
-        mov al, 0xF                               ; AL = n. of sectors to read
+        mov ah, 0x2                           ; AH = 02 => access disk read interrupt
+        mov al, 0xF                           ; AL = n. of sectors to read
         stc
         int 0x13
         jnc .read_successful
@@ -41,11 +44,13 @@ disk_read:
         jnz .try_again
     
     .read_failed:
+        mov es, bx
         mov si, DISK_READ_FAILED
         call print
         jmp halt
     
     .read_successful:
+        mov es, bx
         mov si, DISK_READ_SUCCESSFULLY
         call print
         ret

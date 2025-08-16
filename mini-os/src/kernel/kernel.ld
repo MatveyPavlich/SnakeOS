@@ -1,7 +1,7 @@
 OUTPUT_FORMAT("elf64-x86-64")
 ENTRY(kernel_entry)
 SECTIONS {
-    STACK_TOP = 0x80000;
+    STACK_TOP = 0x90000;
     . = 0x90000;
     .text : { *(.text*) }
     .rodata : { *(.rodata*) }
