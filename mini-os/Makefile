@@ -18,8 +18,8 @@ $(BUILD_DIR)/main.bin: $(SRC_DIR)/bootloader/main.asm
 
 # === Kernel ===
 kernel: $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.bin
-$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(SRC_DIR)/kernel/impl/kernel.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o
+$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(SRC_DIR)/kernel/impl/kernel.ld $(BUILD_DIR)/kprint.o
+	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 	objcopy -O binary $< $@
 
@@ -27,6 +27,9 @@ $(BUILD_DIR)/kernel_entry.o: $(SRC_DIR)/kernel/kernel_entry.asm
 	$(ASM) -f elf64 $< -o $@
 
 $(BUILD_DIR)/kmain.o: $(SRC_DIR)/kernel/impl/kmain.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/kprint.o: $(SRC_DIR)/kernel/impl/kprint.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
