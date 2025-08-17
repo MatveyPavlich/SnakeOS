@@ -1,1 +1,0 @@
-void kprint(const char* s);
