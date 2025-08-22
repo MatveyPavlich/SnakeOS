@@ -5,14 +5,16 @@
 
 */
 
-#include "print.h"
+#include "kprint.h"
+#include "gdt.h"
 
 extern void print_64_bits(const char* str);
 
 void kmain() {
     print_64_bits("Hello from C!\0");
     print_clear();
-    print_str("This is my string\n");
-    print_str("This is my second string!!!\n");
+    kprint("This is my string\n");
+    gdtInit();
+    kprint("This is my second string!!!\n");
     while (1) __asm__("hlt");
 }
