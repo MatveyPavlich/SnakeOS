@@ -10,6 +10,7 @@
 #include "idt.h"
 
 extern void print_64_bits(const char* str);
+extern void init_timer(uint32_t freq);
 
 void kmain() {
     print_64_bits("Hello from C!\0");
@@ -18,5 +19,7 @@ void kmain() {
     gdtInit();
     idtInit();
     kprint("This is my second string!!!\n");
+    init_timer(100);
+    kprint("Is timer working?\n");
     while (1) __asm__("hlt");
 }
