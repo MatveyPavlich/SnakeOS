@@ -44,22 +44,22 @@ $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 
 $(BUILD_DIR)/kernel_entry.o: $(SRC_DIR)/kernel/impl/kernel_entry.asm
 	$(ASM) -f elf64 $< -o $@
-$(BUILD_DIR)/gdt_asm.o: $(SRC_DIR)/kernel/impl/gdt.asm
+$(BUILD_DIR)/gdt_asm.o: $(SRC_DIR)/kernel/impl/gdt/gdt.asm
 	$(ASM) -f elf64 $< -o $@
-$(BUILD_DIR)/isr_asm.o: $(SRC_DIR)/kernel/impl/isr.asm
+$(BUILD_DIR)/isr_asm.o: $(SRC_DIR)/kernel/impl/interrupts/isr.asm
 	$(ASM) -f elf64 $< -o $@
 
 $(BUILD_DIR)/kmain.o: $(SRC_DIR)/kernel/impl/kmain.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/kprint.o: $(SRC_DIR)/kernel/impl/kprint.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/gdt.o: $(SRC_DIR)/kernel/impl/gdt.c
+$(BUILD_DIR)/gdt.o: $(SRC_DIR)/kernel/impl/gdt/gdt.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/util.o: $(SRC_DIR)/kernel/impl/util.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/idt.o: $(SRC_DIR)/kernel/impl/idt.c
+$(BUILD_DIR)/idt.o: $(SRC_DIR)/kernel/impl/interrupts/idt.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/isr.o: $(SRC_DIR)/kernel/impl/isr.c
+$(BUILD_DIR)/isr.o: $(SRC_DIR)/kernel/impl/interrupts/isr.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # === Run ===
