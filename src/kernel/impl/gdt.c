@@ -6,20 +6,26 @@
 
 extern void loadGdtr(GdtMetadata *m);
 
+Tss64Entry tss[1] __attribute__((aligned(8))); // Actual tss table, need 1 TSS per core => for now make the OS single core
+
+
 void gdtInit() {
     static GdtSegmentDescriptor gdt_segment_entries[GDT_SEGMENT_DESCRIPTOR_COUNT] __attribute__((aligned(8)));
-    // static GdtSystemDescriptor  gdt_system_entries[GDT_SYSTEM_DESCRIPTOR_COUNT]   __attribute__((aligned(8)));
+    static GdtSystemDescriptor  gdt_system_entries[GDT_SYSTEM_DESCRIPTOR_COUNT]   __attribute__((aligned(8)));
  
     gdt_segment_entries[0] = createGdtSegmentDescriptor(0, 0,       0,    0   ); // Null descriptor
     gdt_segment_entries[1] = createGdtSegmentDescriptor(0, 0xFFFFF, 0x9A, 0x20); // Kernel code segment
     gdt_segment_entries[2] = createGdtSegmentDescriptor(0, 0xFFFFF, 0x92, 0xC0); // Kernel data segment
     gdt_segment_entries[3] = createGdtSegmentDescriptor(0, 0xFFFFF, 0xFA, 0x20); // User code segment
     gdt_segment_entries[4] = createGdtSegmentDescriptor(0, 0xFFFFF, 0xF2, 0xC0); // User data segment
-    // gdt_segment_entries[5] = createGdtSystemDescriptor(5, , , ); // TSS
+    gdt_system_entries[0]  = createGdtSystemDescriptor(tss, (sizeof(Tss64Entry) - 1)); // TSS descriptor
 
     GdtMetadata gdt_metadata;
     gdt_metadata.gdt_pointer = (uintptr_t)gdt_segment_entries;
-    gdt_metadata.gdt_size = (sizeof(GdtSegmentDescriptor) * GDT_SEGMENT_DESCRIPTOR_COUNT - 1); // TODO: adjust GDT metadata to include system descriptors
+    uint16_t gdt_byte_size = 
+    (sizeof(GdtSegmentDescriptor) * GDT_SEGMENT_DESCRIPTOR_COUNT) +
+        (sizeof(GdtSystemDescriptor) * GDT_SYSTEM_DESCRIPTOR_COUNT) - 1;
+    gdt_metadata.gdt_size = gdt_byte_size;
 
     loadGdtr(&gdt_metadata);
 
@@ -43,7 +49,6 @@ GdtSystemDescriptor createGdtSystemDescriptor(uint64_t base, uint32_t limit) {
 
     return d;
 }
-
 
 void GdtError() {
     while (1) __asm__("hlt");
