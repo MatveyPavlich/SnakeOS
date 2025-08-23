@@ -1,4 +1,5 @@
 global loadGdtr
+global loadLtr
 
 bits 64
 
@@ -26,3 +27,9 @@ loadGdtr:
 
     .return:
         ret
+
+; void ltr(uint16_t selector);
+loadLtr:
+    mov ax, [rdi]    ; SysV AMD64 ABI: first argument is at [rsp+8]
+    ltr ax
+    ret

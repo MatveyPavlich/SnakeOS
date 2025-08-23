@@ -1,34 +1,69 @@
 #include "stddef.h"
 #include "stdint.h"
 #include "gdt.h"
-#define GDT_SEGMENT_DESCRIPTOR_COUNT 5
-#define GDT_SYSTEM_DESCRIPTOR_COUNT 1
+#include "util.h"
+#include "kprint.h"
+
+#define GDT_SEGMENT_DESCRIPTOR_COUNT 5 // null + kernel code/data + user code/data
+#define GDT_SYSTEM_DESCRIPTOR_COUNT  1  
+#define GDT_ENTRY_COUNT              (GDT_SEGMENT_DESCRIPTOR_COUNT + GDT_SYSTEM_DESCRIPTOR_COUNT * 2)
+#define KERNEL_STACK_TOP             0x80000 // TODO: actually find out what it is
+#define DF_STACK_TOP                 0x80000 // TODO: actually find out what it is
+
 
 extern void loadGdtr(GdtMetadata *m);
+extern void loadLtr(uint16_t selector);
 
-Tss64Entry tss[1] __attribute__((aligned(8))); // Actual tss table, need 1 TSS per core => for now make the OS single core
+// ---- Actual TSS ----
+static Tss64Entry tss __attribute__((aligned(16))); // 1 TSS per core => for now make the OS single core
 
+// ---- GDT ----
+static uint64_t gdt[GDT_ENTRY_COUNT] __attribute__((aligned(16)));
 
 void gdtInit() {
-    static GdtSegmentDescriptor gdt_segment_entries[GDT_SEGMENT_DESCRIPTOR_COUNT] __attribute__((aligned(8)));
-    static GdtSystemDescriptor  gdt_system_entries[GDT_SYSTEM_DESCRIPTOR_COUNT]   __attribute__((aligned(8)));
- 
-    gdt_segment_entries[0] = createGdtSegmentDescriptor(0, 0,       0,    0   ); // Null descriptor
-    gdt_segment_entries[1] = createGdtSegmentDescriptor(0, 0xFFFFF, 0x9A, 0x20); // Kernel code segment
-    gdt_segment_entries[2] = createGdtSegmentDescriptor(0, 0xFFFFF, 0x92, 0xC0); // Kernel data segment
-    gdt_segment_entries[3] = createGdtSegmentDescriptor(0, 0xFFFFF, 0xFA, 0x20); // User code segment
-    gdt_segment_entries[4] = createGdtSegmentDescriptor(0, 0xFFFFF, 0xF2, 0xC0); // User data segment
-    gdt_system_entries[0]  = createGdtSystemDescriptor(tss, (sizeof(Tss64Entry) - 1)); // TSS descriptor
+    
+    // 1. Init TSS
+    memset(&tss, 0, sizeof(Tss64Entry));
+    tss.rsp0 = KERNEL_STACK_TOP;
+    tss.ist1 = DF_STACK_TOP; 
+    tss.iomap = sizeof(Tss64Entry); // no I/O bitmap
 
+    // 2. Build GDT
+    GdtSegmentDescriptor seg;
+
+    // Null
+    seg = createGdtSegmentDescriptor(0, 0, 0, 0);
+    memcopy(&gdt[0], &seg, sizeof(seg));
+
+    // Kernel code
+    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0x9A, 0x20);
+    memcopy(&gdt[1], &seg, sizeof(seg));
+
+    // Kernel data
+    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0x92, 0xC0);
+    memcopy(&gdt[2], &seg, sizeof(seg));
+
+    // User code
+    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0xFA, 0x20);
+    memcopy(&gdt[3], &seg, sizeof(seg));
+
+    // User data
+    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0xF2, 0xC0);
+    memcopy(&gdt[4], &seg, sizeof(seg));
+
+    // TSS (16 bytes → 2 entries)
+    GdtSystemDescriptor sys = createGdtSystemDescriptor((uint64_t)&tss, sizeof(Tss64Entry) - 1);
+    memcopy(&gdt[5], &sys, sizeof(sys));
+
+    // 3. Load GDT
     GdtMetadata gdt_metadata;
-    gdt_metadata.gdt_pointer = (uintptr_t)gdt_segment_entries;
-    uint16_t gdt_byte_size = 
-    (sizeof(GdtSegmentDescriptor) * GDT_SEGMENT_DESCRIPTOR_COUNT) +
-        (sizeof(GdtSystemDescriptor) * GDT_SYSTEM_DESCRIPTOR_COUNT) - 1;
-    gdt_metadata.gdt_size = gdt_byte_size;
-
+    gdt_metadata.gdt_pointer = (uintptr_t)gdt;
+    gdt_metadata.gdt_size = sizeof(gdt) - 1;
     loadGdtr(&gdt_metadata);
 
+    // 4. Load TR (TSS selector at offset 0x28, i.e., index 5*8)
+    loadLtr(5 << 3);
+    
     return;
 }
 
@@ -50,16 +85,14 @@ GdtSystemDescriptor createGdtSystemDescriptor(uint64_t base, uint32_t limit) {
     return d;
 }
 
-void GdtError() {
-    while (1) __asm__("hlt");
-}
-
 GdtSegmentDescriptor createGdtSegmentDescriptor(uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
     /*
     limit = 20 bits; base = 32 bits; access = 8 btis; flags = 4 bits
     */
-    if(limit > 0xFFFFF)
-        GdtError();
+    if (limit > 0xFFFFF) {
+        kprint("Invalid gdt entry \n");
+        while (1) __asm__("hlt");
+    }
     GdtSegmentDescriptor d = {0};
 
     d.low_limit = (uint16_t)(limit & 0xFFFFu);

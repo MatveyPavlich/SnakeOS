@@ -1,14 +1,15 @@
 #include "stddef.h"
 #include "stdint.h"
 #include "gdt.h"
-#include "string.h"   // for memset
+#include "util.h"   // for memset
+#include "kprint.h"
 
 #define GDT_SEGMENT_COUNT 5   // null + kernel code/data + user code/data
 #define GDT_TSS_COUNT     2   // TSS takes 16 bytes = 2 entries
 #define GDT_ENTRY_COUNT   (GDT_SEGMENT_COUNT + GDT_TSS_COUNT)
 
 extern void loadGdtr(GdtMetadata *m);
-extern void ltr(uint16_t selector); // you’ll need a small asm stub for this
+extern void loadLtr(uint16_t selector); // you’ll need a small asm stub for this
 
 // ---- Actual TSS ----
 Tss64Entry tss __attribute__((aligned(16))); // 1 TSS for single core
@@ -19,8 +20,10 @@ static uint64_t gdt[GDT_ENTRY_COUNT] __attribute__((aligned(16)));
 // ---- Helpers ----
 static GdtSegmentDescriptor createGdtSegmentDescriptor(uint32_t base, uint32_t limit,
                                                        uint8_t access, uint8_t flags) {
-    if (limit > 0xFFFFF)
+    if (limit > 0xFFFFF) {
+        kprint("Invalid gdt entry \n");
         while (1) __asm__("hlt");
+    }
 
     GdtSegmentDescriptor d = {0};
     d.low_limit = (uint16_t)(limit & 0xFFFFu);
@@ -88,5 +91,5 @@ void gdtInit(uint64_t kernel_stack_top, uint64_t df_stack_top) {
     loadGdtr(&gdt_metadata);
 
     // 4. Load TR (TSS selector at offset 0x28, i.e., index 5*8)
-    ltr(5 << 3);
+    loadLtr(5 << 3);
 }
