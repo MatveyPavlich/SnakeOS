@@ -30,6 +30,5 @@ loadGdtr:
 
 ; void ltr(uint16_t selector);
 loadLtr:
-    mov ax, [rdi]    ; SysV AMD64 ABI: first argument is at [rsp+8]
-    ltr ax
+    ltr di
     ret

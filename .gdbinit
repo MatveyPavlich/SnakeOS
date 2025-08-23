@@ -10,6 +10,8 @@ stepi
 br* kmain
 continue
 layout split
+br* loadLtr
+continue
 
 define restart
     disconnect

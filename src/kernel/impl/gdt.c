@@ -7,8 +7,17 @@
 #define GDT_SEGMENT_DESCRIPTOR_COUNT 5 // null + kernel code/data + user code/data
 #define GDT_SYSTEM_DESCRIPTOR_COUNT  1  
 #define GDT_ENTRY_COUNT              (GDT_SEGMENT_DESCRIPTOR_COUNT + GDT_SYSTEM_DESCRIPTOR_COUNT * 2)
-#define KERNEL_STACK_TOP             0x80000 // TODO: actually find out what it is
-#define DF_STACK_TOP                 0x80000 // TODO: actually find out what it is
+// #define KERNEL_STACK_TOP             0x80000 // TODO: actually find out what it is
+// #define DF_STACK_TOP                 0x80000 // TODO: actually find out what it is
+
+
+// allocate 4 KiB stack for double faults
+static uint8_t df_stack[4096] __attribute__((aligned(16)));
+#define DF_STACK_TOP ((uint64_t)(df_stack + sizeof(df_stack)))
+// allocate 16 KiB kernel stack in BSS
+static uint8_t kernel_stack[16384] __attribute__((aligned(16)));
+// kernel stack top = base + size
+#define KERNEL_STACK_TOP ((uint64_t)(kernel_stack + sizeof(kernel_stack)))
 
 
 extern void loadGdtr(GdtMetadata *m);
