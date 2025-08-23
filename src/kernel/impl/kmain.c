@@ -7,6 +7,7 @@
 
 #include "kprint.h"
 #include "gdt.h"
+#include "idt.h"
 
 extern void print_64_bits(const char* str);
 
@@ -15,6 +16,7 @@ void kmain() {
     print_clear();
     kprint("This is my string\n");
     gdtInit();
+    idtInit();
     kprint("This is my second string!!!\n");
     while (1) __asm__("hlt");
 }

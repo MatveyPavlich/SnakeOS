@@ -1,5 +1,6 @@
 global loadGdtr
 global loadLtr
+global loadIdt
 
 bits 64
 
@@ -31,4 +32,9 @@ loadGdtr:
 ; void ltr(uint16_t selector);
 loadLtr:
     ltr di
+    ret
+
+
+loadIdt:
+    lidt [rdi]   ; pointer to IdtDescriptor passed in RDI
     ret
