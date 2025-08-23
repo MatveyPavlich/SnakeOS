@@ -4,64 +4,48 @@
 #include "util.h"
 #include "kprint.h"
 
+
+
 #define GDT_SEGMENT_DESCRIPTOR_COUNT 5 // null + kernel code/data + user code/data
 #define GDT_SYSTEM_DESCRIPTOR_COUNT  1  
 #define GDT_ENTRY_COUNT              (GDT_SEGMENT_DESCRIPTOR_COUNT + GDT_SYSTEM_DESCRIPTOR_COUNT * 2)
-// #define KERNEL_STACK_TOP             0x80000 // TODO: actually find out what it is
-// #define DF_STACK_TOP                 0x80000 // TODO: actually find out what it is
 
-
-// allocate 4 KiB stack for double faults
-static uint8_t df_stack[4096] __attribute__((aligned(16)));
-#define DF_STACK_TOP ((uint64_t)(df_stack + sizeof(df_stack)))
-// allocate 16 KiB kernel stack in BSS
-static uint8_t kernel_stack[16384] __attribute__((aligned(16)));
-// kernel stack top = base + size
-#define KERNEL_STACK_TOP ((uint64_t)(kernel_stack + sizeof(kernel_stack)))
 
 
 extern void loadGdtr(GdtMetadata *m);
 extern void loadLtr(uint16_t selector);
 
-// ---- Actual TSS ----
-static Tss64Entry tss __attribute__((aligned(16))); // 1 TSS per core => for now make the OS single core
 
-// ---- GDT ----
-static uint64_t gdt[GDT_ENTRY_COUNT] __attribute__((aligned(16)));
+
+static uint64_t     gdt[GDT_ENTRY_COUNT]   __attribute__((aligned(16))); // GDT table
+static Tss64Entry   tss                    __attribute__((aligned(16))); // TSS table (u should have 1 TSS per core => for now make the OS single core)
+static uint8_t      df_stack[4096]         __attribute__((aligned(16))); // 4 KiB stack for TSS entry to be used in double faults 
+static uint8_t      kernel_stack[16384]    __attribute__((aligned(16))); // 16 KiB kernel stack for TSS entry to be used for kernel
+
+
 
 void gdtInit() {
     
     // 1. Init TSS
     memset(&tss, 0, sizeof(Tss64Entry));
-    tss.rsp0 = KERNEL_STACK_TOP;
-    tss.ist1 = DF_STACK_TOP; 
+    tss.rsp0 = ((uint64_t)(kernel_stack + sizeof(kernel_stack)));
+    tss.ist1 = ((uint64_t)(df_stack + sizeof(df_stack))); 
     tss.iomap = sizeof(Tss64Entry); // no I/O bitmap
 
     // 2. Build GDT
     GdtSegmentDescriptor seg;
-
-    // Null
-    seg = createGdtSegmentDescriptor(0, 0, 0, 0);
+    seg = createGdtSegmentDescriptor(0, 0, 0, 0);             // Null
     memcopy(&gdt[0], &seg, sizeof(seg));
-
-    // Kernel code
-    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0x9A, 0x20);
+    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0x9A, 0x20); // Kernel code
     memcopy(&gdt[1], &seg, sizeof(seg));
-
-    // Kernel data
-    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0x92, 0xC0);
+    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0x92, 0xC0); // Kernel data
     memcopy(&gdt[2], &seg, sizeof(seg));
-
-    // User code
-    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0xFA, 0x20);
+    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0xFA, 0x20); // User code
     memcopy(&gdt[3], &seg, sizeof(seg));
-
-    // User data
-    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0xF2, 0xC0);
+    seg = createGdtSegmentDescriptor(0, 0xFFFFF, 0xF2, 0xC0); // User data
     memcopy(&gdt[4], &seg, sizeof(seg));
 
-    // TSS (16 bytes → 2 entries)
-    GdtSystemDescriptor sys = createGdtSystemDescriptor((uint64_t)&tss, sizeof(Tss64Entry) - 1);
+    GdtSystemDescriptor sys = createGdtSystemDescriptor((uint64_t)&tss, sizeof(Tss64Entry) - 1); // TSS (16 bytes → 2 entries)
     memcopy(&gdt[5], &sys, sizeof(sys));
 
     // 3. Load GDT
@@ -70,8 +54,8 @@ void gdtInit() {
     gdt_metadata.gdt_size = sizeof(gdt) - 1;
     loadGdtr(&gdt_metadata);
 
-    // 4. Load TR (TSS selector at offset 0x28, i.e., index 5*8)
-    loadLtr(5 << 3);
+    // 4. Load TR 
+    loadLtr(5 << 3);                                           // TSS descriptor at index 5 => offset = 0x28 (5*8)
     
     return;
 }

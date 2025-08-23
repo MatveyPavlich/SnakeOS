@@ -37,14 +37,14 @@ $(BUILD_DIR)/stage1.bin:
 
 # === Kernel ===
 kernel: $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.bin
-$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/loadGdtr.o $(BUILD_DIR)/util.o $(SRC_DIR)/kernel/impl/kernel.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/loadGdtr.o $(BUILD_DIR)/util.o
+$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o $(SRC_DIR)/kernel/impl/kernel.ld
+	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 	objcopy -O binary $< $@
 
 $(BUILD_DIR)/kernel_entry.o: $(SRC_DIR)/kernel/impl/kernel_entry.asm
 	$(ASM) -f elf64 $< -o $@
-$(BUILD_DIR)/loadGdtr.o: $(SRC_DIR)/kernel/impl/loadGdtr.asm
+$(BUILD_DIR)/gdt_asm.o: $(SRC_DIR)/kernel/impl/gdt.asm
 	$(ASM) -f elf64 $< -o $@
 
 $(BUILD_DIR)/kmain.o: $(SRC_DIR)/kernel/impl/kmain.c
