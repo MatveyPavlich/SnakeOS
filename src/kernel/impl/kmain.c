@@ -21,6 +21,11 @@ void kmain() {
     idtInit();
     // pic_init();
     kprint("This is my second string!!!\n");
+    
+    // Division by zero interrup check
+    // int a = 1, b = 0, c;
+    // c = 1/0;
+
     // init_timer(100);
     // __asm__ volatile ("sti");
     // kprint("Is timer working?\n");

@@ -3,16 +3,18 @@
 #include "idt.h"
 #include "util.h"
 
+#define IDT_DESCRIPTORS 256
 #define PIC1_CMD        0x20
 #define PIC1_DATA       0x21
 #define PIC2_CMD        0xA0
 #define PIC2_DATA       0xA1
-#define IDT_DESCRIPTORS 256
 
 extern void *isr_stub_table[];   // generate array of asm stubs
 extern void loadIdt(IdtMetadata *idt_metadata);
 
 static IdtDescriptor idt[IDT_DESCRIPTORS];
+
+
 
 static void setIdtEntry(int intex, void *isr, uint8_t flags, uint8_t ist) {
     uint64_t addr = (uint64_t)isr;
