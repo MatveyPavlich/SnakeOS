@@ -1,6 +1,6 @@
 // isr.h
 #pragma once
-#include <stdint.h>
+#include "stdint.h"
 
 typedef void (*isr_t)(int vector);
 

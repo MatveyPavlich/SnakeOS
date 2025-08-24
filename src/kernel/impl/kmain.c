@@ -8,7 +8,7 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
-#include "pic.h"
+// #include "pic.h"
 
 extern void print_64_bits(const char* str);
 extern void init_timer(uint32_t freq);
@@ -19,10 +19,10 @@ void kmain() {
     kprint("This is my string\n");
     gdtInit();
     idtInit();
-    pic_init();
+    // pic_init();
     kprint("This is my second string!!!\n");
-    init_timer(100);
-    __asm__ volatile ("sti");
-    kprint("Is timer working?\n");
+    // init_timer(100);
+    // __asm__ volatile ("sti");
+    // kprint("Is timer working?\n");
     while (1) __asm__("hlt");
 }

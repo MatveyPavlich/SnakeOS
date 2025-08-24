@@ -1,6 +1,6 @@
 #include "stdint.h"
 #include "kprint.h"
-#include "ports.h"    // inb/outb helpers
+#include "util.h"    // inb/outb helpers
 #include "isr.h"      // ISR registration
 
 static uint64_t tick = 0;

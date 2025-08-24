@@ -8,14 +8,12 @@ typedef struct {
     uint8_t  type_attr;    // gate type, DPL, P
     uint16_t offset_mid;   // bits 16..31 of handler address
     uint32_t offset_high;  // bits 32..63 of handler address
-    uint32_t zero;         // reserved
-} __attribute__((packed)) IdtEntry;
+    uint32_t reserved;     // do not touch, some intel magic
+} __attribute__((packed)) IdtDescriptor;
 
 typedef struct {
     uint16_t limit;
     uint64_t base;
-} __attribute__((packed)) IdtDescriptor;
-
-#define IDT_SIZE 256   // 256 possible vectors
+} __attribute__((packed)) IdtMetadata;
 
 void idtInit(void);
