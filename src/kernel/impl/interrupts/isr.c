@@ -1,26 +1,28 @@
 #include "kprint.h"
 #include "isr.h"
 
-static isr_t interrupt_handlers[256];
+static isrptr_t interrupt_handlers[256];
 
-void register_interrupt_handler(int n, isr_t handler) {
-    interrupt_handlers[n] = handler;
-}
+/* =================== isrHandler =================== 
+// Called by all ISR stubs (index pushed by asm stub)
+// ================================================*/
 
-// Called by all ISR stubs (vector pushed by stub)
-void isrHandler(int vector) {
-    if (interrupt_handlers[vector]) {
-        interrupt_handlers[vector](vector);
-    } else {
+void isrHandler(int index) {
+    
+    // Call ISR if ptr not empty
+    if (interrupt_handlers[index]) {
+        interrupt_handlers[index](index);
+    } 
+    
+    // Else print a general message
+    else {
         kprint("Unhandled interrupt: ");
-
-        // Print simple number
-        char buf[4];
-        buf[0] = '0' + (vector / 10);
-        buf[1] = '0' + (vector % 10);
-        buf[2] = '\n';
-        buf[3] = 0;
-        kprint(buf);
+        char interrupt_number[4];
+        interrupt_number[0] = '0' + (index / 10);
+        interrupt_number[1] = '0' + (index % 10);
+        interrupt_number[2] = '\n';
+        interrupt_number[3] = 0;
+        kprint(interrupt_number);
     }
 
     // If this was an IRQ, remember: send EOI to PIC (outb(0x20, 0x20))
