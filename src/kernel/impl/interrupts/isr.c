@@ -23,6 +23,8 @@ void isrHandler(int index) {
         interrupt_number[2] = '\n';
         interrupt_number[3] = 0;
         kprint(interrupt_number);
+        kprint("System halted.\n");
+        while (1) __asm__("hlt");
     }
 
     // If this was an IRQ, remember: send EOI to PIC (outb(0x20, 0x20))

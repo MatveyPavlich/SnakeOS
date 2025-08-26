@@ -9,15 +9,14 @@
 #define PIC2_CMD        0xA0
 #define PIC2_DATA       0xA1
 
-extern void loadIdt(IdtMetadata *idt_metadata);
+extern void             loadIdt(IdtMetadata *idt_metadata);
+extern void*            isr_pointer_table[]; // 256 pointers
 
 static IdtDescriptor  idt_table[IDT_DESCRIPTORS];
-static uint64_t      *isr[IDT_DESCRIPTORS]; // Array of pointers to isrs
-// TODO: isr used to be taken from isr.asm, but now they are here. Resolve
 
 
 
-static void setIdtEntry(int intex, void *isr, uint8_t flags, uint8_t ist) {
+static void setIdtEntry(int intex, uintptr_t *isr, uint8_t flags, uint8_t ist) {
     uint64_t addr = (uint64_t)isr;
 
     idt_table[intex].offset_low  = addr & 0xFFFF;
@@ -56,14 +55,14 @@ void idtInit(void) {
 
     // Fill exception handlers (0–31)
     for (int i = 0; i < 32; i++) {
-        setIdtEntry(i, isr[i], 0x8E, 0); // ring0, interrupt gate
+        setIdtEntry(i, isr_pointer_table[i], 0x8E, 0); // ring0, interrupt gate
     }
 
     // Example: Timer IRQ (intex 32)
-    setIdtEntry(32, isr[32], 0x8E, 0);
+    setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
 
     // Example: Keyboard IRQ (intex 33)
-    setIdtEntry(33, isr[33], 0x8E, 0);
+    setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
 
     // Load IDT
     IdtMetadata idt_metadata;

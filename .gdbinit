@@ -10,7 +10,7 @@ stepi
 br* kmain
 continue
 layout split
-br* loadLtr
+br* kmain+48
 continue
 
 define restart
