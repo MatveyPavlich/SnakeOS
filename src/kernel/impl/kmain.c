@@ -26,8 +26,8 @@ void kmain() {
     // int a = 1, b = 0, c;
     // c = 1/0;
 
-    // init_timer(100);
-    // __asm__ volatile ("sti");
-    // kprint("Is timer working?\n");
+    init_timer(100);
+    __asm__ volatile ("sti");
+    kprint("Is timer working?\n");
     while (1) __asm__("hlt");
 }

@@ -10,8 +10,6 @@ stepi
 br* kmain
 continue
 layout split
-br* kmain+48
-continue
 
 define restart
     disconnect
