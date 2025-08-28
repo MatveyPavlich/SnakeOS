@@ -61,8 +61,8 @@ void idtInit(void) {
     // Example: Timer IRQ (intex 32)
     setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
 
-    // Example: Keyboard IRQ (intex 33)
-    setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
+    // // Example: Keyboard IRQ (intex 33)
+    // setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
 
     // Load IDT
     IdtMetadata idt_metadata;

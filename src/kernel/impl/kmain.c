@@ -11,7 +11,7 @@
 // #include "pic.h"
 
 extern void print_64_bits(const char* str);
-extern void init_timer(uint32_t freq);
+extern void initTimer(uint32_t freq);
 
 void kmain() {
     print_64_bits("Hello from C!\0");
@@ -26,7 +26,7 @@ void kmain() {
     // int a = 1, b = 0, c;
     // c = 1/0;
 
-    init_timer(100);
+    initTimer(100);
     __asm__ volatile ("sti");
     kprint("Is timer working?\n");
     while (1) __asm__("hlt");

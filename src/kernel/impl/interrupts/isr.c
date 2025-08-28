@@ -17,7 +17,15 @@ static void timer_callback(int vector) {
     outb(0x20, 0x20);
 }
 
-void init_timer(uint32_t frequency) {
+void register_interrupt_handler(int vector, isrptr_t handler) {
+    if (vector < 0 || vector >= 256) {
+        // out of range — could panic or ignore
+        return;
+    }
+    interrupt_handlers[vector] = handler;
+}
+
+void initTimer(uint32_t frequency) {
     
     register_interrupt_handler(32, timer_callback); // Register handler (IRQ0 = vector 32)
 
@@ -28,14 +36,6 @@ void init_timer(uint32_t frequency) {
     outb(0x43, 0x36);
     outb(0x40, divisor & 0xFF);         // low byte
     outb(0x40, (divisor >> 8) & 0xFF);  // high byte
-}
-
-void register_interrupt_handler(int vector, isrptr_t handler) {
-    if (vector < 0 || vector >= 256) {
-        // out of range — could panic or ignore
-        return;
-    }
-    interrupt_handlers[vector] = handler;
 }
 
 void gp_fault_handler(int vector) {
