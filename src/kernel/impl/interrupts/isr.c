@@ -26,8 +26,6 @@ void register_interrupt_handler(int vector, isrptr_t handler) {
 }
 
 void initTimer(uint32_t frequency) {
-    
-    register_interrupt_handler(32, timer_callback); // Register handler (IRQ0 = vector 32)
 
     // PIT runs at 1193182 Hz
     uint32_t divisor = 1193182 / frequency;
