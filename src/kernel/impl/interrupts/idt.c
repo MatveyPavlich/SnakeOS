@@ -48,10 +48,8 @@ void idtInit(void) {
     outb(PIC2_DATA, 0x1);
 
     // Mask all IRQs except IRQ0 (timer) (for now since nothing else can't be handelled yet)
-    outb(PIC1_DATA, 0xFE);
+    outb(PIC1_DATA, 0xFF);
     outb(PIC2_DATA, 0xFF);
-
-    // Create 256 64-bit pointers to functions each of which would print "Interrupt n: handeled or not handeled"
 
     // Fill exception handlers (0–31)
     for (int i = 0; i < 32; i++) {

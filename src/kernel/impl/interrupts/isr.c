@@ -37,7 +37,13 @@ void initTimer(uint32_t frequency) {
 }
 
 void gp_fault_handler(int vector) {
-    kprint("General Protection Fault!\n");
+    kprint("General Protection Fault: ");
+    char interrupt_number[4];
+    interrupt_number[0] = '0' + (vector / 10);
+    interrupt_number[1] = '0' + (vector % 10);
+    interrupt_number[2] = '\n';
+    interrupt_number[3] = 0;
+    kprint(interrupt_number);
     while (1) __asm__("hlt");
 }
 
