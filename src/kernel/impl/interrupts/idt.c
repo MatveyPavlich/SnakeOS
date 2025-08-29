@@ -48,7 +48,7 @@ void idtInit(void) {
     outb(PIC2_DATA, 0x1);
 
     // Mask all IRQs except IRQ0 (timer) (for now since nothing else can't be handelled yet)
-    outb(PIC1_DATA, 0xFF);
+    outb(PIC1_DATA, 0xFE);
     outb(PIC2_DATA, 0xFF);
 
     // Fill exception handlers (0–31)
@@ -57,7 +57,7 @@ void idtInit(void) {
     }
 
     // Example: Timer IRQ (intex 32)
-    setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
+    // setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
 
     // // Example: Keyboard IRQ (intex 33)
     // setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);

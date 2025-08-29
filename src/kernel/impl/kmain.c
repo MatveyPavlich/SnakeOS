@@ -8,6 +8,7 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
+#include "timer.h"
 
 extern void print_64_bits(const char* str);
 // extern void initTimer(uint32_t freq);
@@ -19,6 +20,7 @@ void kmain() {
     kprint("This is my string\n");
     gdtInit();
     idtInit(); // TODO: Check IDT initialisation & mask all interrupts since they will go into the buffer
+    init_timer(100);
     __asm__ volatile ("sti");
     kprint("Interrupts are enabled!!!\n");
     
