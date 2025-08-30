@@ -8,7 +8,7 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
-#include "timer.h"
+// #include "timer.h"
 
 extern void print_64_bits(const char* str);
 // extern void initTimer(uint32_t freq);
@@ -20,7 +20,6 @@ void kmain() {
     kprint("This is my string\n");
     gdtInit();
     idtInit();
-    // init_timer(100);
     __asm__ volatile ("sti");
     kprint("Interrupts are enabled!!!\n");
     

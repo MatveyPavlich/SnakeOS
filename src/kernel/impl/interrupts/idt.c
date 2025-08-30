@@ -2,6 +2,7 @@
 #include "stdint.h"
 #include "idt.h"
 #include "util.h"
+#include "isr.h"
 
 #define IDT_DESCRIPTORS 256
 #define PIC1_CMD        0x20
@@ -64,7 +65,8 @@ void idtInit(void) {
 
     // Example: Timer IRQ (intex 32)
     setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
-    // outb(PIC1_DATA, 0xFE); // Unmask the timer (at some point)
+    initTimer(100);
+    outb(PIC1_DATA, 0xFE); // Unmask the timer (at some point)
 
     // // Example: Keyboard IRQ (intex 33)
     // setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);

@@ -1,3 +1,3 @@
-#include "stdint.h"
+// #include "stdint.h"
 
-void init_timer(uint32_t frequency);
+// void init_timer(uint32_t frequency);

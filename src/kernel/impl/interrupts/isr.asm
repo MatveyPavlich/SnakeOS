@@ -15,8 +15,9 @@ isr_pointer_table:
 global isr_stub_%1
 isr_stub_%1:
     mov rdi, %1        ; TODO: see if I need to PUSH, POP old RDI to preserve it
+    mov rsi, rsp
     call isrHandler
-    add rsp, 8         ; clean up argument
+    ; add rsp, 8         ; clean up argument
     iretq
 %endmacro
 
