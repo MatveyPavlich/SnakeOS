@@ -1,9 +1,9 @@
-global isr_stub_table
+global isr_pointer_table
 extern isrHandler  ; C function: void isrHandler(int vector);
 
-section .text
+bits 64
 
-isr_stub_table:
+isr_pointer_table:
 %assign i 0
 %rep 256
     dq isr_stub_%+i
@@ -14,9 +14,10 @@ isr_stub_table:
 %macro ISR_STUB 1
 global isr_stub_%1
 isr_stub_%1:
-    push %1            ; push vector number (NASM understands this)
+    mov rdi, %1        ; TODO: see if I need to PUSH, POP old RDI to preserve it
+    mov rsi, rsp
     call isrHandler
-    add rsp, 8         ; clean up argument
+    ; add rsp, 8         ; clean up argument
     iretq
 %endmacro
 

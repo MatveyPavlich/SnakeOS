@@ -1,6 +1,6 @@
 # SnakeOS 🐍🖥️
 
-SnakeOS is a **from-scratch operating system** written in **x86-64 Assembly and C** with the mission of running a 2D Snake game.
+SnakeOS is a **toy operating system** written for **x86-64** with the mission of running a 2D Snake game. **ARM and RISC-V architectures are not supported**. Compiler support is **GCC and clang only**.
 
 The project explores **low-level OS development**, including bootloader design, memory management, graphics, and hardware interfacing, to build a minimalist but fully functional 64-bit OS.
 

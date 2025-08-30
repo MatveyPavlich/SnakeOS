@@ -1,7 +1,17 @@
 // isr.h
 #pragma once
-#include <stdint.h>
+#include "stdint.h"
 
-typedef void (*isr_t)(int vector);
+struct interrupt_frame {
+    uint64_t rip;
+    uint64_t cs;
+    uint64_t rflags;
+    uint64_t error_code;
+    // if CPL change: rsp, ss
+};
 
-void register_interrupt_handler(int n, isr_t handler);
+// typedef void (*isrptr_t)(int index);
+typedef void (*isrptr_t)(int vector, struct interrupt_frame* frame);
+void isrHandler(int index, struct interrupt_frame* frame);
+void register_interrupt_handler(int vector, isrptr_t handler);
+void initTimer(uint32_t frequency);
