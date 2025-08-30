@@ -30,12 +30,23 @@ static void setIdtEntry(int intex, uintptr_t *isr, uint8_t flags, uint8_t ist) {
 
 void idtInit(void) {
 
+    // Fill exception handlers (0–31)
+    for (int i = 0; i < 32; i++) {
+        setIdtEntry(i, isr_pointer_table[i], 0x8E, 0); // ring0, interrupt gate
+    }
+
+    // Load IDT
+    IdtMetadata idt_metadata;
+    idt_metadata.limit = sizeof(idt_table) - 1;
+    idt_metadata.base  = (uint64_t)&idt_table;
+    loadIdt(&idt_metadata);
+
     // === PIC ===
     // Start initialization sequence (cascade mode, expect ICW4)
     outb(PIC1_CMD, 0x11);
     outb(PIC2_CMD, 0x11);
 
-    // Remap offsets: master to 0x20 (32), slave to 0x28 (40)
+    // Map master to 0x20-0x27 (32-39) IDT entries, slave to 0x28-2F (40-47) IDT entries
     outb(PIC1_DATA, 0x20);
     outb(PIC2_DATA, 0x28);
 
@@ -47,24 +58,15 @@ void idtInit(void) {
     outb(PIC1_DATA, 0x1);
     outb(PIC2_DATA, 0x1);
 
-    // Mask all IRQs except IRQ0 (timer) (for now since nothing else can't be handelled yet)
-    outb(PIC1_DATA, 0xFE);
+    // Mask all IRQs until they are set up (to make sure they don't go into the buffer)
+    outb(PIC1_DATA, 0xFF);
     outb(PIC2_DATA, 0xFF);
 
-    // Fill exception handlers (0–31)
-    for (int i = 0; i < 32; i++) {
-        setIdtEntry(i, isr_pointer_table[i], 0x8E, 0); // ring0, interrupt gate
-    }
-
     // Example: Timer IRQ (intex 32)
-    // setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
+    setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
+    // outb(PIC1_DATA, 0xFE); // Unmask the timer (at some point)
 
     // // Example: Keyboard IRQ (intex 33)
     // setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
-
-    // Load IDT
-    IdtMetadata idt_metadata;
-    idt_metadata.limit = sizeof(idt_table) - 1;
-    idt_metadata.base  = (uint64_t)&idt_table;
-    loadIdt(&idt_metadata);
+    // outb(PIC1_DATA, 0xFD); // Unmask keyboard interrupts
 }
