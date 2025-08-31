@@ -8,10 +8,8 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
-// #include "timer.h"
 
 extern void print_64_bits(const char* str);
-// extern void initTimer(uint32_t freq);
 
 void kmain() {
 

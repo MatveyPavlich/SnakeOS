@@ -31,6 +31,8 @@ static void setIdtEntry(int intex, uintptr_t *isr, uint8_t flags, uint8_t ist) {
 
 void idtInit(void) {
 
+    /*================ Set up CPU exceptions (0–31) ================*/
+
     // Fill exception handlers (0–31)
     for (int i = 0; i < 32; i++) {
         setIdtEntry(i, isr_pointer_table[i], 0x8E, 0); // ring0, interrupt gate
@@ -42,7 +44,7 @@ void idtInit(void) {
     idt_metadata.base  = (uint64_t)&idt_table;
     loadIdt(&idt_metadata);
 
-    // === PIC ===
+    /*================ Set up PIC to enable hardware interrupts ================*/
     // Start initialization sequence (cascade mode, expect ICW4)
     outb(PIC1_CMD, 0x11);
     outb(PIC2_CMD, 0x11);
@@ -66,7 +68,7 @@ void idtInit(void) {
     // Example: Timer IRQ (intex 32)
     setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
     initTimer(100);
-    outb(PIC1_DATA, 0xFE); // Unmask the timer (at some point)
+    outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
 
     // // Example: Keyboard IRQ (intex 33)
     // setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
