@@ -83,7 +83,7 @@ GdtSegmentDescriptor createGdtSegmentDescriptor(uint32_t base, uint32_t limit, u
     limit = 20 bits; base = 32 bits; access = 8 btis; flags = 4 bits
     */
     if (limit > 0xFFFFF) {
-        kprint("Invalid gdt entry \n");
+        kprintf("Invalid gdt entry \n");
         while (1) __asm__("hlt");
     }
     GdtSegmentDescriptor d = {0};

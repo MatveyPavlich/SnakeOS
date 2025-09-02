@@ -5,4 +5,5 @@
 
 void print_clear();
 void print_char(char character);
-void kprint(char* string);
+// void kprint(char* string);
+void kprintf(const char* fmt, ...);
