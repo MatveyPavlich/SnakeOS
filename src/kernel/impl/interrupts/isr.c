@@ -5,17 +5,6 @@
 static isrptr_t interrupt_handlers[256];
 static uint64_t tick = 0;
 
-void print_hex64(uint64_t val) {
-    char buf[17];
-    const char* hex = "0123456789ABCDEF";
-    for (int i = 15; i >= 0; i--) {
-        buf[i] = hex[val & 0xF];
-        val >>= 4;
-    }
-    buf[16] = 0;
-    kprintf(buf);
-}
-
 
 static void timer_callback(int vector, struct interrupt_frame* frame) {
     (void)vector;  // unused
@@ -50,17 +39,9 @@ void initTimer(uint32_t frequency) {
 }
 
 void gp_fault_handler(int vector, struct interrupt_frame* frame) {
-    kprintf("General Protection Fault: ");
-    char interrupt_number[4];
-    interrupt_number[0] = '0' + (vector / 10);
-    interrupt_number[1] = '0' + (vector % 10);
-    interrupt_number[2] = '\n';
-    interrupt_number[3] = 0;
-    kprintf(interrupt_number);
-
-    kprintf("RIP = 0x");
-    print_hex64(frame->rip);   // custom helper to print hex
-    kprintf("\n");
+    kprintf("General Protection Fault: %d\n", vector);
+    kprintf("RIP = %x\n",frame->rip);
+    kprintf("System halted\n");
 
     while (1) __asm__("hlt");
 }
@@ -81,13 +62,7 @@ void isrHandler(int index, struct interrupt_frame* frame) {
     
     // Else print a general message
     else {
-        kprintf("Unhandled interrupt: ");
-        char interrupt_number[4];
-        interrupt_number[0] = '0' + (index / 10);
-        interrupt_number[1] = '0' + (index % 10);
-        interrupt_number[2] = '\n';
-        interrupt_number[3] = 0;
-        kprintf(interrupt_number);
+        kprintf("Unhandled interrupt: %d\n", index);
         kprintf("System halted.\n");
         while (1) __asm__("hlt");
     }

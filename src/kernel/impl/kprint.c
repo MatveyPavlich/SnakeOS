@@ -1,7 +1,7 @@
 // print.c
 #include "stdint.h"
 #include "stddef.h"
-#include "stdarg.h"
+#include <stdarg.h>
 
 enum {
     PRINT_COLOUR_BLACK = 0,
@@ -83,7 +83,7 @@ void print_str(const char* str) {
 
 // Convert integer to string (decimal)
 void itoa_dec(int value, char* buffer) {
-    char temp[32];
+    char temp[64];
     int i = 0;
     int neg = 0;
 
@@ -149,22 +149,26 @@ void kprintf(const char* fmt, ...) {
         if (fmt[i] == '%') {
             i++;
             if (fmt[i] == 'd') {
-                int val = va_arg(args, int);
-                char buf[32];
+                uint64_t val = va_arg(args, int);
+                char buf[64];
                 itoa_dec(val, buf);
                 print_str(buf);
-            } else if (fmt[i] == 'x') {
-                unsigned int val = va_arg(args, unsigned int);
-                char buf[32];
+            }
+            else if (fmt[i] == 'x') {
+                uint64_t val = va_arg(args, unsigned int);
+                char buf[64];
                 itoa_hex(val, buf);
                 print_str(buf);
-            } else if (fmt[i] == 's') {
+            }
+            else if (fmt[i] == 's') {
                 char* s = va_arg(args, char*);
                 print_str(s);
-            } else if (fmt[i] == 'c') {
+            }
+            else if (fmt[i] == 'c') {
                 char c = (char) va_arg(args, int);
                 print_char(c);
-            } else {
+            }
+            else {
                 print_char('%');
                 print_char(fmt[i]);
             }

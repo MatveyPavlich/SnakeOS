@@ -31,7 +31,6 @@ void kmain() {
     // int a = 1, b = 0, c;
     // c = 1/0;
 
-    // initTimer(100);
-    // kprint("Is timer working?\n");
+    kprintf("Is timer working?\n");
     while (1) __asm__("hlt");
 }
