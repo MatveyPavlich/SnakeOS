@@ -25,7 +25,7 @@ static uint8_t      kernel_stack[16384]    __attribute__((aligned(16))); // 16 K
 
 
 void gdtInit() {
-    
+   
     // 1. Init TSS
     memset(&tss, 0, sizeof(Tss64Entry));
     tss.rsp0 = ((uint64_t)(kernel_stack + sizeof(kernel_stack)));

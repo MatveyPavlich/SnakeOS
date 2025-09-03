@@ -1,7 +1,7 @@
 1. Load kernel while still in stage0! - done
 2. Jmp into kernel from stage1 - done
 2. Create a C file - done (can't install i386 tool chain...)
-3. Link together - WIP
+3. Link together - done
 
 New plan (enter long mode):
 1. Detect the presence of the long mode - done
@@ -9,7 +9,8 @@ New plan (enter long mode):
 3. Enter long mode - done
 
 Plan for C:
-1. Create IDT
-2. Create file system drivers to be able to read from disk
-3. Set up graphics card
-4. Do double buffering
+1. Create IDT - done (might need to set up other essential interrupts such as divide by zero etc)
+2. Create keyboard drivers
+3. Create file system drivers to be able to read from disk
+4. Set up graphics card
+5. Do double buffering
