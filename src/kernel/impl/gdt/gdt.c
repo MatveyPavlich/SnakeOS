@@ -25,7 +25,7 @@ static uint8_t      kernel_stack[16384]    __attribute__((aligned(16))); // 16 K
 
 
 void gdtInit() {
-    
+   
     // 1. Init TSS
     memset(&tss, 0, sizeof(Tss64Entry));
     tss.rsp0 = ((uint64_t)(kernel_stack + sizeof(kernel_stack)));
@@ -83,7 +83,7 @@ GdtSegmentDescriptor createGdtSegmentDescriptor(uint32_t base, uint32_t limit, u
     limit = 20 bits; base = 32 bits; access = 8 btis; flags = 4 bits
     */
     if (limit > 0xFFFFF) {
-        kprint("Invalid gdt entry \n");
+        kprintf("Invalid gdt entry \n");
         while (1) __asm__("hlt");
     }
     GdtSegmentDescriptor d = {0};

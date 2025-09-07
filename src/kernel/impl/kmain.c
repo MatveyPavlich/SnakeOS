@@ -8,26 +8,29 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
-// #include "timer.h"
 
 extern void print_64_bits(const char* str);
-// extern void initTimer(uint32_t freq);
 
 void kmain() {
 
     print_64_bits("Hello from C!\0");
     print_clear();
-    kprint("This is my string\n");
+    kprintf("This is my string\n");
+    kprintf("Hello world!\n");
+    kprintf("Value: %d\n", 1234);
+    kprintf("Hex: %x\n", 0xBEEF);
+    kprintf("Char: %c\n", 'A');
+    kprintf("String: %s\n", "OSDev!");
+
     gdtInit();
     idtInit();
     __asm__ volatile ("sti");
-    kprint("Interrupts are enabled!!!\n");
+    kprintf("Interrupts are enabled!!!\n");
     
     // Division by zero interrup check
     // int a = 1, b = 0, c;
     // c = 1/0;
 
-    // initTimer(100);
-    // kprint("Is timer working?\n");
+    kprintf("Is timer working?\n");
     while (1) __asm__("hlt");
 }
