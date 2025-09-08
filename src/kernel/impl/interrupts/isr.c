@@ -2,6 +2,8 @@
 #include "isr.h"
 #include "util.h"
 
+extern void keyboard_handler();
+
 static isrptr_t interrupt_handlers[256];
 static uint64_t tick = 0;
 
@@ -46,6 +48,14 @@ void gp_fault_handler(int vector, struct interrupt_frame* frame) {
     while (1) __asm__("hlt");
 }
 
+// void init_keyboard() {
+    
+// }
+
+// void keyboard_handler() {
+
+// }
+
 /* =================== isrHandler =================== 
 // Called by all ISR stubs (index pushed by asm stub)
 // ================================================*/
@@ -53,7 +63,8 @@ void gp_fault_handler(int vector, struct interrupt_frame* frame) {
 void isrHandler(int index, struct interrupt_frame* frame) {
 
     register_interrupt_handler(13, gp_fault_handler);   // GP fault
-    register_interrupt_handler(32, timer_callback); 
+    register_interrupt_handler(32, timer_callback);
+    // register_interrupt_handler(32, keyboard_handler); 
     
     // Call ISR if ptr not empty
     if (interrupt_handlers[index]) {

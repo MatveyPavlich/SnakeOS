@@ -2,7 +2,7 @@
 #include "stdint.h"
 #include "idt.h"
 #include "util.h"
-#include "isr.h"
+// #include "isr.h"
 
 #define IDT_DESCRIPTORS 256
 #define PIC1_CMD        0x20
@@ -12,6 +12,8 @@
 
 extern void             loadIdt(IdtMetadata *idt_metadata);
 extern void*            isr_pointer_table[]; // 256 pointers
+extern void             initTimer(uint32_t hz);
+extern void             init_keyboard(void);
 
 static IdtDescriptor  idt_table[IDT_DESCRIPTORS];
 
@@ -71,6 +73,7 @@ void idtInit(void) {
     outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
 
     // // Example: Keyboard IRQ (intex 33)
-    // setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
-    // outb(PIC1_DATA, 0xFD); // Unmask keyboard interrupts
+    setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
+    init_keyboard();
+    outb(PIC1_DATA, 0xFD); // Unmask keyboard interrupts
 }

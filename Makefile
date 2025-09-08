@@ -37,8 +37,8 @@ $(BUILD_DIR)/stage1.bin:
 
 # === Kernel ===
 kernel: $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.bin
-$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o $(BUILD_DIR)/isr_asm.o $(SRC_DIR)/kernel/impl/kernel.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o $(BUILD_DIR)/isr_asm.o
+$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o $(BUILD_DIR)/isr_asm.o $(BUILD_DIR)/keyboard.o $(SRC_DIR)/kernel/impl/kernel.ld
+	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o $(BUILD_DIR)/isr_asm.o $(BUILD_DIR)/keyboard.o
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 	objcopy -O binary $< $@
 
@@ -60,6 +60,8 @@ $(BUILD_DIR)/util.o: $(SRC_DIR)/kernel/impl/util.c
 $(BUILD_DIR)/idt.o: $(SRC_DIR)/kernel/impl/interrupts/idt.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/isr.o: $(SRC_DIR)/kernel/impl/interrupts/isr.c
+	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/keyboard.o: $(SRC_DIR)/kernel/impl/keyboard.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # === Run ===
