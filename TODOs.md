@@ -10,7 +10,7 @@ New plan (enter long mode):
 
 Plan for C:
 1. Create IDT - done (might need to set up other essential interrupts such as divide by zero etc)
-2. Create keyboard drivers
+2. Create keyboard drivers - done
 3. Create file system drivers to be able to read from disk
 4. Set up graphics card
 5. Do double buffering

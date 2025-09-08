@@ -24,7 +24,6 @@ void kmain() {
 
     gdtInit();
     idtInit();
-    __asm__ volatile ("sti");
     kprintf("Interrupts are enabled!!!\n");
     
     // Division by zero interrup check

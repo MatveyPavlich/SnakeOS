@@ -1,8 +1,8 @@
 #include "kprint.h"
 #include "isr.h"
 #include "util.h"
-#include <stdbool.h>
 #include "stdint.h"
+#include <stdbool.h>
 
 /* ===== PS/2 + PIC ===== */
 #define PS2_DATA        0x60
@@ -93,7 +93,6 @@ static void keyboard_handler(int vector, struct interrupt_frame* frame) {
 
 /* ===== Init: register ISR and unmask IRQ1 on PIC ===== */
 void init_keyboard(void) {
-    /* Register once, at boot init (NOT inside isrHandler) */
     register_interrupt_handler(IRQ_KEYBOARD_VECTOR, keyboard_handler);
 
     /* Unmask IRQ1 (bit1) on PIC1 */

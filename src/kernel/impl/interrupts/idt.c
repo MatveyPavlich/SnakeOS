@@ -2,7 +2,7 @@
 #include "stdint.h"
 #include "idt.h"
 #include "util.h"
-// #include "isr.h"
+#include "isr.h"
 
 #define IDT_DESCRIPTORS 256
 #define PIC1_CMD        0x20
@@ -46,6 +46,8 @@ void idtInit(void) {
     idt_metadata.base  = (uint64_t)&idt_table;
     loadIdt(&idt_metadata);
 
+    register_interrupt_handler(13, gp_fault_handler);   // GP fault
+
     /*================ Set up PIC to enable hardware interrupts ================*/
     // Start initialization sequence (cascade mode, expect ICW4)
     outb(PIC1_CMD, 0x11);
@@ -76,4 +78,6 @@ void idtInit(void) {
     setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
     init_keyboard();
     outb(PIC1_DATA, 0xFD); // Unmask keyboard interrupts
+
+    __asm__ volatile ("sti"); // Unmask all interrupts
 }
