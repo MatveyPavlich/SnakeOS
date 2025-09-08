@@ -16,54 +16,54 @@ ensure_a20:
     ; Halt the system if A20 was not enabled
     jmp .halt_with_failure
 
-.check_a20:
-    ; Presever current es and ds segments
-    push es
-    push ds
+    .check_a20:
+        ; Presever current es and ds segments
+        push es
+        push ds
 
-    ; Set up memory segments for the test
-    cli                                       ; Disable interrupts
-    mov ax, 0x0000                            ; Case 1: 0x0000:0x0500 = 0x00500 (ds:di)
-    mov ds, ax                                ; Case 1 set up
-    mov di, 0x0500                            ; Case 1 set up
-    not ax                                    ; Make ax = 0xFFFF
-    mov es, ax                                ; Case 2: 0xFFFF:0x0510 = 0x100500 = 0x00500 if a20 disabled (es:ei)
-    mov si, 0x0510                            ; Case 2 set up
+        ; Set up memory segments for the test
+        cli                                       ; Disable interrupts
+        mov ax, 0x0000                            ; Case 1: 0x0000:0x0500 = 0x00500 (ds:di)
+        mov ds, ax                                ; Case 1 set up
+        mov di, 0x0500                            ; Case 1 set up
+        not ax                                    ; Make ax = 0xFFFF
+        mov es, ax                                ; Case 2: 0xFFFF:0x0510 = 0x100500 = 0x00500 if a20 disabled (es:ei)
+        mov si, 0x0510                            ; Case 2 set up
 
-    ; Save original values
-    mov al, [ds:di]                           ; Preserve original value at case 1 (ds:di)
-    mov ah, [es:si]                           ; Preserve original value at case 1 (es:si)
+        ; Save original values
+        mov al, [ds:di]                           ; Preserve original value at case 1 (ds:di)
+        mov ah, [es:si]                           ; Preserve original value at case 1 (es:si)
 
-    ; Write test values
-    mov byte [ds:di], 0xBB
-    mov byte [es:si], 0xFF
+        ; Write test values
+        mov byte [ds:di], 0xBB
+        mov byte [es:si], 0xFF
 
-    ; Compare
-    mov bl, [ds:di]
-    mov cl, [es:si]
-    cmp bl, cl
+        ; Compare
+        mov bl, [ds:di]
+        mov cl, [es:si]
+        cmp bl, cl
 
-    ; Restore originals
-    mov [ds:di], al
-    mov [es:si], ah
-    pop ds
-    pop es
-    sti                                       ; ZF != 0 if different (A20 enabled)
-    ret
+        ; Restore originals
+        mov [ds:di], al
+        mov [es:si], ah
+        pop ds
+        pop es
+        sti                                       ; ZF != 0 if different (A20 enabled)
+        ret
 
-.enable_a20_fast:
-    in al, 0x92
-    or al, 0x02
-    out 0x92, al                              ; enable a20 via fast method
-    ret
+    .enable_a20_fast:
+        in al, 0x92
+        or al, 0x02
+        out 0x92, al                              ; enable a20 via fast method
+        ret
 
-.done:
-    ret
+    .done:
+        ret
 
-.halt_with_failure:
-    mov si, A20_FAILED
-    call print                                ; SI = string pointer; print is from utils_shared.asm
-    call halt                                 ; Input = void; halt is from utils_shared.asm.
+    .halt_with_failure:
+        mov si, A20_FAILED
+        call print                                ; SI = string pointer; print is from utils_shared.asm
+        call halt                                 ; Input = void; halt is from utils_shared.asm.
 
 A20_FAILED:    db "A20 couldn't be enabled. System halted", 0xD, 0xA, 0x00
 
@@ -122,3 +122,46 @@ gdt_descriptor:
     ; Calculate GDT start & length to be loaded into lgtd 
     dw gdt_end - gdt_start - 1 ; size (16 bit), always one less of its true size
     dd gdt_start               ; address (32 bit)
+
+
+; ======================================================
+; get_memory_map
+; ------------------------------------------------------
+; Collects BIOS E820 memory map entries into buffer.
+; Input:
+;   ES:DI -> buffer (enough space for entries)
+; Output:
+;   CX = number of entries stored
+; Registers:
+;   Modifies AX, BX, CX, DX, SI, DI
+; ======================================================
+
+get_memory_map:
+    pushad                    ; save regs
+    xor bx, bx                ; continuation value = 0
+    xor cx, cx                ; entry counter = 0
+
+    .next_entry:
+        mov eax, 0xE820       ; E820h BIOS function
+        mov edx, 0x534D4150   ; 'SMAP' magic
+        mov ecx, 20           ; size of buffer (20 bytes per entry)
+
+        int 0x15              ; BIOS call
+        jc .done              ; if CF=1, error/finished
+
+        cmp eax, 0x534D4150   ; did BIOS return 'SMAP'?
+        jne .done             ; if not, quit
+
+        cmp ecx, 20           ; did BIOS write 20 bytes?
+        jb .done              ; if not, quit
+
+        add di, 20            ; move buffer pointer to next entry
+        inc cx                ; count entry
+
+        test ebx, ebx         ; EBX=0 => no more entries
+        jnz .next_entry
+
+    .done:
+        mov ax, cx            ; AX = number of entries
+        popad
+        ret

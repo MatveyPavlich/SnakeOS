@@ -1,4 +1,4 @@
-set architecture i386:x86-64
+set architecture i8086
 set disassembly-flavor intel
 target remote localhost:1234
 symbol-file build/kernel.elf
@@ -7,9 +7,8 @@ layout asm
 break *0x7c00
 continue
 stepi
-br* kmain
+br* enter_stage1
 continue
-layout split
 
 define restart
     disconnect
