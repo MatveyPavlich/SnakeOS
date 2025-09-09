@@ -12,6 +12,16 @@
 
 extern void print_64_bits(const char* str);
 
+void print_ram_map(void) {
+    for (int i = 0; i < 10; i++) {
+        struct ram_entry e = ram_entries_by_bios[i];
+        kprintf("Entry %d:", i);
+        kprintf(" Base = %x", (unsigned int)(e.base & 0xFFFFFFFF));
+        kprintf(" Length = %x", (unsigned int)(e.length & 0xFFFFFFFF));
+        kprintf(" Type = %d\n", (int)e.type);
+    }
+}
+
 void kmain() {
 
     print_64_bits("Hello from C!\0");
@@ -27,13 +37,7 @@ void kmain() {
     idtInit();
     kprintf("Interrupts are enabled!!!\n");
     
-    for (int i = 0; i < 20; i++) {
-    kprintf("Entry %d: base=%llx length=%llx type=%u\n",
-            i,
-            ram_entries_by_bios[i].base,
-            ram_entries_by_bios[i].length,
-            ram_entries_by_bios[i].type);
-    }
+    print_ram_map();
      
     // Division by zero interrup check
     // int a = 1, b = 0, c;
