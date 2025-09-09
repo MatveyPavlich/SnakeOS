@@ -8,6 +8,7 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
+#include "get_ram_info.h"
 
 extern void print_64_bits(const char* str);
 
@@ -26,6 +27,14 @@ void kmain() {
     idtInit();
     kprintf("Interrupts are enabled!!!\n");
     
+    for (int i = 0; i < 20; i++) {
+    kprintf("Entry %d: base=%llx length=%llx type=%u\n",
+            i,
+            ram_entries_by_bios[i].base,
+            ram_entries_by_bios[i].length,
+            ram_entries_by_bios[i].type);
+    }
+     
     // Division by zero interrup check
     // int a = 1, b = 0, c;
     // c = 1/0;
