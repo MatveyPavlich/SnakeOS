@@ -28,21 +28,16 @@ void kmain() {
     print_clear();
     kprintf("This is my string\n");
     kprintf("Hello world!\n");
-    kprintf("Value: %d\n", 1234);
-    kprintf("Hex: %x\n", 0xBEEF);
-    kprintf("Char: %c\n", 'A');
-    kprintf("String: %s\n", "OSDev!");
 
     gdtInit();
     idtInit();
     kprintf("Interrupts are enabled!!!\n");
-    
+
     print_ram_map();
-     
+        
     // Division by zero interrup check
     // int a = 1, b = 0, c;
     // c = 1/0;
 
-    kprintf("Is timer working?\n");
     while (1) __asm__("hlt");
 }

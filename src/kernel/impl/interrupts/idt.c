@@ -3,6 +3,7 @@
 #include "idt.h"
 #include "util.h"
 #include "isr.h"
+#include "kprint.h"
 
 #define IDT_DESCRIPTORS 256
 #define PIC1_CMD        0x20
@@ -77,7 +78,8 @@ void idtInit(void) {
     // // Example: Keyboard IRQ (intex 33)
     setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
     init_keyboard();
-    outb(PIC1_DATA, 0xFD); // Unmask keyboard interrupts
+    // outb(PIC1_DATA, 0xFD); // Unmask keyboard interrupts - this masks PIT
+    outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupts
 
     __asm__ volatile ("sti"); // Unmask all interrupts
 }
