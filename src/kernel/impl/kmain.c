@@ -8,19 +8,9 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
-#include "get_ram_info.h"
+#include "init_ram.h"
 
 extern void print_64_bits(const char* str);
-
-void print_ram_map(void) {
-    for (int i = 0; i < 10; i++) {
-        struct ram_entry e = ram_entries_by_bios[i];
-        kprintf("Entry %d:", i);
-        kprintf(" Base = %x", (unsigned int)(e.base & 0xFFFFFFFF));
-        kprintf(" Length = %x", (unsigned int)(e.length & 0xFFFFFFFF));
-        kprintf(" Type = %d\n", (int)e.type);
-    }
-}
 
 void kmain() {
 

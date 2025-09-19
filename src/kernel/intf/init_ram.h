@@ -8,6 +8,4 @@ struct ram_entry {
         uint32_t type;
 } __attribute__((packed));
 
-struct ram_entry *ram_entries_by_bios = (struct ram_entry *)0x86000;
-
-
+void print_ram_map(void);
