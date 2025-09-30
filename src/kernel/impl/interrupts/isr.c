@@ -3,15 +3,16 @@
 #include "util.h"
 
 extern void keyboard_handler();
+extern void print_clock(uint64_t* tick_pointer);
 
 static isrptr_t interrupt_handlers[256];
-static uint64_t tick = 0;
+uint64_t tick = 0;
 
 
 static void timer_callback(int vector, struct interrupt_frame* frame) {
     (void)vector; (void)frame;         // unused
     tick++;
-    if (tick % 100 == 0) kprintf("x"); // ~1 second if PIT set to 100 Hz
+    if (tick % 100 == 0) print_clock(&tick); // ~1 second if PIT set to 100 Hz
     outb(0x20, 0x20);                  // Send EOI to PIC
 }
 
