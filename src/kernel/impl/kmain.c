@@ -9,17 +9,19 @@
 #include "gdt.h"
 #include "idt.h"
 #include "init_ram.h"
+#include "keyboard.h"
 
 extern void print_64_bits(const char* str);
+extern char get_char(void);
 
-void shell()
+void start_shell()
 {
     while(1) {
         kprintf("SnakeOS> ");
         
         char c;
         do {c = get_char();} while (c != '\n');
-        kprintf('\n');   
+        kprintf("\n");   
     }
 }
 
@@ -35,7 +37,7 @@ void kmain()
     kprintf("Interrupts are enabled!!!\n");
 
     print_ram_map();
-    shell();
+    start_shell();
         
     // Division by zero interrup check
     // int a = 1, b = 0, c;
