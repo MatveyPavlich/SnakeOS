@@ -12,6 +12,9 @@ Plan for C:
 1. Create IDT - done (might need to set up other essential interrupts such as divide by zero etc)
 2. Create keyboard drivers - done
 3. Create basic shell interface
+        - Print SnakeOS on a new line once enter is pressed - done
+        - Implement delete key (for some reason gives rubbish now)
+        - Clear the buffer? Figure out how buffer works and add commands!
 4. Create alarm 
 5. Create a clock - done
 6. Create file system drivers to be able to read from disk
