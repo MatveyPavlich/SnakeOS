@@ -13,7 +13,7 @@ Plan for C:
 2. Create keyboard drivers - done
 3. Create basic shell interface
 4. Create alarm 
-5. Create a clock
+5. Create a clock - done
 6. Create file system drivers to be able to read from disk
 7. Set up graphics card
 8. Do double buffering

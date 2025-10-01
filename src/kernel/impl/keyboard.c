@@ -46,15 +46,16 @@ static unsigned char translate_scancode(uint8_t sc) {
         bool shifted = (shift_l || shift_r);
         unsigned char c = shifted ? shift_map[sc] : base_map[sc];
 
-        if (c >= 'a' && c <= 'z') {
+        if (c >= 'a' && c <= 'z')
             if (caps_lock && !shifted) c = (unsigned char)(c - 'a' + 'A');
-        } else if (c >= 'A' && c <= 'Z') {
+        else if (c >= 'A' && c <= 'Z')
             if (caps_lock && !shifted) c = (unsigned char)(c - 'A' + 'a');
-        }
         return c;
     }
     return 0;
 }
+
+volatile char last_key = 0;
 
 // Keyboard IRQ handler
 static void keyboard_handler(int vector, struct interrupt_frame* frame) {

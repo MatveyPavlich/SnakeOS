@@ -12,8 +12,19 @@
 
 extern void print_64_bits(const char* str);
 
-void kmain() {
+void shell()
+{
+    while(1) {
+        kprintf("SnakeOS> ");
+        
+        char c;
+        do {c = get_char();} while (c != '\n');
+        kprintf('\n');   
+    }
+}
 
+void kmain()
+{
     print_64_bits("Hello from C!\0");
     print_clear();
     kprintf("This is my string\n");
@@ -24,6 +35,7 @@ void kmain() {
     kprintf("Interrupts are enabled!!!\n");
 
     print_ram_map();
+    shell();
         
     // Division by zero interrup check
     // int a = 1, b = 0, c;
