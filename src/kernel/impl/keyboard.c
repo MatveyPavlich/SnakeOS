@@ -111,8 +111,10 @@ static void keyboard_handler(int vector, struct interrupt_frame* frame)
                 unsigned char ch = translate_scancode(make);
                 if (ch) {
                     keybuf_put((char)ch);
-                    char s[2] = { (char)ch, 0 };
-                    kprintf("%s", s);
+                    if (ch != '\n') {
+                        char s[2] = { (char)ch, 0 };
+                        kprintf("%s", s);
+                    }
                 }
             }
             break;
