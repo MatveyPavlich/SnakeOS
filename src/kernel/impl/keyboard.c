@@ -13,8 +13,8 @@
 #define IRQ_KEYBOARD_VECTOR  (32 + 1) // IRQ1 (keyboard) => vector 32 + 1 = 33 (with PIC remapped to 0x20)
 
 // State
-static bool shift_l = false;
-static bool shift_r = false;
+static bool shift_l   = false;
+static bool shift_r   = false;
 static bool caps_lock = false;
 
 // Key's in the buffer
@@ -29,7 +29,7 @@ static void keybuf_put(char c)
         keybuf[keybuf_head] = c;
         keybuf_head = next;
     }
-    // else: buffer full → drop key
+    // else: buffer full => drop key
 }
 
 char get_char(void)
@@ -66,7 +66,6 @@ static const unsigned char shift_map[0x60] = {
 
 
 
-// Translate scancode -> ASCII, with Shift + CapsLock for letters
 static unsigned char translate_scancode(uint8_t sc)
 {
     if (sc < sizeof(base_map)) {
@@ -84,7 +83,10 @@ static unsigned char translate_scancode(uint8_t sc)
     return 0;
 }
 
-
+void handle_character(char c)
+{
+    // TODO: Handle character deletion
+}
 
 // Keyboard IRQ handler
 static void keyboard_handler(int vector, struct interrupt_frame* frame)
@@ -113,7 +115,8 @@ static void keyboard_handler(int vector, struct interrupt_frame* frame)
                     keybuf_put((char)ch);
                     if (ch != '\n') {
                         char s[2] = { (char)ch, 0 };
-                        kprintf("%s", s);
+                        handle_character(s);
+                        // kprintf("%s", s);
                     }
                 }
             }
