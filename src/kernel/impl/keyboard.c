@@ -115,8 +115,8 @@ static void keyboard_handler(int vector, struct interrupt_frame* frame)
                     keybuf_put((char)ch);
                     if (ch != '\n') {
                         char s[2] = { (char)ch, 0 };
-                        handle_character(s);
-                        // kprintf("%s", s);
+                        // handle_character(s);
+                        kprintf("%s", s);
                     }
                 }
             }
