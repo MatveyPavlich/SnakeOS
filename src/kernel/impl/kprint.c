@@ -3,6 +3,14 @@
 #include "stddef.h"
 #include <stdarg.h>
 
+/*=============================================
+Examples:    
+    kprintf("Value: %d\n", 1234);
+    kprintf("Hex: %x\n", 0xBEEF);
+    kprintf("Char: %c\n", 'A');
+    kprintf("String: %s\n", "OSDev!");
+=============================================*/
+
 enum {
     PRINT_COLOUR_BLACK = 0,
     PRINT_COLOUR_WHITE = 15,

@@ -2,21 +2,18 @@
 #include "isr.h"
 #include "util.h"
 
+extern void keyboard_handler();
+extern void print_clock(uint64_t* tick_pointer);
+
 static isrptr_t interrupt_handlers[256];
-static uint64_t tick = 0;
+uint64_t tick = 0;
 
 
 static void timer_callback(int vector, struct interrupt_frame* frame) {
-    (void)vector;  // unused
-    (void)frame;
+    (void)vector; (void)frame;         // unused
     tick++;
-
-    if (tick % 100 == 0) {   // ~1 second if PIT set to 100 Hz
-        kprintf("x");
-    }
-
-    // Send EOI to PIC
-    outb(0x20, 0x20);
+    if (tick % 100 == 0) print_clock(&tick); // ~1 second if PIT set to 100 Hz
+    outb(0x20, 0x20);                  // Send EOI to PIC
 }
 
 void register_interrupt_handler(int vector, isrptr_t handler) {
@@ -28,8 +25,7 @@ void register_interrupt_handler(int vector, isrptr_t handler) {
 }
 
 void initTimer(uint32_t frequency) {
-
-    // PIT runs at 1193182 Hz
+    register_interrupt_handler(32, timer_callback);
     uint32_t divisor = 1193182 / frequency;
 
     // Command byte: channel 0, lobyte/hibyte, mode 3 (square wave)
@@ -52,13 +48,11 @@ void gp_fault_handler(int vector, struct interrupt_frame* frame) {
 
 void isrHandler(int index, struct interrupt_frame* frame) {
 
-    register_interrupt_handler(13, gp_fault_handler);   // GP fault
-    register_interrupt_handler(32, timer_callback); 
+    // register_interrupt_handler(32, keyboard_handler); 
     
     // Call ISR if ptr not empty
-    if (interrupt_handlers[index]) {
+    if (interrupt_handlers[index])
         interrupt_handlers[index](index, frame);
-    }
     
     // Else print a general message
     else {

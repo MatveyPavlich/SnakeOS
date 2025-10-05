@@ -8,29 +8,40 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
+#include "init_ram.h"
+#include "keyboard.h"
 
 extern void print_64_bits(const char* str);
+extern char get_char(void);
 
-void kmain() {
+void start_shell()
+{
+    while(1) {
+        kprintf("SnakeOS> ");
+        
+        char c;
+        do {c = get_char();} while (c != '\n');
+        kprintf("\n");   
+    }
+}
 
+void kmain()
+{
     print_64_bits("Hello from C!\0");
     print_clear();
     kprintf("This is my string\n");
     kprintf("Hello world!\n");
-    kprintf("Value: %d\n", 1234);
-    kprintf("Hex: %x\n", 0xBEEF);
-    kprintf("Char: %c\n", 'A');
-    kprintf("String: %s\n", "OSDev!");
 
     gdtInit();
     idtInit();
-    __asm__ volatile ("sti");
     kprintf("Interrupts are enabled!!!\n");
-    
+
+    print_ram_map();
+    start_shell();
+        
     // Division by zero interrup check
     // int a = 1, b = 0, c;
     // c = 1/0;
 
-    kprintf("Is timer working?\n");
     while (1) __asm__("hlt");
 }

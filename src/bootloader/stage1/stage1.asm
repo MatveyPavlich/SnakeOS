@@ -17,6 +17,9 @@ enter_stage1:
     mov si, MSG_STAGE1                        ; 0x80000 in gdb
     call print                                ; 0x80006 in gdb to skip the print
     
+    mov di, 0x6000
+    call get_memory_map
+
     ; Make sure A20 is enabled
     call ensure_a20                           ; Input = void             
 

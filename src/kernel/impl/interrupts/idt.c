@@ -3,6 +3,7 @@
 #include "idt.h"
 #include "util.h"
 #include "isr.h"
+#include "kprint.h"
 
 #define IDT_DESCRIPTORS 256
 #define PIC1_CMD        0x20
@@ -12,6 +13,8 @@
 
 extern void             loadIdt(IdtMetadata *idt_metadata);
 extern void*            isr_pointer_table[]; // 256 pointers
+extern void             initTimer(uint32_t hz);
+extern void             init_keyboard(void);
 
 static IdtDescriptor  idt_table[IDT_DESCRIPTORS];
 
@@ -44,6 +47,8 @@ void idtInit(void) {
     idt_metadata.base  = (uint64_t)&idt_table;
     loadIdt(&idt_metadata);
 
+    register_interrupt_handler(13, gp_fault_handler);   // GP fault
+
     /*================ Set up PIC to enable hardware interrupts ================*/
     // Start initialization sequence (cascade mode, expect ICW4)
     outb(PIC1_CMD, 0x11);
@@ -71,6 +76,9 @@ void idtInit(void) {
     outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
 
     // // Example: Keyboard IRQ (intex 33)
-    // setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
-    // outb(PIC1_DATA, 0xFD); // Unmask keyboard interrupts
+    setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
+    init_keyboard();
+    outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupt
+
+    __asm__ volatile ("sti"); // Unmask all interrupts
 }
