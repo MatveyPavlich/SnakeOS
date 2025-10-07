@@ -1,4 +1,4 @@
-// vga.c
+// vga.c - dumb pixel pusher
 
 #include "stdint.h"
 #include "stddef.h"
@@ -8,8 +8,12 @@
 #define VGA_MEMO_START 0xB8000
 
 #define VGA_COLOR(fg, bg) ((bg << 4) | (fg & 0x0F))
-#define COLOR_BLACK   0
-#define COLOR_WHITE   15
+
+enum {
+        VGA_COLOUR_BLACK = 0,
+        VGA_COLOUR_WHITE = 15,
+        VGA_COLOUR_RED = 2
+};
 
 typedef struct {
         uint8_t character;
@@ -17,7 +21,7 @@ typedef struct {
 } __attribute__((packed)) Char;
 
 static Char* const vga_memory = (Char*)VGA_MEMO_START;
-static uint8_t default_colour = VGA_COLOR(COLOR_WHITE, COLOR_BLACK);
+static uint8_t default_colour = VGA_COLOR(VGA_COLOUR_BLACK, VGA_COLOUR_WHITE);
 
 void vga_clear_row(size_t row) {
         Char empty = { ' ', default_colour };

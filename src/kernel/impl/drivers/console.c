@@ -34,3 +34,10 @@ FLOW OF EXECUTION
 
 ===============================================================================
 */
+
+/*
+- Move cursor left, right, up, down
+- delete characters
+- write characters
+https://www.linusakesson.net/programming/tty/index.php
+*/
