@@ -61,9 +61,9 @@ $(BUILD_DIR)/idt.o: $(SRC_DIR)/kernel/impl/interrupts/idt.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/isr.o: $(SRC_DIR)/kernel/impl/interrupts/isr.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/keyboard.o: $(SRC_DIR)/kernel/impl/keyboard.c
+$(BUILD_DIR)/keyboard.o: $(SRC_DIR)/kernel/impl/drivers/keyboard.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/init_ram.o: $(SRC_DIR)/kernel/impl/init_ram.c
+$(BUILD_DIR)/init_ram.o: $(SRC_DIR)/kernel/impl/drivers/init_ram.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/print_clock.o: $(SRC_DIR)/kernel/impl/interrupts/print_clock.c
 	$(CC) $(CFLAGS) -c $< -o $@
