@@ -3,13 +3,12 @@
 #include "stddef.h"
 #include <stdarg.h>
 
-/*=============================================
-Examples:    
-kprintf("Value: %d\n", 1234);
-kprintf("Hex: %x\n", 0xBEEF);
-kprintf("Char: %c\n", 'A');
-kprintf("String: %s\n", "OSDev!");
-=============================================*/
+/* Examples: 
+ * kprintf("Value: %d\n", 1234);
+ * kprintf("Hex: %x\n", 0xBEEF);
+ * kprintf("Char: %c\n", 'A');
+ * kprintf("String: %s\n", "OSDev!");
+ */
 
 enum {
         PRINT_COLOUR_BLACK = 0,
@@ -29,7 +28,8 @@ size_t col = 0;
 size_t row = 0;
 uint8_t colour = PRINT_COLOUR_WHITE | PRINT_COLOUR_BLACK << 4;
 
-void clear_row(size_t row) {
+void clear_row(size_t row)
+{
         Char empty = (Char) {
                 .character = ' ',
                         .colour = colour,
@@ -40,13 +40,13 @@ void clear_row(size_t row) {
         }
 }
 
-void print_clear() {
-        for (size_t i = 0; i < NUM_ROWS; i++) {
-                clear_row(i);
-        }
+void print_clear()
+{
+        for (size_t i = 0; i < NUM_ROWS; i++) clear_row(i);
 }
 
-void print_newline() {
+void print_newline()
+{
         col = 0;
 
         if (row < NUM_ROWS - 1) {
@@ -64,7 +64,8 @@ void print_newline() {
         clear_row(NUM_ROWS - 1);
 }
 
-void print_char(char character) {
+void print_char(char character)
+{
         if (character == '\n') {
                 print_newline();
                 return;
@@ -82,15 +83,15 @@ void print_char(char character) {
         col++;
 }
 
-// -------------------- Helpers -------------------- //
-void print_str(const char* str) {
-        for (size_t i = 0; str[i] != '\0'; i++) {
-                print_char(str[i]);
-        }
+/* Helpers */
+void print_str(const char* str)
+{
+        for (size_t i = 0; str[i] != '\0'; i++) print_char(str[i]);
 }
 
 // Convert integer to string (decimal)
-void itoa_dec(int value, char* buffer) {
+void itoa_dec(int value, char* buffer)
+{
         char temp[64];
         int i = 0;
         int neg = 0;
@@ -122,7 +123,8 @@ void itoa_dec(int value, char* buffer) {
 }
 
 // Convert integer to string (hex)
-void itoa_hex(unsigned int value, char* buffer) {
+void itoa_hex(unsigned int value, char* buffer)
+{
         const char* digits = "0123456789ABCDEF";
         char temp[32];
         int i = 0;
@@ -148,8 +150,9 @@ void itoa_hex(unsigned int value, char* buffer) {
         buffer[j] = '\0';
 }
 
-// -------------------- Kernel Printf -------------------- //
-void kprintf(const char* fmt, ...) {
+// Kernel Printf main function //
+void kprintf(const char* fmt, ...)
+{
         va_list args;
         va_start(args, fmt);
 
