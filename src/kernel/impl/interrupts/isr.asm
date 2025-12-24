@@ -1,5 +1,5 @@
 global isr_pointer_table
-extern isrHandler  ; C function: void isrHandler(int vector);
+extern isr_handler  ; C function: void isrHandler(int vector);
 
 bits 64
 
@@ -16,7 +16,7 @@ global isr_stub_%1
 isr_stub_%1:
     mov rdi, %1        ; TODO: see if I need to PUSH, POP old RDI to preserve it
     mov rsi, rsp
-    call isrHandler
+    call isr_handler
     ; add rsp, 8         ; clean up argument
     iretq
 %endmacro

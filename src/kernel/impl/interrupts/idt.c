@@ -13,72 +13,71 @@
 
 extern void             loadIdt(IdtMetadata *idt_metadata);
 extern void*            isr_pointer_table[]; // 256 pointers
-extern void             initTimer(uint32_t hz);
+extern void             init_timer(uint32_t hz);
 extern void             init_keyboard(void);
 
 static IdtDescriptor  idt_table[IDT_DESCRIPTORS];
 
 
 
-static void setIdtEntry(int intex, uintptr_t *isr, uint8_t flags, uint8_t ist) {
-    uint64_t addr = (uint64_t)isr;
+static void set_idt_entry(int intex, uintptr_t *isr, uint8_t flags, uint8_t ist)
+{
+        uint64_t addr = (uint64_t)isr;
 
-    idt_table[intex].offset_low  = addr & 0xFFFF;
-    idt_table[intex].selector    = 0x08;     // kernel code segment selector
-    idt_table[intex].ist         = ist & 0x7;
-    idt_table[intex].type_attr   = flags;    // e.g. 0x8E = present, ring0, 64-bit interrupt gate
-    idt_table[intex].offset_mid  = (addr >> 16) & 0xFFFF;
-    idt_table[intex].offset_high = (addr >> 32) & 0xFFFFFFFF;
-    idt_table[intex].reserved    = 0;
+        idt_table[intex].offset_low  = addr & 0xFFFF;
+        idt_table[intex].selector    = 0x08;     // kernel code segment selector
+        idt_table[intex].ist         = ist & 0x7;
+        idt_table[intex].type_attr   = flags;    // e.g. 0x8E = present, ring0, 64-bit interrupt gate
+        idt_table[intex].offset_mid  = (addr >> 16) & 0xFFFF;
+        idt_table[intex].offset_high = (addr >> 32) & 0xFFFFFFFF;
+        idt_table[intex].reserved    = 0;
 }
 
-void idt_init(void) {
+/* Set up CPU exceptions (0–31) */ 
+void idt_init(void)
+{
+        // Fill exception handlers (0–31)
+        for (int i = 0; i < 32; i++)
+                set_idt_entry(i, isr_pointer_table[i], 0x8E, 0);
 
-    /*================ Set up CPU exceptions (0–31) ================*/
+        // Load IDT
+        IdtMetadata idt_metadata;
+        idt_metadata.limit = sizeof(idt_table) - 1;
+        idt_metadata.base  = (uint64_t)&idt_table;
+        loadIdt(&idt_metadata);
 
-    // Fill exception handlers (0–31)
-    for (int i = 0; i < 32; i++) {
-        setIdtEntry(i, isr_pointer_table[i], 0x8E, 0); // ring0, interrupt gate
-    }
+        register_interrupt_handler(13, gp_fault_handler);   // GP fault
 
-    // Load IDT
-    IdtMetadata idt_metadata;
-    idt_metadata.limit = sizeof(idt_table) - 1;
-    idt_metadata.base  = (uint64_t)&idt_table;
-    loadIdt(&idt_metadata);
+        /* Set up PIC to enable hardware interrupts */
+        // Start initialization sequence (cascade mode, expect ICW4)
+        outb(PIC1_CMD, 0x11);
+        outb(PIC2_CMD, 0x11);
 
-    register_interrupt_handler(13, gp_fault_handler);   // GP fault
+        // Map master to 0x20-0x27 (32-39) IDT entries, slave to 0x28-2F (40-47) IDT entries
+        outb(PIC1_DATA, 0x20);
+        outb(PIC2_DATA, 0x28);
 
-    /*================ Set up PIC to enable hardware interrupts ================*/
-    // Start initialization sequence (cascade mode, expect ICW4)
-    outb(PIC1_CMD, 0x11);
-    outb(PIC2_CMD, 0x11);
+        // Setup cascading
+        outb(PIC1_DATA, 0x04); // Tell master that slave is at IRQ2
+        outb(PIC2_DATA, 0x02); // Tell slave its cascade identity
 
-    // Map master to 0x20-0x27 (32-39) IDT entries, slave to 0x28-2F (40-47) IDT entries
-    outb(PIC1_DATA, 0x20);
-    outb(PIC2_DATA, 0x28);
+        // Environment info
+        outb(PIC1_DATA, 0x1);
+        outb(PIC2_DATA, 0x1);
 
-    // Setup cascading
-    outb(PIC1_DATA, 0x04); // Tell master that slave is at IRQ2
-    outb(PIC2_DATA, 0x02); // Tell slave its cascade identity
+        // Mask all IRQs until they are set up (to make sure they don't go into the buffer)
+        outb(PIC1_DATA, 0xFF);
+        outb(PIC2_DATA, 0xFF);
 
-    // Environment info
-    outb(PIC1_DATA, 0x1);
-    outb(PIC2_DATA, 0x1);
+        // Timer IRQ (intex 32)
+        set_idt_entry(32, isr_pointer_table[32], 0x8E, 0);
+        init_timer(100);
+        outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
 
-    // Mask all IRQs until they are set up (to make sure they don't go into the buffer)
-    outb(PIC1_DATA, 0xFF);
-    outb(PIC2_DATA, 0xFF);
+        // Keyboard IRQ (intex 33)
+        set_idt_entry(33, isr_pointer_table[33], 0x8E, 0);
+        init_keyboard();
+        outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupt
 
-    // Example: Timer IRQ (intex 32)
-    setIdtEntry(32, isr_pointer_table[32], 0x8E, 0);
-    initTimer(100);
-    outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
-
-    // // Example: Keyboard IRQ (intex 33)
-    setIdtEntry(33, isr_pointer_table[33], 0x8E, 0);
-    init_keyboard();
-    outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupt
-
-    __asm__ volatile ("sti"); // Unmask all interrupts
+        __asm__ volatile ("sti"); // Unmask all interrupts
 }
