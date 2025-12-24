@@ -22,5 +22,5 @@ kernel_entry:
     hlt
     jmp $
 
-%include "./src/bootloader/stage1/utils_long_mode.asm"
+%include "./boot/x86/stage1/utils_long_mode.asm"
 MSG_KERNEL db "SUCCESSFUL: Kernel entry loaded. Loading the kernel...", 0x00

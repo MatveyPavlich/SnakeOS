@@ -37,8 +37,8 @@ enter_stage1:
     jmp dword CODE_SEG:start_protected_mode   ; Far jump by using the segment from GDT
 
 
-%include "./src/bootloader/shared_utils.asm"
-%include "./src/bootloader/stage1/utils_real_mode.asm"
+%include "./boot/x86/shared_utils.asm"
+%include "./boot/x86/stage1/utils_real_mode.asm"
 MSG_STAGE1: db "Stage1 live, do you copy? Pshh... Pshh...", 0x0D, 0x0A, 0x00
 
 
@@ -89,7 +89,7 @@ start_protected_mode:
     ; jmp dword null_descriptor:start_lm      ; Will not work
 
 
-%include "./src/bootloader/stage1/utils_protected_mode.asm"
+%include "./boot/x86/stage1/utils_protected_mode.asm"
 MSG_PROT_MODE          db "MODE ENTERED: Protected", 0x00
 PRINT_STRING_POSSITION dd 0xb8000
 
@@ -118,7 +118,7 @@ start_long_mode:
     hlt
     jmp $
 
-%include "./src/bootloader/stage1/utils_long_mode.asm"
+%include "./boot/x86/stage1/utils_long_mode.asm"
 long_mode_enabled db "MODE ENTERED: Long", 0
 kernel_load_offset equ 0x90000                ; Stage0 loaded kernel.bin at this offset (stayed the same since)
                                               

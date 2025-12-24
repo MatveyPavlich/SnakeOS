@@ -2,15 +2,17 @@
 ASM=nasm
 CC=gcc
 LD=ld
-SRC_DIR=src
 BUILD_DIR=build
 
-CFLAGS = -ffreestanding -m64 -nostdlib -O0 -Wall -g -Isrc/kernel/intf -fno-stack-protector -fno-stack-check
-# -fno-stack-protector -fno-stack-check prevent GCC inserting hidden runtime dependencies into a freestanding kernel.
-
+CFLAGS = -ffreestanding -m64 -nostdlib -O0 -Wall -g -Iinclude \
+	 -fno-stack-protector -fno-stack-check
+# -fno-stack-protector -fno-stack-check prevent GCC inserting hidden runtime
+# dependencies into a freestanding kernel.
 # Note! -O0 removes optimisations to easier debug
-# Commit a4214a854972e04ffb38ac2af53b898a47688990: code breaks with "-O2" flag (i.e., when compiler starts to optimise the code) 
-LDFLAGS=-T $(SRC_DIR)/kernel/impl/kernel.ld -nostdlib -z max-page-size=0x200000
+# Commit a4214a854972e04ffb38ac2af53b898a47688990: code breaks with "-O2" flag
+# (i.e., when compiler starts to optimise the code) 
+
+LDFLAGS=-T kernel.ld -nostdlib -z max-page-size=0x200000
 
 # === Phony targets ===
 .PHONY: all floppy_image stage0 stage1 kernel run debug clean
@@ -28,44 +30,61 @@ $(BUILD_DIR)/main.img: stage0 stage1 kernel
 # === Bootloader ===
 stage0: $(BUILD_DIR)/stage0.bin
 $(BUILD_DIR)/stage0.bin:
-	$(ASM) $(SRC_DIR)/bootloader/stage0/stage0.asm -f bin -o $(BUILD_DIR)/stage0.bin
+	$(ASM) boot/x86/stage0/stage0.asm -f bin -o $(BUILD_DIR)/stage0.bin
 
 # === Stage 1 ===
 stage1: $(BUILD_DIR)/stage1.bin
 $(BUILD_DIR)/stage1.bin:
-	$(ASM) $(SRC_DIR)/bootloader/stage1/stage1.asm -f bin -o $(BUILD_DIR)/stage1.bin
+	$(ASM) boot/x86/stage1/stage1.asm -f bin -o $(BUILD_DIR)/stage1.bin
 
 # === Kernel ===
 kernel: $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.bin
-$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o $(BUILD_DIR)/isr_asm.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/init_ram.o $(BUILD_DIR)/print_clock.o $(SRC_DIR)/kernel/impl/kernel.ld
-	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o $(BUILD_DIR)/isr_asm.o $(BUILD_DIR)/keyboard.o $(BUILD_DIR)/init_ram.o $(BUILD_DIR)/print_clock.o
+$(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
+		         $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o           \
+			 $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o         \
+			 $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o              \
+			 $(BUILD_DIR)/isr_asm.o $(BUILD_DIR)/keyboard.o     \
+			 $(BUILD_DIR)/init_ram.o $(BUILD_DIR)/print_clock.o \
+			 kernel.ld
+	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o \
+			    $(BUILD_DIR)/kmain.o           \
+			    $(BUILD_DIR)/kprint.o          \
+			    $(BUILD_DIR)/gdt.o             \
+			    $(BUILD_DIR)/gdt_asm.o         \
+   			    $(BUILD_DIR)/util.o            \
+			    $(BUILD_DIR)/idt.o             \
+			    $(BUILD_DIR)/isr.o             \
+			    $(BUILD_DIR)/isr_asm.o         \
+			    $(BUILD_DIR)/keyboard.o        \
+			    $(BUILD_DIR)/init_ram.o        \
+			    $(BUILD_DIR)/print_clock.o
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 	objcopy -O binary $< $@
 
-$(BUILD_DIR)/kernel_entry.o: $(SRC_DIR)/kernel/impl/kernel_entry.asm
+$(BUILD_DIR)/kernel_entry.o: boot/x86/kernel_entry.asm
 	$(ASM) -f elf64 $< -o $@
-$(BUILD_DIR)/gdt_asm.o: $(SRC_DIR)/kernel/impl/gdt/gdt.asm
+$(BUILD_DIR)/gdt_asm.o: gdt/gdt.asm
 	$(ASM) -f elf64 $< -o $@
-$(BUILD_DIR)/isr_asm.o: $(SRC_DIR)/kernel/impl/interrupts/isr.asm
+$(BUILD_DIR)/isr_asm.o: interrupts/isr.asm
 	$(ASM) -f elf64 $< -o $@
 
-$(BUILD_DIR)/kmain.o: $(SRC_DIR)/kernel/impl/kmain.c
+$(BUILD_DIR)/kmain.o: init/kmain.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/kprint.o: $(SRC_DIR)/kernel/impl/kprint.c
+$(BUILD_DIR)/kprint.o: kernel/kprint.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/gdt.o: $(SRC_DIR)/kernel/impl/gdt/gdt.c
+$(BUILD_DIR)/gdt.o: gdt/gdt.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/util.o: $(SRC_DIR)/kernel/impl/util.c
+$(BUILD_DIR)/util.o: lib/util.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/idt.o: $(SRC_DIR)/kernel/impl/interrupts/idt.c
+$(BUILD_DIR)/idt.o: interrupts/idt.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/isr.o: $(SRC_DIR)/kernel/impl/interrupts/isr.c
+$(BUILD_DIR)/isr.o: interrupts/isr.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/keyboard.o: $(SRC_DIR)/kernel/impl/drivers/keyboard.c
+$(BUILD_DIR)/keyboard.o: drivers/keyboard.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/init_ram.o: $(SRC_DIR)/kernel/impl/drivers/init_ram.c
+$(BUILD_DIR)/init_ram.o: drivers/init_ram.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/print_clock.o: $(SRC_DIR)/kernel/impl/interrupts/print_clock.c
+$(BUILD_DIR)/print_clock.o: interrupts/print_clock.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # === Run ===

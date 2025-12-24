@@ -91,8 +91,8 @@ main:
 
 
 
-%include "./src/bootloader/stage0/utils.asm"
-%include "./src/bootloader/shared_utils.asm"
+%include "boot/x86/stage0/utils.asm"
+%include "boot/x86/shared_utils.asm"
 
 read_failure:           db "Read failed", 0x0D, 0x0A, 0x00
 disk_read_sucessfully:  db "Read finished", 0x0D, 0x0A, 0x00
