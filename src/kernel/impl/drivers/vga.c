@@ -26,7 +26,7 @@ static uint8_t default_colour = VGA_COLOR(VGA_COLOUR_BLACK, VGA_COLOUR_WHITE);
 void vga_clear_row(size_t row) {
         Char empty = { ' ', default_colour };
         for (size_t col = 0; col < VGA_NUM_COLS; col++)
-            vga_memory[col + VGA_NUM_COLS * row] = empty;
+                vga_memory[col + VGA_NUM_COLS * row] = empty;
 }
 
 void vga_put_char(size_t row, size_t col, char c) {
