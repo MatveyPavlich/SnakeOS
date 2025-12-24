@@ -16,4 +16,4 @@ typedef struct {
     uint64_t base;
 } __attribute__((packed)) IdtMetadata;
 
-void idtInit(void);
+void idt_init(void);

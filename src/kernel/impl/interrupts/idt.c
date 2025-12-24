@@ -32,7 +32,7 @@ static void setIdtEntry(int intex, uintptr_t *isr, uint8_t flags, uint8_t ist) {
     idt_table[intex].reserved    = 0;
 }
 
-void idtInit(void) {
+void idt_init(void) {
 
     /*================ Set up CPU exceptions (0–31) ================*/
 

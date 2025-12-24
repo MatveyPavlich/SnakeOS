@@ -32,8 +32,8 @@ void kmain()
         kprintf("This is my string\n");
         kprintf("Hello world!\n");
 
-        gdtInit();
-        idtInit();
+        gdt_init();
+        idt_init();
         kprintf("Interrupts are enabled!!!\n");
 
         print_ram_map();
