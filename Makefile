@@ -65,7 +65,7 @@ $(BUILD_DIR)/kernel_entry.o: boot/x86/kernel_entry.asm
 	$(ASM) -f elf64 $< -o $@
 $(BUILD_DIR)/gdt_asm.o: arch/x86/gdt.asm
 	$(ASM) -f elf64 $< -o $@
-$(BUILD_DIR)/isr_asm.o: interrupts/isr.asm
+$(BUILD_DIR)/isr_asm.o: arch/x86/isr.asm
 	$(ASM) -f elf64 $< -o $@
 
 $(BUILD_DIR)/kmain.o: init/kmain.c
