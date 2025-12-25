@@ -76,9 +76,9 @@ $(BUILD_DIR)/gdt.o: arch/x86/gdt.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/util.o: lib/util.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/idt.o: interrupts/idt.c
+$(BUILD_DIR)/idt.o: arch/x86/idt.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/isr.o: interrupts/isr.c
+$(BUILD_DIR)/isr.o: arch/x86/isr.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/keyboard.o: drivers/keyboard.c
 	$(CC) $(CFLAGS) -c $< -o $@
