@@ -63,7 +63,7 @@ $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 
 $(BUILD_DIR)/kernel_entry.o: boot/x86/kernel_entry.asm
 	$(ASM) -f elf64 $< -o $@
-$(BUILD_DIR)/gdt_asm.o: gdt/gdt.asm
+$(BUILD_DIR)/gdt_asm.o: arch/x86/gdt.asm
 	$(ASM) -f elf64 $< -o $@
 $(BUILD_DIR)/isr_asm.o: interrupts/isr.asm
 	$(ASM) -f elf64 $< -o $@
@@ -72,7 +72,7 @@ $(BUILD_DIR)/kmain.o: init/kmain.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/kprint.o: kernel/kprint.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/gdt.o: gdt/gdt.c
+$(BUILD_DIR)/gdt.o: arch/x86/gdt.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/util.o: lib/util.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -84,7 +84,7 @@ $(BUILD_DIR)/keyboard.o: drivers/keyboard.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/init_ram.o: drivers/init_ram.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/print_clock.o: interrupts/print_clock.c
+$(BUILD_DIR)/print_clock.o: drivers/print_clock.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # === Run ===
