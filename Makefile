@@ -45,6 +45,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			 $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o              \
 			 $(BUILD_DIR)/isr_asm.o $(BUILD_DIR)/keyboard.o     \
 			 $(BUILD_DIR)/init_ram.o $(BUILD_DIR)/print_clock.o \
+			 $(BUILD_DIR)/irq.o $(BUILD_DIR)/irq.o \
 			 kernel.ld
 	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o \
 			    $(BUILD_DIR)/kmain.o           \
@@ -57,6 +58,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			    $(BUILD_DIR)/isr_asm.o         \
 			    $(BUILD_DIR)/keyboard.o        \
 			    $(BUILD_DIR)/init_ram.o        \
+			    $(BUILD_DIR)/irq.o             \
 			    $(BUILD_DIR)/print_clock.o
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 	objcopy -O binary $< $@
@@ -85,6 +87,8 @@ $(BUILD_DIR)/keyboard.o: drivers/keyboard.c
 $(BUILD_DIR)/init_ram.o: drivers/init_ram.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/print_clock.o: drivers/print_clock.c
+	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/irq.o: kernel/irq.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # === Run ===
