@@ -29,6 +29,7 @@ static struct irq_chip i8259A_chip = {
 	.irq_eoi         = i8259A_send_eoi,
 };
 
+/* Init hook to be exposed for the registration */
 void irq_arch_init(void)
 {
 	irq_set_chip(&i8259A_chip);
@@ -78,7 +79,6 @@ static void i8259A_mask_irq(int irq)
 	else {
 		port = PIC2_DATA;
 		irq -= 8; // slave IRQs are 0–7 internally
-
 	}
 
 	value = inb(port);
