@@ -9,6 +9,13 @@ struct irq_desc {
 };
 
 static struct irq_desc irq_table[IRQ_NMBR];
+static struct irq_chip irq_chip_active;
+
+void irq_set_chip(struct irq_chip *chip)
+{
+	irq_chip_active = chip;
+	if (irq_chip_active->irq_init) irq_chip_active->irq_init();
+}
 
 /*
  * request_irq - Add a handler to an interrupt line

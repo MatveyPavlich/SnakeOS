@@ -1,13 +1,9 @@
-/* i8259A controller set up (PIC) */
+/* Impelentation of the i8259A controller (PIC) */
 
 #include "util.h"
+#include "irq.h"
 
-/* irq_chip is located in the irq core module (kernel/irq.c). However, don't
- * want to expose its API to i8259A.c since it should be powering it
- */
-extern struct irq_chip;
-
-#define PIC1	     0x20       /* IO port base address for master PIC */
+#define PIC1         0x20       /* IO port base address for master PIC */
 #define PIC2         0xA0       /* IO port base address for slave PIC */
 #define PIC1_CMD     PIC1
 #define PIC1_DATA    (PIC1 + 1)
@@ -18,18 +14,25 @@ extern struct irq_chip;
 #define PIC_EOI      0x20
 
 /* Forward declarations */
-void i8259A_init(void);
-void i8259A_disable_all(void);
-void i8259A_unmask_irq(int irq);
-void i8259A_send_eoi(int irq);
+static void i8259A_init(void);
+static void i8259A_mask_all(void);
+static void i8259A_mask_irq(int irq);
+static void i8259A_unmask_irq(int irq);
+static void i8259A_send_eoi(int irq);
 
 static struct irq_chip i8259A_chip = {
 	.name            = "i8259A",
 	.irq_init        = i8259A_init,
-	.irq_disable_all = i8259A_disable_all,
-	.irq_unmask_irq  = i8259A_unmask_irq,
+	.irq_shutdown    = i8259A_mask_all,
+	.irq_mask_irq    = i8259A_mask_irq,
+        .irq_unmask_irq  = i8259A_unmask_irq,
 	.irq_eoi         = i8259A_send_eoi,
 };
+
+void irq_arch_init(void)
+{
+	irq_set_chip(&i8259A_chip);
+}
 
 /* Set up PIC to enable hardware interrupts */
 static void i8259A_init(void)
@@ -52,15 +55,36 @@ static void i8259A_init(void)
         outb(PIC2_DATA, 0x1);
 
         /* Mask all IRQs. Useful for making sure they don't go into the buffer */
-        i8259A_disable_all();
+        i8259A_mask_all();
 
 }
 
 /* Mask all IRQs. Useful for making sure they don't go into the buffer */
-static void i8259A_disable_all(void)
+static void i8259A_mask_all(void)
 {
         outb(PIC1_DATA, 0xFF);
         outb(PIC2_DATA, 0xFF);
+}
+
+/* i8259A_mask_irq - mask specified interrupt line to deactivate it
+ * @irq:             Interrupt request line
+ */
+static void i8259A_mask_irq(int irq)
+{
+	uint16_t port;
+	uint8_t value;
+
+	if (irq < 8) port = PIC1_DATA;
+	else {
+		port = PIC2_DATA;
+		irq -= 8; // slave IRQs are 0–7 internally
+
+	}
+
+	value = inb(port);
+	value |= (1 << irq); // set bit to mask
+
+	outb(port, value);
 }
 
 /* i8259A_unmask_irq - unmask specified interrupt line to activate it
@@ -76,7 +100,7 @@ static void i8259A_unmask_irq(int irq)
         // Slave PIC
         else {
                 port = PIC2_DATA;
-                irq -= 8;   // slave IRQs are 0–7 internally
+                irq -= 8; // slave IRQs are 0–7 internally
         }
 
         value = inb(port);

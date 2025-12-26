@@ -13,18 +13,22 @@ struct interrupt_frame {
 /* irq_chip - structure to represent all properties of an IRQ chip
  * @name:            name of the chip
  * @irq_init:        int the chip
- * @irq_disable_all: disabling all interrupts to prevent them going into
- *                   the buffer
- * @irq_unmask:      unmask a specific irq
+ * @irq_shutdown:    mask all interrupts to prevent them going into the buffer.
+ *                   Do this before switching to a different irq_chip
+ * @irq_mask_irq:    mask a specific irq
+ * @irq_unmask_irq:  unmask a specific irq
  * @irq_eoi:         send an End Of Interrupt (EOI) signal to irq_chip
  */
 struct irq_chip {
         const char *name;
         void (*irq_init)(void);
-        void (*irq_disable_all)(void);
-        void (*irq_unmask)(int irq);
+        void (*irq_shutdown)(void);
+        void (*irq_mask_irq)(int irq);
+        void (*irq_unmask_irq)(int irq);
         void (*irq_eoi)(int irq);
 };
+
+void irq_set_chip(struct irq_chip *chip);
 
 typedef void (*irq_handler_t)(struct interrupt_frame *);
 int register_irq(int irq, irq_handler_t handler, void *dev);
