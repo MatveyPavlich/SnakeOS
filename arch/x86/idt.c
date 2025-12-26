@@ -11,14 +11,12 @@
 #define PIC2_CMD        0xA0
 #define PIC2_DATA       0xA1
 
-extern void             loadIdt(IdtMetadata *idt_metadata);
+extern void             idt_load(struct idt_metadata *idt_metadata);
 extern void*            isr_pointer_table[]; // 256 pointers
 extern void             init_timer(uint32_t hz);
 extern void             init_keyboard(void);
 
 static IdtDescriptor  idt_table[IDT_DESCRIPTORS];
-
-
 
 static void set_idt_entry(int intex, uintptr_t *isr, uint8_t flags, uint8_t ist)
 {
@@ -44,30 +42,9 @@ void idt_init(void)
         IdtMetadata idt_metadata;
         idt_metadata.limit = sizeof(idt_table) - 1;
         idt_metadata.base  = (uint64_t)&idt_table;
-        loadIdt(&idt_metadata);
+        idt_load(&idt_metadata);
 
         register_interrupt_handler(13, gp_fault_handler);   // GP fault
-
-        /* Set up PIC to enable hardware interrupts */
-        // Start initialization sequence (cascade mode, expect ICW4)
-        outb(PIC1_CMD, 0x11);
-        outb(PIC2_CMD, 0x11);
-
-        // Map master to 0x20-0x27 (32-39) IDT entries, slave to 0x28-2F (40-47) IDT entries
-        outb(PIC1_DATA, 0x20);
-        outb(PIC2_DATA, 0x28);
-
-        // Setup cascading
-        outb(PIC1_DATA, 0x04); // Tell master that slave is at IRQ2
-        outb(PIC2_DATA, 0x02); // Tell slave its cascade identity
-
-        // Environment info
-        outb(PIC1_DATA, 0x1);
-        outb(PIC2_DATA, 0x1);
-
-        // Mask all IRQs until they are set up (to make sure they don't go into the buffer)
-        outb(PIC1_DATA, 0xFF);
-        outb(PIC2_DATA, 0xFF);
 
         // Timer IRQ (intex 32)
         set_idt_entry(32, isr_pointer_table[32], 0x8E, 0);

@@ -1,12 +1,14 @@
 #include "stdint.h"
 #include "irq.h"
 
+// Implementation of the system timer
+
 #define TIMER_INTERRUPT_LINE 32
+#define CLOCK_FREQUENCY 100
 #define VGA_MEMORY ((uint8_t*)0xB8000)
 #define VGA_COLS 80
 #define VGA_ROWS 25
 
-static const int PIT_FREQUENCY = 100;
 static uint64_t tick = 0;
 
 /* Forward declarations */
@@ -18,7 +20,7 @@ void timer_init()
 {
         if (register_irq(TIMER_INTERRUPT_LINE, timer_callback, NULL))
                 kprint("Error: irq allocation to the timer failed\n");
-        uint32_t divisor = 1193182 / PIT_FREQUENCY;
+        uint32_t divisor = 1193182 / CLOCK_FREQUENCY;
 
         // Command byte: channel 0, lobyte/hibyte, mode 3 (square wave)
         outb(0x43, 0x36);
@@ -30,13 +32,13 @@ static void timer_callback(int vector, struct interrupt_frame* frame)
 {
         (void)vector; (void)frame;         // unused
         tick++;
-        if (tick % 100 == 0) timer_display_value(&tick); // ~1 second if PIT = 100 Hz
+        if (tick % CLOCK_FREQUENCY == 0) timer_display_value(&tick); // ~1 sec
         outb(0x20, 0x20);                  // Send EOI to PIC
 }
 
 static void timer_display_value(uint64_t* tick_pointer)
 {
-        uint64_t total_seconds = *tick_pointer / PIT_FREQUENCY;
+        uint64_t total_seconds = *tick_pointer / CLOCK_FREQUENCY;
         uint64_t hours = total_seconds / 3600;
         uint64_t minutes = (total_seconds / 60) % 60;
         uint64_t seconds = total_seconds % 60;

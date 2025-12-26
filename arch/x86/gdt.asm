@@ -1,6 +1,6 @@
 global loadGdtr
 global loadLtr
-global loadIdt
+global idt_load
 
 bits 64
 
@@ -35,6 +35,6 @@ loadLtr:
     ret
 
 
-loadIdt:
+idt_load:
     lidt [rdi]   ; pointer to IdtDescriptor passed in RDI
     ret

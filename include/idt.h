@@ -9,11 +9,11 @@ typedef struct {
     uint16_t offset_mid;   // bits 16..31 of handler address
     uint32_t offset_high;  // bits 32..63 of handler address
     uint32_t reserved;     // do not touch, some intel magic
-} __attribute__((packed)) IdtDescriptor;
+} __attribute__((packed)) idt_descriptor_t;
 
-typedef struct {
+struct idt_metadata {
     uint16_t limit;
     uint64_t base;
-} __attribute__((packed)) IdtMetadata;
+} __attribute__((packed));
 
 void idt_init(void);

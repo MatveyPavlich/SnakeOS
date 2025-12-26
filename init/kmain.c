@@ -38,6 +38,7 @@ void kmain()
         kprintf("Interrupts are enabled!!!\n");
 
         print_ram_map();
+        timer_init();
         start_shell();
 
         // Division by zero interrup check

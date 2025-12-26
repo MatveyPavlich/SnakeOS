@@ -30,7 +30,7 @@ int register_irq(int irq, irq_handler_t handler, void *dev)
 
 /*
  * dispatch_irq - Add a handler to an interrupt line
- * @iqr:         Then interrupt line to allocate
+ * @iqr:          Then interrupt line to allocate
  */
 void dispatch_irq(int irq)
 {
