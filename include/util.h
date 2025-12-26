@@ -15,3 +15,11 @@ static inline uint8_t inb(uint16_t port) {
     __asm__ volatile ( "inb %1, %0" : "=a"(ret) : "Nd"(port) );
     return ret;
 }
+
+/* Wait 1-4 ms. Useful for PIC remapping on old hardware. Linux uses port 0x80,
+ * so am I.
+ * */
+static inline void io_wait(void)
+{
+    outb(0x80, 0);
+}
