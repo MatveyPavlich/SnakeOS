@@ -39,7 +39,7 @@ void irq_arch_init(void)
 static void i8259A_init(void)
 {
 
-        // Start initialization sequence (cascade mode, expect ICW4)
+        /* Start initialization sequence (cascade mode, expect ICW4) */
         outb(PIC1_CMD, 0x11);
         outb(PIC2_CMD, 0x11);
 
@@ -47,11 +47,11 @@ static void i8259A_init(void)
         outb(PIC1_DATA, PIC1_IDT_POS);
         outb(PIC2_DATA, PIC2_IDT_POS);
 
-        // Setup cascading
+        /* Setup cascading */
         outb(PIC1_DATA, 0x04); // Tell master that slave is at IRQ2
         outb(PIC2_DATA, 0x02); // Tell slave its cascade identity
 
-        // Environment info
+        /* Environment info */
         outb(PIC1_DATA, 0x1);
         outb(PIC2_DATA, 0x1);
 
