@@ -4,7 +4,6 @@
 #include "stdint.h"
 #include <stdbool.h>
 
-
 #define PS2_DATA        0x60
 #define PIC1_CMD        0x20
 #define PIC1_DATA       0x21

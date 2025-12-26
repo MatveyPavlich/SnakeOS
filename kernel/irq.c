@@ -37,3 +37,11 @@ void dispatch_irq(int irq)
         if (irq_table[irq].handler)
                 irq_table[irq].handler(irq, irq_table[irq].dev_id);
 }
+
+// void irq_dispatch(int irq, struct interrupt_frame *frame)
+// {
+//         if (handlers[irq])
+//                 handlers[irq](irq, frame);
+//
+//         pic_send_eoi(irq);
+// }
