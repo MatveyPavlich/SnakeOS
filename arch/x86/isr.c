@@ -2,20 +2,8 @@
 #include "isr.h"
 #include "util.h"
 
-// extern void keyboard_handler();
-extern void print_clock(uint64_t* tick_pointer);
-
 static isrptr_t interrupt_handlers[256];
-uint64_t tick = 0;
 
-
-static void timer_callback(int vector, struct interrupt_frame* frame)
-{
-        (void)vector; (void)frame;         // unused
-        tick++;
-        if (tick % 100 == 0) print_clock(&tick); // ~1 second if PIT = 100 Hz
-        outb(0x20, 0x20);                  // Send EOI to PIC
-}
 
 void register_interrupt_handler(int vector, isrptr_t handler)
 {
@@ -23,16 +11,6 @@ void register_interrupt_handler(int vector, isrptr_t handler)
         if (vector < 0 || vector >= 256) return;
 
         interrupt_handlers[vector] = handler;
-}
-
-void init_timer(uint32_t frequency) {
-        register_interrupt_handler(32, timer_callback);
-        uint32_t divisor = 1193182 / frequency;
-
-        // Command byte: channel 0, lobyte/hibyte, mode 3 (square wave)
-        outb(0x43, 0x36);
-        outb(0x40, divisor & 0xFF);         // low byte
-        outb(0x40, (divisor >> 8) & 0xFF);  // high byte
 }
 
 void gp_fault_handler(int vector, struct interrupt_frame* frame)

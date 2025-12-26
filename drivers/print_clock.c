@@ -1,12 +1,42 @@
 #include "stdint.h"
+#include "irq.h"
 
 #define VGA_MEMORY ((uint8_t*)0xB8000)
 #define VGA_COLS 80
 #define VGA_ROWS 25
 
 static const int PIT_FREQUENCY = 100;
+uint64_t tick = 0;
 
-void print_clock(uint64_t* tick_pointer)
+/* Forward declarations */
+static void timer_callback(int vector, struct interrupt_frame* frame);
+void init_timer(uint32_t frequency);
+static void print_clock(uint64_t* tick_pointer);
+
+void dispatch_irq(int irq);
+
+void init_timer()
+{
+        if (register_irq(32, timer_callback, NULL))
+                kprint("Error: irq allocation to the timer failed\n");
+        uint32_t divisor = 1193182 / PIT_FREQUENCY;
+
+        // Command byte: channel 0, lobyte/hibyte, mode 3 (square wave)
+        outb(0x43, 0x36);
+        outb(0x40, divisor & 0xFF);         // low byte
+        outb(0x40, (divisor >> 8) & 0xFF);  // high byte
+}
+
+static void timer_callback(int vector, struct interrupt_frame* frame)
+{
+        (void)vector; (void)frame;         // unused
+        tick++;
+        if (tick % 100 == 0) print_clock(&tick); // ~1 second if PIT = 100 Hz
+        outb(0x20, 0x20);                  // Send EOI to PIC
+}
+
+
+static void print_clock(uint64_t* tick_pointer)
 {
         uint64_t total_seconds = *tick_pointer / PIT_FREQUENCY;
         uint64_t hours = total_seconds / 3600;

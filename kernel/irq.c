@@ -1,8 +1,7 @@
 // Logic adopted from linux kernel include/linux/interrupt.h
+// API implementation of the irq module
 
 #define IRQ_NMBR 256
-
-typedef void (*irq_handler_t)(struct interrupt_frame *);
 
 struct irq_desc {
         irq_handler_t handler;
