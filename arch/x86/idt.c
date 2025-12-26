@@ -6,10 +6,6 @@
 #include "kprint.h"
 
 #define IDT_DESCRIPTORS 256
-#define PIC1_CMD        0x20
-#define PIC1_DATA       0x21
-#define PIC2_CMD        0xA0
-#define PIC2_DATA       0xA1
 
 extern void             idt_load(struct idt_metadata *idt_metadata);
 extern void*            isr_pointer_table[]; // 256 pointers
@@ -46,10 +42,10 @@ void idt_init(void)
 
         register_interrupt_handler(13, gp_fault_handler);   // GP fault
 
-        // Timer IRQ (intex 32)
-        set_idt_entry(32, isr_pointer_table[32], 0x8E, 0);
-        init_timer(100);
-        outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
+        // // Timer IRQ (intex 32)
+        // set_idt_entry(32, isr_pointer_table[32], 0x8E, 0);
+        // init_timer(100);
+        // outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
 
         // Keyboard IRQ (intex 33)
         set_idt_entry(33, isr_pointer_table[33], 0x8E, 0);

@@ -1,13 +1,15 @@
 #include "stdint.h"
 #include "irq.h"
+#include "pic.h"
 
 // Implementation of the system timer
 
-#define TIMER_INTERRUPT_LINE 32
-#define CLOCK_FREQUENCY 100
-#define VGA_MEMORY ((uint8_t*)0xB8000)
-#define VGA_COLS 80
-#define VGA_ROWS 25
+#define TIMER_IRQ       0                   // IRQ0 = PIT
+#define TIMER_VECTOR    32                  // IDT vector after remap
+#define CLOCK_FREQUENCY 100                 // Will give ~ 1 sec
+#define VGA_MEMORY      ((uint8_t*)0xB8000)
+#define VGA_COLS        80
+#define VGA_ROWS        25
 
 static uint64_t tick = 0;
 
@@ -18,22 +20,27 @@ static void timer_display_value(uint64_t* tick_pointer);
 /* timer_init - initiate the system timer */
 void timer_init()
 {
-        if (register_irq(TIMER_INTERRUPT_LINE, timer_callback, NULL))
+        if (register_irq(TIMER_IRQ, timer_callback, NULL))
                 kprint("Error: irq allocation to the timer failed\n");
         uint32_t divisor = 1193182 / CLOCK_FREQUENCY;
 
-        // Command byte: channel 0, lobyte/hibyte, mode 3 (square wave)
+        // Command byte: channel 0, lowbyte/highbyte, mode 3 (square wave)
         outb(0x43, 0x36);
         outb(0x40, divisor & 0xFF);         // low byte
         outb(0x40, (divisor >> 8) & 0xFF);  // high byte
+        pic_unmask_irq(TIMER_IRQ);
 }
 
 static void timer_callback(int vector, struct interrupt_frame* frame)
 {
-        (void)vector; (void)frame;         // unused
+        (void)vector; (void)frame;
         tick++;
-        if (tick % CLOCK_FREQUENCY == 0) timer_display_value(&tick); // ~1 sec
-        outb(0x20, 0x20);                  // Send EOI to PIC
+
+        /* TODO: implement set_clock_dirty_flag() to separate UI update 
+         * from the interrupt handling code that should be fast */
+        if (tick % CLOCK_FREQUENCY == 0) timer_display_value(&tick); 
+
+        pic_send_eoi(TIMER_IRQ);
 }
 
 static void timer_display_value(uint64_t* tick_pointer)
