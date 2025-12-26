@@ -10,6 +10,7 @@
 #include "idt.h"
 #include "init_ram.h"
 #include "keyboard.h"
+#include "timer.h"
 
 extern void print_64_bits(const char* str);
 extern char get_char(void);
