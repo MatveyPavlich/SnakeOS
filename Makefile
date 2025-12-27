@@ -97,7 +97,7 @@ run:
 
 # === Debug ===
 debug:
-	./debug.sh
+	./debugging/debug.sh
 
 # === Clean ===
 clean:

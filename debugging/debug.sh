@@ -1,3 +1,5 @@
+# TODO: this script used to be at root. So adjust it for the correct path to
+#       accout for the /debugging folder
 #!/bin/bash
 PROJECT_DIR=~/repos/SnakeOS
 QEMU_BIN=~/qemu-patched/bin/qemu-system-i386 # For real mode debugging (make sure to adjust gdb "set architecture" line)
