@@ -125,8 +125,6 @@ static void keyboard_handler(int vector, struct interrupt_frame* frame)
         outb(PIC1_CMD, PIC_EOI);
 }
 
-
-
 void init_keyboard(void)
 {
         register_interrupt_handler(IRQ_KEYBOARD_VECTOR, keyboard_handler);

@@ -7,7 +7,7 @@
 #define KERNEL_CS       0x08 // kernel code segment selector
 
 extern void             idt_load(struct idt_metadata *idt_metadata);
-extern void*            isr_pointer_table[]; // 256 pointers
+extern void*            idt_stub_table[]; // 256 pointers
 
 /* Format of the 64-bit idt table row (i.e., descriptor) for an interrupt */
 struct idt_descriptor_64 {
@@ -55,25 +55,25 @@ void idt_init(void)
 {
         // Fill exception handlers (0–31)
         for (int i = 0; i < 32; i++)
-                set_idt_entry(i, isr_pointer_table[i], 0x8E, 0);
+                set_idt_entry(i, idt_stub_table[i], 0x8E, 0);
 
-        // Load IDT
-        IdtMetadata idt_metadata;
-        idt_metadata.limit = sizeof(idt_table) - 1;
-        idt_metadata.base  = (uint64_t)&idt_table;
-        idt_load(&idt_metadata);
+        struct idt_metadata idt_metadata = {
+                .limit = sizeof(idt_table) - 1,
+                .base  = (uint64_t)&idt_table,
+        }
+        idt_load(&idt_metadata); /* Load usign lidt instruction */
 
         register_interrupt_handler(13, gp_fault_handler);   // GP fault
 
-        // // Timer IRQ (intex 32)
-        // set_idt_entry(32, isr_pointer_table[32], 0x8E, 0);
-        // init_timer(100);
-        // outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
-
-        // Keyboard IRQ (intex 33)
-        // set_idt_entry(33, isr_pointer_table[33], 0x8E, 0);
-        // init_keyboard();
-        // outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupt
-
-        // __asm__ volatile ("sti"); // Unmask all interrupts
 }
+// // Timer IRQ (intex 32)
+// set_idt_entry(32, isr_pointer_table[32], 0x8E, 0);
+// init_timer(100);
+// outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
+
+// Keyboard IRQ (intex 33)
+// set_idt_entry(33, isr_pointer_table[33], 0x8E, 0);
+// init_keyboard();
+// outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupt
+
+// __asm__ volatile ("sti"); // Unmask all interrupts

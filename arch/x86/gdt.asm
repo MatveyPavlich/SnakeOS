@@ -35,6 +35,3 @@ loadLtr:
     ret
 
 
-idt_load:
-    lidt [rdi]   ; pointer to IdtDescriptor passed in RDI
-    ret
