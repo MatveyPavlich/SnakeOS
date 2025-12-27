@@ -1,30 +1,53 @@
-#include "stddef.h"
+/* Implementation of the 64-bit idt setup */
+
 #include "stdint.h"
-#include "idt.h"
-#include "util.h"
 #include "isr.h"
-#include "kprint.h"
 
 #define IDT_DESCRIPTORS 256
+#define KERNEL_CS       0x08 // kernel code segment selector
 
 extern void             idt_load(struct idt_metadata *idt_metadata);
 extern void*            isr_pointer_table[]; // 256 pointers
-extern void             init_timer(uint32_t hz);
-extern void             init_keyboard(void);
 
-static IdtDescriptor  idt_table[IDT_DESCRIPTORS];
+/* Format of the 64-bit idt table row (i.e., descriptor) for an interrupt */
+struct idt_descriptor_64 {
+        uint16_t offset_low;   // bits 0..15 of handler function address
+        uint16_t selector;     // code segment selector in GDT
+        uint8_t  ist;          // bits 0..2 = IST index, rest zero
+        uint8_t  type_attr;    // gate type, DPL, P
+        uint16_t offset_mid;   // bits 16..31 of handler address
+        uint32_t offset_high;  // bits 32..63 of handler address
+        uint32_t reserved;     // do not touch, some intel magic
+} __attribute__((packed));
 
-static void set_idt_entry(int intex, uintptr_t *isr, uint8_t flags, uint8_t ist)
+/* Metadata about the IDT to be loaded into the CPU with lidt instruction */
+struct idt_metadata {
+        uint16_t limit;
+        uint64_t base;
+} __attribute__((packed));
+
+static struct idt_descriptor_64 idt_table[IDT_DESCRIPTORS];
+
+/* set_idt_entry - Helper to fill the idt_descriptor with relevant flags.
+ * @index:         Vector of the IDT desriptor in the table.
+ * @isr:           Pointer to the IRS that will handle the interrupt.
+ * @flags:         Flags for the IDT descriptor.
+ * @ist:           Interrupt Stack Table (ist) pointer to switch to the correct
+ *                 stack to deal with the interrupt.
+ */
+static void set_idt_entry(int index, uint_64_t isr_addr, uint8_t flags,
+                          uint8_t ist)
 {
-        uint64_t addr = (uint64_t)isr;
-
-        idt_table[intex].offset_low  = addr & 0xFFFF;
-        idt_table[intex].selector    = 0x08;     // kernel code segment selector
-        idt_table[intex].ist         = ist & 0x7;
-        idt_table[intex].type_attr   = flags;    // e.g. 0x8E = present, ring0, 64-bit interrupt gate
-        idt_table[intex].offset_mid  = (addr >> 16) & 0xFFFF;
-        idt_table[intex].offset_high = (addr >> 32) & 0xFFFFFFFF;
-        idt_table[intex].reserved    = 0;
+        idt_table[index] = (struct idt_descriptor_64) {
+                .offset_low  = isr_addr & 0xFFFF,
+                .selector    = KERNEL_CS,
+                .ist         = ist & 0x7,
+                .type_attr   = flags, // e.g. 0x8E = present, ring0, 64-bit
+                                      // interrupt gate
+                .offset_mid  = (isr_addr >> 16) & 0xFFFF,
+                .offset_high = (isr_addr >> 32) & 0xFFFFFFFF,
+                .reserved    = 0,
+        }
 }
 
 /* Set up CPU exceptions (0–31) */ 
@@ -48,9 +71,9 @@ void idt_init(void)
         // outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
 
         // Keyboard IRQ (intex 33)
-        set_idt_entry(33, isr_pointer_table[33], 0x8E, 0);
-        init_keyboard();
-        outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupt
+        // set_idt_entry(33, isr_pointer_table[33], 0x8E, 0);
+        // init_keyboard();
+        // outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupt
 
-        __asm__ volatile ("sti"); // Unmask all interrupts
+        // __asm__ volatile ("sti"); // Unmask all interrupts
 }
