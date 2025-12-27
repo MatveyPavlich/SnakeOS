@@ -24,8 +24,8 @@ static struct irq_chip i8259A_chip = {
 	.name            = "i8259A",
 	.irq_init        = i8259A_init,
 	.irq_shutdown    = i8259A_mask_all,
-	.irq_mask_irq    = i8259A_mask_irq,
-        .irq_unmask_irq  = i8259A_unmask_irq,
+	.irq_mask        = i8259A_mask_irq,
+        .irq_unmask      = i8259A_unmask_irq,
 	.irq_eoi         = i8259A_send_eoi,
 };
 

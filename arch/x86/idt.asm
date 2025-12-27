@@ -1,8 +1,10 @@
-global idt_stub_table    ; Expose the stub table to load it into idt
-extern irq_handle_vector ; Function from irq.h to handle the interrupt.
-                         ; Not sure if I am supposed to directly hardcode
-                         ; it into IDT though (arch specific).  Lets see if
-                         ; I'll regret it later!
+global idt_stub_table     ; Expose the stub table to load it into idt
+extern irq_handle         ; Function from irq.h to handle the interrupt.
+                          ; Not sure if I am supposed to directly hardcode
+                          ; it into IDT though (arch specific).  Lets see if
+                          ; I'll regret it later!
+
+%define PIC_IDT_BASE 0x20 ; TODO: Will need a macro if will support APIC
 
 bits 64
 
@@ -24,10 +26,17 @@ idt_stub_table:
 %macro STUB 1
 global stub_%1
 stub_%1:
-        mov rdi, %1 ; TODO: see if I need to PUSH, POP old RDI to preserve it
-        mov rsi, rsp
-        call irq_handle_vector
-        ; add rsp, 8         ; clean up argument
+        push rdi                ; preserve caller-saved regs you use
+        push rsi
+
+        mov rdi, %1             ; rdi = IDT vector
+        sub rdi, PIC_IDT_BASE   ; rdi = irq number
+        mov rsi, rsp            ; rsi = interrupt_frame*
+
+        call irq_handle
+
+        pop rsi
+        pop rdi
         iretq
 %endmacro
 

@@ -2,27 +2,38 @@
 // API implementation of the irq module
 
 #include "irq.h"
-#include "kprint.h"
+#include "kprintf.h"
 
-#define IRQ_NMBR 256
+#define NMBR_IRQS 16
 
 struct irq_desc {
         irq_handler_t handler;
         void *dev_id;
 };
 
-static struct irq_desc irq_table[IRQ_NMBR];
+static struct irq_desc irq_table[NMBR_IRQS];
 static struct irq_chip *irq_chip_active;
 
-/* Called by all IDT entries (index & frame are pushed by the asm stub) */
-void irq_handle_vector(int index, struct interrupt_frame* frame)
+/*
+ * irq_handle - Route interrupt to a relevant handler function.
+ * @irq:        IRQ for the interrupt to handle. 
+ * @frame:      CPU state before receiving the interrupt.
+ */
+void irq_handle(int irq, struct interrupt_frame* frame)
 {
-        struct irq_desc *desc = &irq_table[index];
+
+        if (irq < 0 || irq >= NMBR_IRQS) {
+                kprintf("ERROR: invalid IRQ (%d) in irq_handler.\n", irq);
+                kprintf("System halted.\n");
+                while (1) __asm__("hlt");
+        }
+
+        struct irq_desc *desc = &irq_table[irq];
 
         if (desc->handler)
-                desc->handler(index, frame);
+                desc->handler(irq, frame, desc->dev_id);
         else {
-                kprintf("Unhandled interrupt: %d\n", index);
+                kprintf("Unhandled IRQ: %d\n", irq);
                 kprintf("System halted.\n");
                 while (1) __asm__("hlt");
         }
@@ -30,12 +41,16 @@ void irq_handle_vector(int index, struct interrupt_frame* frame)
         irq_chip_active->irq_eoi(irq);
 }
 
-void irq_set_chip(struct irq_chip *chip)
+int irq_set_chip(struct irq_chip *chip)
 {
 	irq_chip_active = chip;
-
-	if (irq_chip_active->irq_init)
+	if (irq_chip_active->irq_init) {
                 irq_chip_active->irq_init();
+                return 0;
+        } else {
+                kprintf("ERROR: irq_chip is missing irq_init() method\n");
+                return 1;
+        }
 }
 
 /*
@@ -47,43 +62,20 @@ void irq_set_chip(struct irq_chip *chip)
  */
 int irq_request(int irq, irq_handler_t handler, void *dev)
 {
-        if (irq < 0 || irq >= IRQ_NMBR)
+        if (irq < 0 || irq >= NMBR_IRQS) {
+                kprintf("ERROR: %d is an invalid IRQ number\n", irq);
                 return 1;
+        }
+        if (!(irq_chip_active) || !(irq_chip_active->irq_unmask)) {
+                kprintf("ERROR: irq_chip inactive or has no irq_unmask method\n");
+                return 1;
+        }
 
         irq_table[irq] = (struct irq_desc) {
                 .handler = handler,
                 .dev_id  = dev,
         };
+        irq_chip_active->irq_unmask(irq);
 
         return 0;
-}
-
-/*
- * irq_dispatch - Add a handler to an interrupt line
- * @iqr:          The interrupt line to allocate
- * Caller must check if the dispatch was successful
- */
-int irq_dispatch(int irq, struct interrupt_frame *frame)
-{
-        struct irq_desc *desc = &irq_table[index];
-        if (desc->handler)
-                desc->handler(irq, frame);
-        else
-                return 1;
-
-        irq_chip_active->irq_eoi(irq);
-        if (irq_chip_active->irq_eoi)
-                irq_chip_active->irq_eoi(irq);
-
-        return 0;
-}
-
-// TODO: Implement here for now, but later should be in exceptions.c
-static void gp_fault_handler(int vector, struct interrupt_frame* frame)
-{
-        kprintf("General Protection Fault: %d\n", vector);
-        kprintf("RIP = %x\n",frame->rip);
-        kprintf("System halted\n");
-
-        while (1) __asm__("hlt");
 }

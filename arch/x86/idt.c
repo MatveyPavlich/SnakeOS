@@ -58,7 +58,7 @@ void idt_init(void)
 {
         /* Fill every interrupt with a valid stub to fail gracefully */
         for (int i = 0; i < IDT_DESCRIPTORS; i++)
-                set_idt_entry(i, idt_stub_table[i], 0x8E, 0);
+                set_idt_entry(i, idt_stub_table[i], IDT_FLAG_INTERRUPT_GATE, 0);
 
         struct idt_metadata idt_metadata = {
                 .limit = sizeof(idt_table) - 1,
