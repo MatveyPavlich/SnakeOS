@@ -42,38 +42,28 @@ static void set_idt_entry(int index, uint_64_t isr_addr, uint8_t flags,
                 .offset_low  = isr_addr & 0xFFFF,
                 .selector    = KERNEL_CS,
                 .ist         = ist & 0x7,
-                .type_attr   = flags, // e.g. 0x8E = present, ring0, 64-bit
-                                      // interrupt gate
+                .type_attr   = flags, /* e.g. 0x8E = present, ring0, 64-bit
+                                         interrupt gate */
                 .offset_mid  = (isr_addr >> 16) & 0xFFFF,
                 .offset_high = (isr_addr >> 32) & 0xFFFFFFFF,
                 .reserved    = 0,
-        }
+        };
 }
 
-/* Set up CPU exceptions (0–31) */ 
+/* Fill IDT with stubs that will direct interrupts into irq subsystem
+ * through irq_handle_vector() in its API
+ */
 void idt_init(void)
 {
-        // Fill exception handlers (0–31)
-        for (int i = 0; i < 32; i++)
+        /* Fill every interrupt with a valid stub to fail gracefully */
+        for (int i = 0; i < IDT_DESCRIPTORS; i++)
                 set_idt_entry(i, idt_stub_table[i], 0x8E, 0);
 
         struct idt_metadata idt_metadata = {
                 .limit = sizeof(idt_table) - 1,
                 .base  = (uint64_t)&idt_table,
         }
-        idt_load(&idt_metadata); /* Load usign lidt instruction */
 
-        // register_interrupt_handler(13, gp_fault_handler);   // GP fault
-
+        idt_load(&idt_metadata); /* Load IDT into the CPU using the lidt
+                                    instruction */
 }
-// // Timer IRQ (intex 32)
-// set_idt_entry(32, isr_pointer_table[32], 0x8E, 0);
-// init_timer(100);
-// outb(PIC1_DATA, 0xFE); // Unmask the timer (since at IRQ = 0)
-
-// Keyboard IRQ (intex 33)
-// set_idt_entry(33, isr_pointer_table[33], 0x8E, 0);
-// init_keyboard();
-// outb(PIC1_DATA, 0xFC); // Unmask keyboard interrupt
-
-// __asm__ volatile ("sti"); // Unmask all interrupts
