@@ -63,7 +63,7 @@ void idt_init(void)
         }
         idt_load(&idt_metadata); /* Load usign lidt instruction */
 
-        register_interrupt_handler(13, gp_fault_handler);   // GP fault
+        // register_interrupt_handler(13, gp_fault_handler);   // GP fault
 
 }
 // // Timer IRQ (intex 32)

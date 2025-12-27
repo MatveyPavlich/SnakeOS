@@ -11,6 +11,27 @@ struct irq_desc {
 static struct irq_desc irq_table[IRQ_NMBR];
 static struct irq_chip irq_chip_active;
 
+/* Called by all IDT entries (index & frame are pushed by the asm stub) */
+void irq_handle_vector(int index, struct interrupt_frame* frame)
+{
+        if (irq_table[index])
+                irq_table[index]->handler((index, frame)
+        else {
+                kprintf("Unhandled interrupt: %d\n", index);
+                kprintf("System halted.\n");
+                while (1) __asm__("hlt");
+        }
+}
+// // TODO: Implement here for now, but later should be in exceptions.c
+// void gp_fault_handler(int vector, struct interrupt_frame* frame)
+// {
+//         kprintf("General Protection Fault: %d\n", vector);
+//         kprintf("RIP = %x\n",frame->rip);
+//         kprintf("System halted\n");
+//
+//         while (1) __asm__("hlt");
+// }
+
 void irq_set_chip(struct irq_chip *chip)
 {
 	irq_chip_active = chip;
