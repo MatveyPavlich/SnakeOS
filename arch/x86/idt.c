@@ -3,11 +3,12 @@
 #include "stdint.h"
 #include "isr.h"
 
-#define IDT_DESCRIPTORS 256
-#define KERNEL_CS       0x08 // kernel code segment selector
+#define IDT_DESCRIPTORS         256
+#define KERNEL_CS               0x08 // kernel code segment selector
+#define IDT_FLAG_INTERRUPT_GATE 0x8E
 
-extern void             idt_load(struct idt_metadata *idt_metadata);
-extern void*            idt_stub_table[]; // 256 pointers
+extern void                     idt_load(struct idt_metadata *idt_metadata);
+extern void*                    idt_stub_table[]; // 256 pointers
 
 /* Format of the 64-bit idt table row (i.e., descriptor) for an interrupt */
 struct idt_descriptor_64 {
@@ -30,12 +31,12 @@ static struct idt_descriptor_64 idt_table[IDT_DESCRIPTORS];
 
 /* set_idt_entry - Helper to fill the idt_descriptor with relevant flags.
  * @index:         Vector of the IDT desriptor in the table.
- * @isr:           Pointer to the IRS that will handle the interrupt.
+ * @isr_addr:      Pointer to the ISR that will handle the interrupt.
  * @flags:         Flags for the IDT descriptor.
  * @ist:           Interrupt Stack Table (ist) pointer to switch to the correct
  *                 stack to deal with the interrupt.
  */
-static void set_idt_entry(int index, uint_64_t isr_addr, uint8_t flags,
+static void set_idt_entry(int index, uint64_t isr_addr, uint8_t flags,
                           uint8_t ist)
 {
         idt_table[index] = (struct idt_descriptor_64) {
@@ -62,7 +63,7 @@ void idt_init(void)
         struct idt_metadata idt_metadata = {
                 .limit = sizeof(idt_table) - 1,
                 .base  = (uint64_t)&idt_table,
-        }
+        };
 
         idt_load(&idt_metadata); /* Load IDT into the CPU using the lidt
                                     instruction */
