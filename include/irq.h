@@ -32,6 +32,6 @@ struct interrupt_frame {
         uint64_t error_code;
 };
 
-typedef void (*irq_handler_t)(struct interrupt_frame *);
-int irq_register(int irq, irq_handler_t handler, void *dev);
+typedef void (*irq_handler_t)(int irq, struct interrupt_frame *);
+int irq_request(int irq, irq_handler_t handler, void *dev);
 void irq_dispatch(int irq);

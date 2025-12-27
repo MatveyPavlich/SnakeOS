@@ -12,39 +12,45 @@ struct irq_desc {
 };
 
 static struct irq_desc irq_table[IRQ_NMBR];
-static struct irq_chip irq_chip_active;
+static struct irq_chip *irq_chip_active;
 
 /* Called by all IDT entries (index & frame are pushed by the asm stub) */
 void irq_handle_vector(int index, struct interrupt_frame* frame)
 {
-        if (irq_table[index])
-                irq_table[index]->handler((index, frame))
+        struct irq_desc *desc = &irq_table[index];
+
+        if (desc->handler)
+                desc->handler(index, frame);
         else {
                 kprintf("Unhandled interrupt: %d\n", index);
                 kprintf("System halted.\n");
                 while (1) __asm__("hlt");
         }
+
+        irq_chip_active->irq_eoi(irq);
 }
 
 void irq_set_chip(struct irq_chip *chip)
 {
 	irq_chip_active = chip;
-	if (irq_chip_active->irq_init) irq_chip_active->irq_init();
+
+	if (irq_chip_active->irq_init)
+                irq_chip_active->irq_init();
 }
 
 /*
- * request_irq - Add a handler to an interrupt line
+ * irq_request - Add a handler to an interrupt line
  * @irq:         Then interrupt line to allocate
  * @handler:     Function to call when IRQ occurs
  * @dev:	 A cookie passed to the handler function
  * Caller must check if the allocation was successful.
  */
-int irq_register(int irq, irq_handler_t handler, void *dev)
+int irq_request(int irq, irq_handler_t handler, void *dev)
 {
         if (irq < 0 || irq >= IRQ_NMBR)
                 return 1;
 
-        irq_table[irq] = (irq_desc) {
+        irq_table[irq] = (struct irq_desc) {
                 .handler = handler,
                 .dev_id  = dev,
         };
@@ -54,14 +60,22 @@ int irq_register(int irq, irq_handler_t handler, void *dev)
 
 /*
  * irq_dispatch - Add a handler to an interrupt line
- * @iqr:          Then interrupt line to allocate
+ * @iqr:          The interrupt line to allocate
+ * Caller must check if the dispatch was successful
  */
-void irq_dispatch(int irq, struct interrupt_frame *frame)
+int irq_dispatch(int irq, struct interrupt_frame *frame)
 {
-        if (handlers[irq])
-                handlers[irq](irq, frame);
+        struct irq_desc *desc = &irq_table[index];
+        if (desc->handler)
+                desc->handler(irq, frame);
+        else
+                return 1;
 
-        pic_send_eoi(irq);
+        irq_chip_active->irq_eoi(irq);
+        if (irq_chip_active->irq_eoi)
+                irq_chip_active->irq_eoi(irq);
+
+        return 0;
 }
 
 // TODO: Implement here for now, but later should be in exceptions.c
