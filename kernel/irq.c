@@ -21,7 +21,6 @@ static struct irq_chip *irq_chip_active;
  */
 void irq_handle(int irq, struct interrupt_frame* frame)
 {
-
         if (irq < 0 || irq >= NMBR_IRQS) {
                 kprintf("ERROR: invalid IRQ (%d) in irq_handler.\n", irq);
                 kprintf("System halted.\n");
@@ -29,7 +28,6 @@ void irq_handle(int irq, struct interrupt_frame* frame)
         }
 
         struct irq_desc *desc = &irq_table[irq];
-
         if (desc->handler)
                 desc->handler(irq, frame, desc->dev_id);
         else {
@@ -54,10 +52,10 @@ int irq_set_chip(struct irq_chip *chip)
 }
 
 /*
- * irq_request - Add a handler to an interrupt line
- * @irq:         Then interrupt line to allocate
- * @handler:     Function to call when IRQ occurs
- * @dev:	 A cookie passed to the handler function
+ * irq_request - Add a handler to an interrupt line.
+ * @irq:         The interrupt line to allocate.
+ * @handler:     Function to call when IRQ occurs.
+ * @dev:	 A cookie passed to the handler function.
  * Caller must check if the allocation was successful.
  */
 int irq_request(int irq, irq_handler_t handler, void *dev)
