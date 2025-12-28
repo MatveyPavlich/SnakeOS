@@ -8,6 +8,7 @@
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
+#include "i8259.h"
 // #include "init_ram.h"
 // #include "keyboard.h"
 // #include "timer.h"
@@ -35,6 +36,7 @@ void kmain()
 
         gdt_init();
         idt_init();
+        irq_arch_init();
         kprintf("Interrupts are enabled!!!\n");
 
         // print_ram_map();

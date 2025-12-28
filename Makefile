@@ -46,7 +46,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			 $(BUILD_DIR)/keyboard.o                            \
 			 $(BUILD_DIR)/init_ram.o $(BUILD_DIR)/timer.o       \
 			 $(BUILD_DIR)/irq.o $(BUILD_DIR)/irq.o              \
-			 $(BUILD_DIR)/exception.o
+			 $(BUILD_DIR)/exception.o $(BUILD_DIR)/i8259.o
 			 -T kernel.ld
 	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o \
 			    $(BUILD_DIR)/kmain.o           \
@@ -60,6 +60,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			    $(BUILD_DIR)/init_ram.o        \
 			    $(BUILD_DIR)/irq.o             \
 			    $(BUILD_DIR)/exception.o       \
+			    $(BUILD_DIR)/i8259.o           \
 			    $(BUILD_DIR)/timer.o
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 	objcopy -O binary $< $@
@@ -88,6 +89,8 @@ $(BUILD_DIR)/init_ram.o: drivers/init_ram.c
 $(BUILD_DIR)/timer.o: drivers/timer.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/irq.o: kernel/irq.c
+	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/i8259.o: arch/x86/i8259.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/exception.o: kernel/exception.c
 	$(CC) $(CFLAGS) -c $< -o $@
