@@ -1,0 +1,29 @@
+// Exceptions subsystem
+
+#include "exception.h"
+#include "kprint.h"
+
+/* Forward declarations */
+static void gp_fault_handler(int vector, struct interrupt_frame* frame);
+
+
+void exception_handle(int vector, struct interrupt_frame *frame)
+{
+        switch (vector) {
+        case 13:
+                gp_fault_handler(vector, frame);
+                break;
+        default:
+                kprintf("Exception %d unhandled. System halted\n, vector);
+                while (1) __asm__("hlt");
+        }
+}
+
+/* Handler for the General Protection (GP) fault */
+static void gp_fault_handler(int vector, struct interrupt_frame* frame)
+{
+        kprintf("General Protection Fault: %d\n", vector);
+        kprintf("RIP = %x\n",frame->rip);
+        kprintf("System halted\n");
+        while (1) __asm__("hlt");
+}

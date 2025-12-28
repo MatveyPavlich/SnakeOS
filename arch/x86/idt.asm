@@ -1,4 +1,5 @@
 global idt_stub_table     ; Expose the stub table to load it into idt
+extern exception_handle   ; Function from exception.c to handle CPU exceptions.
 extern irq_handle         ; Function from irq.h to handle the interrupt.
                           ; Not sure if I am supposed to directly hardcode
                           ; it into IDT though (arch specific).  Lets see if
@@ -26,16 +27,28 @@ idt_stub_table:
 %macro STUB 1
 global stub_%1
 stub_%1:
-        push rdi                ; preserve caller-saved regs you use
-        push rsi
-
-        mov rdi, %1             ; rdi = IDT vector
-        sub rdi, PIC_IDT_BASE   ; rdi = irq number
+        ; rSP at entry points to CPU-pushed frame
         mov rsi, rsp            ; rsi = interrupt_frame*
 
-        call irq_handle
+        push rdi                ; preserve caller-saved regs we touch
+        push rax
 
-        pop rsi
+        mov rdi, %1             ; rdi = vector number
+
+        cmp rdi, PIC_IDT_BASE
+        jl .exception
+
+        ; -------- IRQ path --------
+        sub rdi, PIC_IDT_BASE   ; convert vector → IRQ
+        call irq_handle
+        jmp .done
+
+.exception:
+        ; -------- exception path --------
+        call exception_handle
+
+.done:
+        pop rax
         pop rdi
         iretq
 %endmacro

@@ -30,18 +30,21 @@ void irq_handle(int irq, struct interrupt_frame* frame)
         struct irq_desc *desc = &irq_table[irq];
         if (desc->handler)
                 desc->handler(irq, frame, desc->dev_id);
-        else {
-                kprintf("Unhandled IRQ: %d\n", irq);
-                kprintf("System halted.\n");
-                while (1) __asm__("hlt");
-        }
+        else
+                kprintf("Unhandled IRQ: %d. No action taken.\n", irq);
 
-        irq_chip_active->irq_eoi(irq);
+        if (irq_chip_active && irq_chip_active->irq_eoi)
+                irq_chip_active->irq_eoi(irq);
 }
 
 int irq_set_chip(struct irq_chip *chip)
 {
+        if (!chip) {
+                kprintf("ERROR: irq_set_chip(NULL)\n");
+                return 1;
+        }
 	irq_chip_active = chip;
+
 	if (irq_chip_active->irq_init) {
                 irq_chip_active->irq_init();
                 return 0;

@@ -1,5 +1,5 @@
 // API interface for irq module
-#include "stdint.h"
+#include "interrupt.h"
 
 /* irq_chip - structure to represent all properties of an IRQ chip
  * @name:            Name of the chip
@@ -21,16 +21,6 @@ struct irq_chip {
 
 int irq_set_chip(struct irq_chip *chip); /* Register interrupt controller with
                                              the IRQ core */
-
-/* interrupt_frame - Structure to capture the CPU state before the interrupt
- * entry
- */
-struct interrupt_frame {
-        uint64_t rip;
-        uint64_t cs;
-        uint64_t rflags;
-        uint64_t error_code;
-};
 
 typedef void (*irq_handler_t)(int irq, struct interrupt_frame *, void *dev_id);
 void irq_handle(int irq, struct interrupt_frame* frame);
