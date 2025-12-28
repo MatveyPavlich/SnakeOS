@@ -11,7 +11,7 @@
 #include "i8259.h"
 // #include "init_ram.h"
 // #include "keyboard.h"
-// #include "timer.h"
+#include "timer.h"
 
 extern void print_64_bits(const char* str);
 extern char get_char(void);
@@ -40,7 +40,7 @@ void kmain()
         kprintf("Interrupts are enabled!!!\n");
 
         // print_ram_map();
-        // timer_init();
+        timer_init();
         // start_shell();
 
         // Division by zero interrup check

@@ -23,5 +23,19 @@ int irq_set_chip(struct irq_chip *chip); /* Register interrupt controller with
                                              the IRQ core */
 
 typedef void (*irq_handler_t)(int irq, struct interrupt_frame *, void *dev_id);
+
+/*
+ * irq_handle - Route interrupt to a relevant handler function.
+ * @irq:        IRQ for the interrupt to handle. 
+ * @frame:      CPU state before receiving the interrupt.
+ */
 void irq_handle(int irq, struct interrupt_frame* frame);
+
+/*
+ * irq_request - Add a handler to an interrupt line.
+ * @irq:         The interrupt line to allocate.
+ * @handler:     Function to call when IRQ occurs.
+ * @dev:	 A cookie passed to the handler function.
+ * Caller must check if the allocation was successful.
+ */
 int irq_request(int irq, irq_handler_t handler, void *dev);
