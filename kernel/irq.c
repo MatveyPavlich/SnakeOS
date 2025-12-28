@@ -2,7 +2,7 @@
 // API implementation of the irq module
 
 #include "irq.h"
-#include "kprintf.h"
+#include "kprint.h"
 
 #define NMBR_IRQS 16
 

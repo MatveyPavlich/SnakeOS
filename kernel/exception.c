@@ -14,7 +14,7 @@ void exception_handle(int vector, struct interrupt_frame *frame)
                 gp_fault_handler(vector, frame);
                 break;
         default:
-                kprintf("Exception %d unhandled. System halted\n, vector);
+                kprintf("Exception %d unhandled. System halted\n", vector);
                 while (1) __asm__("hlt");
         }
 }

@@ -1,14 +1,11 @@
 /* Implementation of the 64-bit idt setup */
 
 #include "stdint.h"
-#include "isr.h"
 
 #define IDT_DESCRIPTORS         256
 #define KERNEL_CS               0x08 // kernel code segment selector
 #define IDT_FLAG_INTERRUPT_GATE 0x8E
 
-extern void                     idt_load(struct idt_metadata *idt_metadata);
-extern void*                    idt_stub_table[]; // 256 pointers
 
 /* Format of the 64-bit idt table row (i.e., descriptor) for an interrupt */
 struct idt_descriptor_64 {
@@ -27,6 +24,9 @@ struct idt_metadata {
         uint64_t base;
 } __attribute__((packed));
 
+/* Temp fix: make sure idt_load() is after idt_metadata struct declaration */
+extern void idt_load(struct idt_metadata *idt_metadata);
+extern void* idt_stub_table[]; // 256 pointers
 static struct idt_descriptor_64 idt_table[IDT_DESCRIPTORS];
 
 /* set_idt_entry - Helper to fill the idt_descriptor with relevant flags.
@@ -58,8 +58,11 @@ void idt_init(void)
 {
         /* Fill every interrupt with a valid stub to fail gracefully */
         for (int i = 0; i < IDT_DESCRIPTORS; i++)
-                set_idt_entry(i, idt_stub_table[i], IDT_FLAG_INTERRUPT_GATE, 0);
+                set_idt_entry(i, (uint64_t)idt_stub_table[i], IDT_FLAG_INTERRUPT_GATE, 0);
 
+        /* CPU copies the contents of idt_metadata, so we don't need to store
+         * the struct anywhere
+         */
         struct idt_metadata idt_metadata = {
                 .limit = sizeof(idt_table) - 1,
                 .base  = (uint64_t)&idt_table,

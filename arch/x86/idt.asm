@@ -1,4 +1,5 @@
 global idt_stub_table     ; Expose the stub table to load it into idt
+global idt_load           ; Expose idt_load function to idt.c
 extern exception_handle   ; Function from exception.c to handle CPU exceptions.
 extern irq_handle         ; Function from irq.h to handle the interrupt.
                           ; Not sure if I am supposed to directly hardcode

@@ -47,7 +47,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			 $(BUILD_DIR)/init_ram.o $(BUILD_DIR)/timer.o       \
 			 $(BUILD_DIR)/irq.o $(BUILD_DIR)/irq.o              \
 			 $(BUILD_DIR)/exception.o
-			 kernel.ld
+			 -T kernel.ld
 	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o \
 			    $(BUILD_DIR)/kmain.o           \
 			    $(BUILD_DIR)/kprint.o          \
