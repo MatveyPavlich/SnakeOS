@@ -27,6 +27,7 @@ int timer_init()
                 kprintf("Error: irq allocation to the timer failed\n");
                 return 1;
         }
+        kprintf("Allocation ok\n");
         uint32_t divisor = PIT_BASE_FREQ / CLOCK_FREQUENCY;
 
         // Command byte: channel 0, lowbyte/highbyte, mode 3 (square wave)
@@ -40,7 +41,7 @@ static void timer_callback(int irq, struct interrupt_frame* frame, void *dev)
 {
         (void)irq; (void)frame, (void)dev;
         tick++;
-
+        kprintf("In timer callback\n");
         /* TODO: implement set_clock_dirty_flag() to separate UI update 
          * from the interrupt handling code that should be fast */
         if (tick % CLOCK_FREQUENCY == 0)

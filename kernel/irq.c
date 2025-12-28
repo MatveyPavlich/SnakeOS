@@ -51,6 +51,7 @@ int irq_set_chip(struct irq_chip *chip)
 
 int irq_request(int irq, irq_handler_t handler, void *dev)
 {
+        kprintf("Requesting %d IRQ\n", irq);
         if (irq < 0 || irq >= NMBR_IRQS) {
                 kprintf("ERROR: %d is an invalid IRQ number\n", irq);
                 return 1;

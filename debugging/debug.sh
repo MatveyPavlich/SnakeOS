@@ -1,10 +1,8 @@
-# TODO: this script used to be at root. So adjust it for the correct path to
-#       accout for the /debugging folder
 #!/bin/bash
 PROJECT_DIR=~/repos/SnakeOS
-QEMU_BIN=~/qemu-patched/bin/qemu-system-i386 # For real mode debugging (make sure to adjust gdb "set architecture" line)
+# QEMU_BIN=~/qemu-patched/bin/qemu-system-i386 # For real mode debugging (make sure to adjust gdb "set architecture" line)
 # QEMU_BIN=qemu-system-i386                      # For protected mode debuggin (not patched, meaning no segment:offset)
-# QEMU_BIN=qemu-system-x86_64                  # For long mode (x86_64 architecture)
+QEMU_BIN=qemu-system-x86_64                  # For long mode (x86_64 architecture)
 
 # Move terminal window and QEMU into workspace 4
 hyprctl dispatch exec "[workspace 4 silent] kitty --title QEMU_WINDOW bash -c 'cd $PROJECT_DIR && $QEMU_BIN -fda ./build/main.img -debugcon stdio -s -S; exec bash'"
@@ -12,7 +10,7 @@ hyprctl dispatch exec "[workspace 4 silent] kitty --title QEMU_WINDOW bash -c 'c
 sleep 0.5
 
 # Execute .gdbinit script
-gdb -q -ex "set pagination off" -x "$PROJECT_DIR/.gdbinit"
+gdb -q -ex "set pagination off" -x "$PROJECT_DIR/debugging/.gdbinit"
 
 
 
