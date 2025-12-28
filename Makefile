@@ -42,8 +42,8 @@ kernel: $(BUILD_DIR)/kernel.elf $(BUILD_DIR)/kernel.bin
 $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 		         $(BUILD_DIR)/kprint.o $(BUILD_DIR)/gdt.o           \
 			 $(BUILD_DIR)/gdt_asm.o $(BUILD_DIR)/util.o         \
-			 $(BUILD_DIR)/idt.o $(BUILD_DIR)/isr.o              \
-			 $(BUILD_DIR)/isr_asm.o $(BUILD_DIR)/keyboard.o     \
+			 $(BUILD_DIR)/idt.o $(BUILD_DIR)/idt_asm.o          \
+			 $(BUILD_DIR)/keyboard.o                            \
 			 $(BUILD_DIR)/init_ram.o $(BUILD_DIR)/timer.o \
 			 $(BUILD_DIR)/irq.o $(BUILD_DIR)/irq.o \
 			 kernel.ld
@@ -54,8 +54,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			    $(BUILD_DIR)/gdt_asm.o         \
    			    $(BUILD_DIR)/util.o            \
 			    $(BUILD_DIR)/idt.o             \
-			    $(BUILD_DIR)/isr.o             \
-			    $(BUILD_DIR)/isr_asm.o         \
+			    $(BUILD_DIR)/idt_asm.o         \
 			    $(BUILD_DIR)/keyboard.o        \
 			    $(BUILD_DIR)/init_ram.o        \
 			    $(BUILD_DIR)/irq.o             \
@@ -67,7 +66,7 @@ $(BUILD_DIR)/kernel_entry.o: boot/x86/kernel_entry.asm
 	$(ASM) -f elf64 $< -o $@
 $(BUILD_DIR)/gdt_asm.o: arch/x86/gdt.asm
 	$(ASM) -f elf64 $< -o $@
-$(BUILD_DIR)/isr_asm.o: arch/x86/isr.asm
+$(BUILD_DIR)/idt_asm.o: arch/x86/idt.asm
 	$(ASM) -f elf64 $< -o $@
 
 $(BUILD_DIR)/kmain.o: init/kmain.c
@@ -79,8 +78,6 @@ $(BUILD_DIR)/gdt.o: arch/x86/gdt.c
 $(BUILD_DIR)/util.o: lib/util.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/idt.o: arch/x86/idt.c
-	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/isr.o: arch/x86/isr.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/keyboard.o: drivers/keyboard.c
 	$(CC) $(CFLAGS) -c $< -o $@
