@@ -23,3 +23,7 @@ static inline void io_wait(void)
 {
     outb(0x80, 0);
 }
+
+/* String stuff */
+size_t strlen(const char *s);
+int strcmp(const char *a, const char *b);
