@@ -1,7 +1,8 @@
 #include "stddef.h"
 #include "cdev.h"
 #include "kerrno.h"
-#define MAX_CDEV 16
+#include "util.h"
+#define MAX_CDEVS 16
 
 static struct cdev *cdev_table[MAX_CDEVS];
 static size_t cdev_count = 0;

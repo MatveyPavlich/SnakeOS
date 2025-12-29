@@ -9,8 +9,8 @@
  */
 
 struct cdev_ops {
-        ssize_t (*read)(void *buf, size_t n);
-        ssize_t (*write)(const void *buf, size_t n);
+        size_t (*read)(void *buf, size_t n);
+        size_t (*write)(const void *buf, size_t n);
         int (*ioctl)(int cmd, void *arg);
 };
 

@@ -2,6 +2,8 @@
 #include "interrupt.h"
 #include "util.h"
 #include "stdint.h"
+#include "stddef.h"
+#include "cdev.h"
 #include <stdbool.h>
 
 #define PS2_DATA        0x60
@@ -21,15 +23,54 @@ static int keybuf_head = 0;
 static int keybuf_tail = 0;
 
 /* Forward declarations */
-static void keyboard_callback(int vector, struct interrupt_frame* frame,
+static size_t keyboard_read(void *buf, size_t n);
+static void keyboard_irq_handler(int vector, struct interrupt_frame* frame,
                               void * dev);
+
+static struct cdev keyboard;
+static struct cdev_ops keyboard_ops = {
+        .read = &keyboard_read,
+        .write = NULL,
+        .ioctl = NULL,
+};
+
+static size_t keyboard_read(void *buf, size_t n)
+{
+        char *out = buf;
+        size_t i = 0;
+
+        while (i < n) {
+                /* Busy-wait until a key is available */
+                while (keybuf_head == keybuf_tail) {
+                        __asm__("hlt");
+                }
+
+                out[i++] = keybuf[keybuf_tail];
+                keybuf_tail = (keybuf_tail + 1) % KEYBUFFER_SIZE;
+        }
+
+        return (size_t)i;
+}
 
 int keyboard_init(void)
 {
-        if (irq_request(KEYBOARD_IRQ, keyboard_callback, NULL)) {
+        if (irq_request(KEYBOARD_IRQ, keyboard_irq_handler, NULL)) {
                 kprintf("Error: irq allocation for the keyboard failed\n");
                 return 1;
         }
+
+        keyboard = (struct cdev) {
+                .name = "keyboard",
+                .ops  = &keyboard_ops,
+                .priv = NULL,
+        };
+
+        if (cdev_register(&keyboard)) {
+                kprintf("Error: cdev registration for keyboard failed\n");
+                return 1;
+        }
+
+        return 0;
 }
 
 static void keybuf_put(char c)
@@ -40,18 +81,6 @@ static void keybuf_put(char c)
                 keybuf_head = next;
         }
         // else: buffer full => drop key
-}
-
-char get_char(void)
-{
-        // Busy-wait until a key is available
-        while (keybuf_head == keybuf_tail) {
-                __asm__("hlt");
-        }
-
-        char c = keybuf[keybuf_tail];
-        keybuf_tail = (keybuf_tail + 1) % KEYBUFFER_SIZE;
-        return c;
 }
 
 static const unsigned char base_map[0x60] = {
@@ -91,13 +120,9 @@ static unsigned char translate_scancode(uint8_t sc)
         return 0;
 }
 
-void handle_character(char c)
-{
-        // TODO: Handle character deletion
-}
 
 // Keyboard IRQ handler
-static void keyboard_callback(int vector, struct interrupt_frame* frame,
+static void keyboard_irq_handler(int vector, struct interrupt_frame* frame,
                               void * dev)
 {
         (void)vector; (void)frame;
@@ -115,19 +140,14 @@ static void keyboard_callback(int vector, struct interrupt_frame* frame,
                         shift_r = !is_break;
                         break;
                 case 0x3A: // CapsLock toggles on make only
-                        if (!is_break) caps_lock = !caps_lock;
+                        if (!is_break)
+                                caps_lock = !caps_lock;
                         break;
                 default:
                         if (!is_break) {
                                 unsigned char ch = translate_scancode(make);
-                                if (ch) {
+                                if (ch)
                                         keybuf_put((char)ch);
-                                        if (ch != '\n') {
-                                                char s[2] = { (char)ch, 0 };
-                                                // handle_character(s);
-                                                kprintf("%s", s);
-                                        }
-                                }
                         }
                         break;
         }

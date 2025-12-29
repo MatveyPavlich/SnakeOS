@@ -26,7 +26,6 @@ int timer_init()
                 kprintf("Error: irq allocation to the timer failed\n");
                 return 1;
         }
-        kprintf("Allocation ok\n");
         uint32_t divisor = PIT_BASE_FREQ / CLOCK_FREQUENCY;
 
         // Command byte: channel 0, lowbyte/highbyte, mode 3 (square wave)
