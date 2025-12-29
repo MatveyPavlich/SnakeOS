@@ -1,7 +1,6 @@
 #include "stdint.h"
 #include "stddef.h"
 #include "interrupt.h"
-#include "irq.h"
 #include "kprint.h"
 #include "util.h"
 

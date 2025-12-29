@@ -1,5 +1,5 @@
 #include "kprint.h"
-#include "irq.h"
+#include "interrupt.h"
 #include "util.h"
 #include "stdint.h"
 #include <stdbool.h>

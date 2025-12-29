@@ -1,7 +1,8 @@
 // Logic adopted from linux kernel include/linux/interrupt.h
 // API implementation of the irq module
 
-#include "irq.h"
+#include "interrupt.h"
+#include "irq_chip.h"
 #include "kprint.h"
 
 #define NMBR_IRQS 16
@@ -14,6 +15,12 @@ struct irq_desc {
 static struct irq_desc irq_table[NMBR_IRQS];
 static struct irq_chip *irq_chip_active;
 
+/* irq_handle - Route an interrupt to the handler function. To be used only
+ *              in the CPU stuff (e.g., IDT) to direct interrupts into the irq
+ *              subsystem. Do not exposed to drivers or callers.
+ * @irq:        IRQ for the interrupt to handle. 
+ * @frame:      CPU state before receiving the interrupt.
+ */
 void irq_handle(int irq, struct interrupt_frame* frame)
 {
         if (irq < 0 || irq >= NMBR_IRQS) {

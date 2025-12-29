@@ -21,4 +21,6 @@ struct cdev {
 };
 
 int cdev_register(struct cdev *dev);
+
+/* Retrieve a cdev identified by the provided 'name' */ 
 struct cdev *cdev_get(const char *name);

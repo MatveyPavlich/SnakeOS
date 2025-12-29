@@ -1,7 +1,7 @@
 /* Impelentation of the i8259A controller (PIC) */
 
 #include "util.h"
-#include "irq.h"
+#include "irq_chip.h"
 
 #define PIC1         0x20       /* IO port base address for master PIC */
 #define PIC2         0xA0       /* IO port base address for slave PIC */

@@ -23,6 +23,9 @@ int cdev_register(struct cdev *dev)
         return K_OK;
 }
 
+/* Iterator for looking up a char device. Add a new cdev_for_each() function
+ * in the future to allow the caller to specify a callback.
+ */
 struct cdev *cdev_get(const char *name)
 {
         if (!name)
