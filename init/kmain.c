@@ -10,7 +10,7 @@
 #include "idt.h"
 #include "i8259.h"
 // #include "init_ram.h"
-// #include "keyboard.h"
+#include "keyboard.h"
 #include "timer.h"
 
 extern void print_64_bits(const char* str);
@@ -41,6 +41,7 @@ void kmain()
         __asm__ volatile ("sti"); // Enable interrupts after PIC is set up
         // print_ram_map();
         timer_init();
+        keyboard_init();
         // start_shell();
 
         // Division by zero interrup check

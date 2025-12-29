@@ -1,1 +1,1 @@
-char get_char(void);
+int keyboard_init(void);
