@@ -38,14 +38,16 @@ void kmain()
         idt_init();
         irq_arch_init();
         kprintf("Interrupts are enabled!!!\n");
-
+        __asm__ volatile ("sti"); // Enable interrupts after PIC is set up
         // print_ram_map();
         timer_init();
         // start_shell();
 
         // Division by zero interrup check
-        // int a = 1, b = 0, c;
-        // c = 1/0;
+        // volatile int a = 1;
+        // volatile int b = 0;
+        // volatile int c;
+        // c = a / b;
 
         while (1) __asm__("hlt");
 }

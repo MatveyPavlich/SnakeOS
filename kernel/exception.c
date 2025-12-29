@@ -5,11 +5,15 @@
 
 /* Forward declarations */
 static void gp_fault_handler(int vector, struct interrupt_frame* frame);
+static void div_by_zero_handler(int vector, struct interrupt_frame* frame);
 
 
 void exception_handle(int vector, struct interrupt_frame *frame)
 {
         switch (vector) {
+        case 0:
+                div_by_zero_handler(vector, frame);
+                break;
         case 13:
                 gp_fault_handler(vector, frame);
                 break;
@@ -23,6 +27,15 @@ void exception_handle(int vector, struct interrupt_frame *frame)
 static void gp_fault_handler(int vector, struct interrupt_frame* frame)
 {
         kprintf("General Protection Fault: %d\n", vector);
+        kprintf("RIP = %x\n",frame->rip);
+        kprintf("System halted\n");
+        while (1) __asm__("hlt");
+}
+
+/* Division by zero */ 
+static void div_by_zero_handler(int vector, struct interrupt_frame* frame)
+{
+        kprintf("Division by zero: (exception %d)\n", vector);
         kprintf("RIP = %x\n",frame->rip);
         kprintf("System halted\n");
         while (1) __asm__("hlt");

@@ -41,7 +41,6 @@ static void timer_callback(int irq, struct interrupt_frame* frame, void *dev)
 {
         (void)irq; (void)frame, (void)dev;
         tick++;
-        kprintf("In timer callback\n");
         /* TODO: implement set_clock_dirty_flag() to separate UI update 
          * from the interrupt handling code that should be fast */
         if (tick % CLOCK_FREQUENCY == 0)
