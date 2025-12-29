@@ -1,31 +1,14 @@
-// main.c
-/*
-   With -m64 gcc flag, function arguments are as follows:
-   (1) RDI (2) RSI (3) RDX (4) RCX (5) R8 (6) R9
-
-*/
-
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
 #include "i8259.h"
-// #include "init_ram.h"
+#include "init_ram.h"
 #include "keyboard.h"
 #include "timer.h"
+#include "tests.h"
 
 extern void print_64_bits(const char* str);
 extern char get_char(void);
-
-// void start_shell()
-// {
-//         while(1) {
-//                 kprintf("SnakeOS> ");
-//
-//                 char c;
-//                 do {c = get_char();} while (c != '\n');
-//                 kprintf("\n");   
-//         }
-// }
 
 void kmain()
 {
@@ -39,16 +22,11 @@ void kmain()
         irq_arch_init();
         kprintf("Interrupts are enabled!!!\n");
         __asm__ volatile ("sti"); // Enable interrupts after PIC is set up
-        // print_ram_map();
+        print_ram_map();
         timer_init();
         keyboard_init();
-        // start_shell();
 
-        // Division by zero interrup check
-        // volatile int a = 1;
-        // volatile int b = 0;
-        // volatile int c;
-        // c = a / b;
+        // tests_div_by_zero();
 
         while (1) __asm__("hlt");
 }
