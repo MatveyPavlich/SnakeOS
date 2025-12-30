@@ -77,6 +77,9 @@ int keyboard_init(void)
         return 0;
 }
 
+/* Known bug: data race is possible if keyboard_read is executed while another
+ * keyboard interrupt is fired and new charactes are appended to the buffer
+ */
 size_t keyboard_read(void *buffer, size_t n)
 {
         char *out = buffer;
@@ -107,21 +110,22 @@ void keyboard_handle_scancode(uint8_t scancode)
         uint8_t key_scancode = scancode & 0x7F;
 
         switch (key_scancode) {
-                case (LEFT_SHIFT || RIGHT_SHIFT):
+                case LEFT_SHIFT:
+                case RIGHT_SHIFT:
                         kbd.shift = is_key_pressed;
-                        break;
+                        return;
                 case CAPS_LOCK:
                         /* Toggle capslock on the press only */
                         if (is_key_pressed)
                                 kbd.caps = !kbd.caps;
-                        break;
+                        return;
                 default:
-                        /* Handle general key on press only */
+                        /* Do not buffer released keys, just the pressed ones */
                         if (!is_key_pressed)
                                 return;
                         break;
         }
-        char unsigned pressed_key = translate_scancode(scancode);
+        char unsigned pressed_key = translate_scancode(key_scancode);
         keybuf_put((char)pressed_key);
 }
 
