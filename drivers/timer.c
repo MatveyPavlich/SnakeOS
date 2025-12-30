@@ -3,6 +3,7 @@
 #include "interrupt.h"
 #include "kprint.h"
 #include "util.h"
+#include "cdev.h"
 
 // Implementation of the system timer
 
@@ -13,11 +14,18 @@
 #define VGA_COLS        80
 #define VGA_ROWS        25
 
-static uint64_t tick = 0;
-
 /* Forward declarations */
 static void timer_callback(int irq, struct interrupt_frame* frame, void *dev);
 static void timer_display_value(uint64_t* tick_pointer);
+size_t timer_read_ticks(void *buf, size_t n);
+
+static uint64_t tick = 0;
+static struct cdev timer;
+static struct cdev_ops timer_ops = {
+        .read = &timer_read_ticks,
+        .write = NULL,
+        .ioctl = NULL,
+};
 
 /* timer_init - initiate the system timer */
 int timer_init()
@@ -32,6 +40,16 @@ int timer_init()
         outb(0x43, 0x36);
         outb(0x40, divisor & 0xFF);         // low byte
         outb(0x40, (divisor >> 8) & 0xFF);  // high byte
+
+        timer = (struct cdev) {
+                .name = "timer",
+                .ops  = &timer_ops,
+                .priv = NULL,
+        };
+        if (cdev_register(&timer)) {
+                kprintf("Error: cdev registration for timer failed\n");
+                return 1;
+        }
         return 0;
 }
 
@@ -43,6 +61,17 @@ static void timer_callback(int irq, struct interrupt_frame* frame, void *dev)
          * from the interrupt handling code that should be fast */
         if (tick % CLOCK_FREQUENCY == 0)
                 timer_display_value(&tick); 
+}
+
+/* Caller API for finding the number of ticks. Handle the data race in the
+ * future to prevent a caller receiving a value while a new PIT interrupt
+ * is executing
+ */
+size_t timer_read_ticks(void *buf, size_t n)
+{
+        (void)n;
+        memset(buf, tick, 8);
+        return 8; /* Ticks is 64 bits */ 
 }
 
 static void timer_display_value(uint64_t* tick_pointer)
