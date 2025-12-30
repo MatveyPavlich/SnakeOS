@@ -1,16 +1,13 @@
-/* Keyboard driver for PS/2 controller connected to i3259A (PIC) */
+/* Keyboard module to evaluate and store keys for consumption by tty */
 
 #include "kprint.h"
-#include "interrupt.h"
 #include "util.h"
 #include "stdint.h"
 #include "stddef.h"
 #include "cdev.h"
+#include "i8042.h"
 #include <stdbool.h>
 
-#define PS2_DATA        0x60
-#define PIC1_CMD        0x20
-#define PIC1_DATA       0x21
 #define KEYBUFFER_SIZE  128
 #define KEYBOARD_IRQ    1
 
@@ -19,18 +16,18 @@
 #define RIGHT_SHIFT     0x36
 #define CAPS_LOCK       0x3A
 
-
 /* Forward declarations */
 static void keybuf_put(char c);
 static unsigned char translate_scancode(uint8_t sc);
-static size_t keyboard_read(void *buf, size_t n);
-static void keyboard_irq_handler(int vector, struct interrupt_frame* frame,
-                                 void * dev);
+size_t keyboard_read(void *buffer, size_t n);
+
+struct keyboard_state {
+        bool shift;
+        bool caps;
+};
 
 /* Private keyboard state and buffer */
-static bool is_shift_enabled = false;
-static bool is_capslock_enabled = false;
-
+static struct keyboard_state kbd;
 static char key_buffer[KEYBUFFER_SIZE]; /* ring buffer for charactes */
 static int key_buffer_head = 0;
 static int key_buffer_tail = 0;
@@ -64,10 +61,7 @@ static const unsigned char shift_map[0x60] = {
 
 int keyboard_init(void)
 {
-        if (irq_request(KEYBOARD_IRQ, keyboard_irq_handler, NULL)) {
-                kprintf("Error: irq allocation for the keyboard failed\n");
-                return 1;
-        }
+        i8042_init(); /* PS/2 controller for the keyboard */
 
         keyboard = (struct cdev) {
                 .name = "keyboard",
@@ -83,83 +77,80 @@ int keyboard_init(void)
         return 0;
 }
 
-static void keyboard_irq_handler(int vector, struct interrupt_frame *frame,
-                void *dev)
+size_t keyboard_read(void *buffer, size_t n)
 {
-        (void)vector; (void)frame, (void)dev;
+        char *out = buffer;
+        size_t i = 0;
 
+        while (i < n) {
+                /* Busy-wait until a key is available */
+                while (key_buffer_head == key_buffer_tail) {
+                        __asm__("hlt");
+                }
+
+                out[i++] = key_buffer[key_buffer_tail];
+                key_buffer_tail = (key_buffer_tail + 1) % KEYBUFFER_SIZE;
+        }
+
+        return (size_t)i;
+}
+
+/* keyboard_handle_scancode - ingestion API for low-level drivers (i8042, USB)
+ *                            to send scancodes to the keyboard module.
+ * @scancode:                 scancode to be send.
+ */
+void keyboard_handle_scancode(uint8_t scancode)
+{
         /* Check if a key was pressed or released by looking up bit 7 (0x80)
-         * in the scancode */
-        uint8_t ps2_scancode = inb(PS2_DATA);
-        bool is_key_pressed = !(code & 0x80);
-        uint8_t key_code = ps2_scancode & 0x7F;
+         * in the scancode for PS/2 */
+        bool is_key_pressed = !(scancode & 0x80);
+        uint8_t key_scancode = scancode & 0x7F;
 
-        switch (key_code) {
+        switch (key_scancode) {
                 case (LEFT_SHIFT || RIGHT_SHIFT):
-                        is_shift_enabled = is_key_pressed;
+                        kbd.shift = is_key_pressed;
                         break;
                 case CAPS_LOCK:
                         /* Toggle capslock on the press only */
                         if (is_key_pressed)
-                                caps_lock = !is_capslock_enabled;
+                                kbd.caps = !kbd.caps;
                         break;
                 default:
                         /* Handle general key on press only */
-                        if (is_key_pressed)
-                                keyboard_handle_key(pressed_key);
+                        if (!is_key_pressed)
+                                return;
                         break;
         }
-}
-char unsigned pressed_key = translate_scancode(key_code);
-keybuf_put((char)pressed_key);
-static void keybuf_put(char c)
-{
-        int next = (keybuf_head + 1) % KEYBUFFER_SIZE;
-        // check buffer not full
-        if (next != keybuf_tail) {
-                keybuf[keybuf_head] = c;
-                keybuf_head = next;
-        }
-        // else: buffer full => drop key
+        char unsigned pressed_key = translate_scancode(scancode);
+        keybuf_put((char)pressed_key);
 }
 
 /* Translate PS2 scancodes into characters */
-static unsigned char translate_scancode(uint8_t scancode)
+static unsigned char translate_scancode(uint8_t sc)
 {
-        if (scancode < sizeof(base_map)) {
-                bool is_shifted = (shift_l || shift_r);
-                unsigned char c = shifted ? shift_map[sc] : base_map[sc];
+        if (sc < sizeof(base_map)) {
+                unsigned char c = kbd.shift ? shift_map[sc] : base_map[sc];
 
                 if (c >= 'a' && c <= 'z') {
-                        if (caps_lock && !shifted) c = (unsigned char)(c - 'a' + 'A');
+                        if (kbd.caps && !kbd.shift)
+                                c = (unsigned char)(c - 'a' + 'A');
                 }
                 else if (c >= 'A' && c <= 'Z') {
-                        if (caps_lock && !shifted) c = (unsigned char)(c - 'A' + 'a');
+                        if (kbd.caps && !kbd.shift)
+                                c = (unsigned char)(c - 'A' + 'a');
                 }
                 return c;
         }
         return 0;
 }
 
-static size_t keyboard_read(void *buf, size_t n)
+static void keybuf_put(char c)
 {
-        char *out = buf;
-        size_t i = 0;
-
-        while (i < n) {
-                /* Busy-wait until a key is available */
-                while (keybuf_head == keybuf_tail) {
-                        __asm__("hlt");
-                }
-
-                out[i++] = keybuf[keybuf_tail];
-                keybuf_tail = (keybuf_tail + 1) % KEYBUFFER_SIZE;
+        int next = (key_buffer_head + 1) % KEYBUFFER_SIZE;
+        /* check buffer not full */
+        if (next != key_buffer_tail) {
+                key_buffer[key_buffer_head] = c;
+                key_buffer_head = next;
         }
-
-        return (size_t)i;
+        /* else: buffer full => drop key */
 }
-
-
-
-
-

@@ -6,6 +6,7 @@
 #include "keyboard.h"
 // #include "tty.h"
 #include "timer.h"
+#include "i8042.h"
 #include "tests.h"
 
 extern void print_64_bits(const char* str);
@@ -25,7 +26,7 @@ void kmain()
         print_ram_map();
         timer_init();
         keyboard_init();
-        tty_init();
+        // tty_init();
 
         // char buf[128];
         // tty_read(buf, sizeof(buf));

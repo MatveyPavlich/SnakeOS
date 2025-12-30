@@ -49,6 +49,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			 $(BUILD_DIR)/exception.o $(BUILD_DIR)/i8259.o      \
 			 $(BUILD_DIR)/cdev.o                                \
 			 $(BUILD_DIR)/tty.o                                 \
+			 $(BUILD_DIR)/i8042.o                                 \
 			 $(BUILD_DIR)/tests.o
 			 -T kernel.ld
 	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o \
@@ -67,6 +68,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			    $(BUILD_DIR)/timer.o           \
 			    $(BUILD_DIR)/cdev.o            \
 			    $(BUILD_DIR)/tty.o             \
+			    $(BUILD_DIR)/i8042.o           \
 			    $(BUILD_DIR)/tests.o
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 	objcopy -O binary $< $@
@@ -103,6 +105,8 @@ $(BUILD_DIR)/exception.o: kernel/exception.c
 $(BUILD_DIR)/cdev.o: drivers/cdev.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/tty.o: drivers/tty.c
+	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/i8042.o: drivers/i8042.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/tests.o: debugging/tests/tests.c
 	$(CC) $(CFLAGS) -c $< -o $@
