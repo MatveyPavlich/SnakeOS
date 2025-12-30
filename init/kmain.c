@@ -4,6 +4,7 @@
 #include "i8259.h"
 #include "init_ram.h"
 #include "keyboard.h"
+// #include "tty.h"
 #include "timer.h"
 #include "tests.h"
 
@@ -24,6 +25,10 @@ void kmain()
         print_ram_map();
         timer_init();
         keyboard_init();
+        tty_init();
+
+        // char buf[128];
+        // tty_read(buf, sizeof(buf));
 
         /* Tests for debugging purposes */
         // tests_div_by_zero();
