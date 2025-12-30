@@ -25,7 +25,7 @@ static int keybuf_tail = 0;
 /* Forward declarations */
 static size_t keyboard_read(void *buf, size_t n);
 static void keyboard_irq_handler(int vector, struct interrupt_frame* frame,
-                              void * dev);
+                                 void * dev);
 
 static struct cdev keyboard;
 static struct cdev_ops keyboard_ops = {
