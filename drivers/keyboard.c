@@ -1,3 +1,5 @@
+/* Keyboard driver for PS/2 controller connected to i3259A (PIC) */
+
 #include "kprint.h"
 #include "interrupt.h"
 #include "util.h"
@@ -12,6 +14,12 @@
 #define KEYBUFFER_SIZE  128
 #define KEYBOARD_IRQ    1
 
+/* PS/2 key codes */
+#define LEFT_SHIFT      0x2A
+#define RIGHT_SHIFT     0x36
+#define CAPS_LOCK       0x3A
+
+
 /* Forward declarations */
 static void keybuf_put(char c);
 static unsigned char translate_scancode(uint8_t sc);
@@ -20,13 +28,12 @@ static void keyboard_irq_handler(int vector, struct interrupt_frame* frame,
                                  void * dev);
 
 /* Private keyboard state and buffer */
-static bool shift_l   = false;
-static bool shift_r   = false;
-static bool caps_lock = false;
+static bool is_shift_enabled = false;
+static bool is_capslock_enabled = false;
 
-static char keybuf[KEYBUFFER_SIZE];
-static int keybuf_head = 0;
-static int keybuf_tail = 0;
+static char key_buffer[KEYBUFFER_SIZE]; /* ring buffer for charactes */
+static int key_buffer_head = 0;
+static int key_buffer_tail = 0;
 
 static struct cdev keyboard;
 static struct cdev_ops keyboard_ops = {
@@ -76,35 +83,62 @@ int keyboard_init(void)
         return 0;
 }
 
-static void keyboard_irq_handler(int vector, struct interrupt_frame* frame,
-                void * dev)
+static void keyboard_irq_handler(int vector, struct interrupt_frame *frame,
+                void *dev)
 {
-        (void)vector; (void)frame;
+        (void)vector; (void)frame, (void)dev;
 
-        // Read scancode once
-        uint8_t code = inb(PS2_DATA);
-        bool is_break = (code & 0x80) != 0;
-        uint8_t make = code & 0x7F;
+        /* Check if a key was pressed or released by looking up bit 7 (0x80)
+         * in the scancode */
+        uint8_t ps2_scancode = inb(PS2_DATA);
+        bool is_key_pressed = !(code & 0x80);
+        uint8_t key_code = ps2_scancode & 0x7F;
 
-        switch (make) {
-                case 0x2A: // Left Shift
-                        shift_l = !is_break;
+        switch (key_code) {
+                case (LEFT_SHIFT || RIGHT_SHIFT):
+                        is_shift_enabled = is_key_pressed;
                         break;
-                case 0x36: // Right Shift
-                        shift_r = !is_break;
-                        break;
-                case 0x3A: // CapsLock toggles on make only
-                        if (!is_break)
-                                caps_lock = !caps_lock;
+                case CAPS_LOCK:
+                        /* Toggle capslock on the press only */
+                        if (is_key_pressed)
+                                caps_lock = !is_capslock_enabled;
                         break;
                 default:
-                        if (!is_break) {
-                                unsigned char ch = translate_scancode(make);
-                                if (ch)
-                                        keybuf_put((char)ch);
-                        }
+                        /* Handle general key on press only */
+                        if (is_key_pressed)
+                                keyboard_handle_key(pressed_key);
                         break;
         }
+}
+char unsigned pressed_key = translate_scancode(key_code);
+keybuf_put((char)pressed_key);
+static void keybuf_put(char c)
+{
+        int next = (keybuf_head + 1) % KEYBUFFER_SIZE;
+        // check buffer not full
+        if (next != keybuf_tail) {
+                keybuf[keybuf_head] = c;
+                keybuf_head = next;
+        }
+        // else: buffer full => drop key
+}
+
+/* Translate PS2 scancodes into characters */
+static unsigned char translate_scancode(uint8_t scancode)
+{
+        if (scancode < sizeof(base_map)) {
+                bool is_shifted = (shift_l || shift_r);
+                unsigned char c = shifted ? shift_map[sc] : base_map[sc];
+
+                if (c >= 'a' && c <= 'z') {
+                        if (caps_lock && !shifted) c = (unsigned char)(c - 'a' + 'A');
+                }
+                else if (c >= 'A' && c <= 'Z') {
+                        if (caps_lock && !shifted) c = (unsigned char)(c - 'A' + 'a');
+                }
+                return c;
+        }
+        return 0;
 }
 
 static size_t keyboard_read(void *buf, size_t n)
@@ -126,32 +160,6 @@ static size_t keyboard_read(void *buf, size_t n)
 }
 
 
-static void keybuf_put(char c)
-{
-        int next = (keybuf_head + 1) % KEYBUFFER_SIZE;
-        // check buffer not full
-        if (next != keybuf_tail) {
-                keybuf[keybuf_head] = c;
-                keybuf_head = next;
-        }
-        // else: buffer full => drop key
-}
 
-static unsigned char translate_scancode(uint8_t sc)
-{
-        if (sc < sizeof(base_map)) {
-                bool shifted = (shift_l || shift_r);
-                unsigned char c = shifted ? shift_map[sc] : base_map[sc];
-
-                if (c >= 'a' && c <= 'z') {
-                        if (caps_lock && !shifted) c = (unsigned char)(c - 'a' + 'A');
-                }
-                else if (c >= 'A' && c <= 'Z') {
-                        if (caps_lock && !shifted) c = (unsigned char)(c - 'A' + 'a');
-                }
-                return c;
-        }
-        return 0;
-}
 
 
