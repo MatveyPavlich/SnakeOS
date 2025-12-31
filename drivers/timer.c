@@ -1,3 +1,4 @@
+// Implementation of the system timer
 #include "stdint.h"
 #include "stddef.h"
 #include "interrupt.h"
@@ -5,7 +6,6 @@
 #include "util.h"
 #include "cdev.h"
 
-// Implementation of the system timer
 
 #define TIMER_IRQ       0                   // IRQ0 = PIT
 #define CLOCK_FREQUENCY 100                 // Will give ~ 1 sec

@@ -1,22 +1,18 @@
-1. Load kernel while still in stage0! - done
-2. Jmp into kernel from stage1 - done
-2. Create a C file - done (can't install i386 tool chain...)
-3. Link together - done
+### Bootloader
+- [x] Load kernel and stage1 in stage0
+- [x] Jmp into stage1 and then kernel_entry
+- [x] Create a C file - done (can't install i386 tool chain...)
+- [x] Link together - done
+- [x] Jump into C from kernel_entry
+- [x] (Extension work) Detect the presence of the long mode
+- [x] (Extension work) Setup paging
+- [x] (Extension work) Enter long mode to make your OS 64 bits
 
-New plan (enter long mode):
-1. Detect the presence of the long mode - done
-2. Set up paging - done
-3. Enter long mode - done
-
-Plan for C:
-1. Create IDT - done (might need to set up other essential interrupts such as divide by zero etc)
-2. Create keyboard drivers - done
-3. Create basic shell interface
-        - Print SnakeOS on a new line once enter is pressed - done
-        - Implement delete key (for some reason gives rubbish now)
-        - Clear the buffer? Figure out how buffer works and add commands!
-4. Create alarm 
-5. Create a clock - done
-6. Create file system drivers to be able to read from disk
-7. Set up graphics card
-8. Do double buffering
+### Kernel
+- [x] Set up IDT with a common stub for IRQs and exceptions
+- [x] Create a keyboard driver (for the PS/2 controller)
+- [x] Create timer driver (PIT)
+- [] Create basic shell interface
+- [] Create file system drivers to be able to read from disk
+- [] Set up graphics card
+- [] Do double buffering
