@@ -6,7 +6,6 @@
 #include "util.h"
 #include "cdev.h"
 
-
 #define TIMER_IRQ       0                   // IRQ0 = PIT
 #define CLOCK_FREQUENCY 100                 // Will give ~ 1 sec
 #define PIT_BASE_FREQ   1193182
