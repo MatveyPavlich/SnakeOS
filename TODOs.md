@@ -33,3 +33,5 @@ a modular codebase with a dedicated mechanism and code modules.
 - [ ] Address data race in the `keyboard.c` module.
 - [ ] Cleanup tty module and actually make it work so that I could print stuff with the keyboard on the screeen.
 - [ ] After the console is done scope out how to implement tasks
+- [ ] Scope how to implement a log functionality for debugging the OS
+- [ ] Refactor the current build system (monolith Makefile)
