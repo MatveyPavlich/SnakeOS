@@ -17,6 +17,8 @@
  *  5. Small, fixed number of character devices
  */
 
+#include "stddef.h"
+
 /* struct cdev_ops - Character device operations. Drivers may leave unsupported
  *                   operations as NULL.
  * @read:            Read up to @n bytes into @buf. Returns n. of bytes read.

@@ -11,6 +11,18 @@
 
 extern void print_64_bits(const char* str);
 
+// void kernel_console(void)
+// {
+//         char buf[128];
+//
+//         while (1) {
+//                 size_t n = tty_read(buf, sizeof(buf));
+//                 buf[n] = '\0';
+//
+//                 kprintf("got: %s\n", buf);
+//         }
+// }
+
 void kmain()
 {
         print_clear();
@@ -28,11 +40,10 @@ void kmain()
         keyboard_init();
         // tty_init();
 
-        // char buf[128];
-        // tty_read(buf, sizeof(buf));
+        // kernel_console();
 
         /* Tests for debugging purposes */
-        // tests_div_by_zero();
+        tests_div_by_zero();
 
         while (1) __asm__("hlt");
 }
