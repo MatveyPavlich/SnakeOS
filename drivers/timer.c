@@ -5,6 +5,7 @@
 #include "kprint.h"
 #include "cdev.h"
 #include "util.h"
+#include "i8253.h"
 
 #define VGA_MEMORY      ((uint8_t*)0xB8000)
 #define VGA_COLS        80
@@ -28,6 +29,8 @@ static struct cdev_ops timer_ops = {
 /* timer_init - initiate the system timer */
 int timer_init()
 {
+        i8253_init(); /* TODO: later can add macro to detect which controller
+                         is available */
 
         timer = (struct cdev) {
                 .name = "timer",

@@ -6,4 +6,5 @@ void timer_init();
  */
 size_t timer_read_ticks(void *buf, size_t n);
 
+/* Ingestion API */
 void timer_handle_tick();

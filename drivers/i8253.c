@@ -32,9 +32,9 @@
 #define PIT_CH2              0x80
 
 /* Timer stuff */
-#define TIMER_IRQ       0    // IRQ0 = PIT
-#define CLOCK_FREQUENCY 100  // Will give ~ 1 sec
-#define PIT_BASE_FREQ   1193182
+#define TIMER_IRQ            0    // IRQ0 = PIT
+#define CLOCK_FREQUENCY      100  // Will give ~ 1 sec
+#define PIT_BASE_FREQ        1193182
 
 /* Forward declarations */
 static inline void pit_set_mode(uint8_t channel, uint8_t mode);
@@ -56,13 +56,14 @@ int i8253_init(void)
         return 0;
 }
 
-static inline void pit_set_mode(uint8_t channel, uint8_t mode)
-{
-        outb(PIT_CMD, channel | PIT_ACCESS_LOHI | mode | PIT_BINARY);
-}
-
+/* Pass the tick into the timer core module through its ingestion API */
 static void i8253_irq_handle(int irq, struct interrupt_frame* frame, void *dev)
 {
         (void)irq; (void)frame, (void)dev;
         timer_handle_tick();
+}
+
+static void pit_set_mode(uint8_t channel, uint8_t mode)
+{
+        outb(PIT_CMD, channel | PIT_ACCESS_LOHI | mode | PIT_BINARY);
 }
