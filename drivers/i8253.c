@@ -2,8 +2,10 @@
 
 #include "interrupt.h"
 #include "util.h"
+#include "timer.h"
+#include "kprint.h"
 
-/ * Hardware ports */
+/* Hardware ports */
 #define PIT_CH0_DATA         0x40
 #define PIT_CH1_DATA         0x41
 #define PIT_CH2_DATA         0x42
@@ -43,11 +45,11 @@ int i8253_init(void)
         /* Set up PIT to the correct frequency with the square mode*/
         uint32_t divisor = PIT_BASE_FREQ / CLOCK_FREQUENCY;
         pit_set_mode(PIT_CH0, PIT_MODE_3);
-        outb(0x40, divisor & 0xFF);         // low byte
-        outb(0x40, (divisor >> 8) & 0xFF);  // high byte
+        outb(PIT_CH0_DATA, divisor & 0xFF);
+        outb(PIT_CH0_DATA, (divisor >> 8) & 0xFF);
 
         if (irq_request(TIMER_IRQ, i8253_irq_handle, NULL)) {
-                kprintf("Error: irq allocation to the timer failed\n");
+                kprintf("Error: irq allocation for PIT failed\n");
                 return 1;
         }
 
@@ -62,9 +64,5 @@ static inline void pit_set_mode(uint8_t channel, uint8_t mode)
 static void i8253_irq_handle(int irq, struct interrupt_frame* frame, void *dev)
 {
         (void)irq; (void)frame, (void)dev;
-        tick++;
-        /* TODO: implement set_clock_dirty_flag() to separate UI update 
-         * from the interrupt handling code that should be fast */
-        if (tick % CLOCK_FREQUENCY == 0)
-                timer_display_value(&tick); 
+        timer_handle_tick();
 }

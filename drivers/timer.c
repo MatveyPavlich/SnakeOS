@@ -4,10 +4,14 @@
 #include "interrupt.h"
 #include "kprint.h"
 #include "cdev.h"
+#include "util.h"
 
 #define VGA_MEMORY      ((uint8_t*)0xB8000)
 #define VGA_COLS        80
 #define VGA_ROWS        25
+
+/* TODO: create a macro to later identify which value should be here */
+#define CLOCK_FREQUENCY 100  // Will give ~ 1 sec for PIT
 
 /* Forward declarations */
 static void timer_display_value(uint64_t* tick_pointer);
@@ -54,7 +58,10 @@ size_t timer_read_ticks(void *buf, size_t n)
 void timer_handle_tick()
 {
         tick++;
-        timer_display_value(&tick); 
+        /* TODO: implement set_clock_dirty_flag() to separate UI update 
+         * from the interrupt handling code that should be fast */
+        if (tick % CLOCK_FREQUENCY == 0)
+                timer_display_value(&tick); 
 }
 
 static void timer_display_value(uint64_t* tick_pointer)

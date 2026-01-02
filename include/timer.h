@@ -5,3 +5,5 @@ void timer_init();
  * really used
  */
 size_t timer_read_ticks(void *buf, size_t n);
+
+void timer_handle_tick();
