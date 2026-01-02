@@ -1,8 +1,8 @@
-#include "tty.h"
 #include "cdev.h"
 #include "kprint.h"
-#include "stddef.h"
 #include <stdbool.h>
+#include "stddef.h"
+#include "tty.h"
 
 #define TTY_BUF_SIZE 128
 

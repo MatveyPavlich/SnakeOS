@@ -1,12 +1,12 @@
 /* Keyboard module to evaluate and store keys for consumption by tty */
 
-#include "kprint.h"
-#include "util.h"
-#include "stdint.h"
-#include "stddef.h"
 #include "cdev.h"
 #include "i8042.h"
+#include "kprint.h"
 #include <stdbool.h>
+#include "stddef.h"
+#include "stdint.h"
+#include "util.h"
 
 #define KEYBUFFER_SIZE  128
 #define KEYBOARD_IRQ    1
@@ -77,7 +77,10 @@ int keyboard_init(void)
         return 0;
 }
 
-/* Known bug: data race is possible if keyboard_read is executed while another
+/* keyboard_read - caller method for reading keyboard buffer.
+ * @buffer:        pointer to the buffer where to copy characters.
+ * @n:             number of characters to copy.
+ * Known bug: data race is possible if keyboard_read is executed while another
  * keyboard interrupt is fired and new charactes are appended to the buffer
  */
 size_t keyboard_read(void *buffer, size_t n)
@@ -88,7 +91,7 @@ size_t keyboard_read(void *buffer, size_t n)
         while (i < n) {
                 /* Busy-wait until a key is available */
                 while (key_buffer_head == key_buffer_tail) {
-                        __asm__("hlt");
+                        __asm__ volatile ("hlt");
                 }
 
                 out[i++] = key_buffer[key_buffer_tail];

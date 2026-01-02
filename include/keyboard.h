@@ -8,3 +8,4 @@ int keyboard_init(void);
  * @scancode:                 scancode to be send.
  */
 void keyboard_handle_scancode(uint8_t scancode);
+
