@@ -1,8 +1,12 @@
 # SnakeOS 🐍🖥️
 
-SnakeOS is a **toy operating system** written for **x86-64** with the mission of running a 2D Snake game. **ARM and RISC-V architectures are not supported**. Compiler support is **GCC and clang only**.
+SnakeOS is a **toy operating system** written for **x86-64** with the mission
+of running a 2D Snake game. **ARM and RISC-V architectures are not supported**.
+Compiler support is **GCC and clang only**.
 
-The project explores **low-level OS development**, including bootloader design, memory management, graphics, and hardware interfacing, to build a minimalist but fully functional 64-bit OS.
+The project explores **low-level OS development**, including bootloader design,
+memory management, graphics, and hardware interfacing, to build a minimalist
+but fully functional 64-bit OS.
 
 ---
 
@@ -38,7 +42,7 @@ The project explores **low-level OS development**, including bootloader design, 
 ---
 
 ## 🛠️ Tech Stack
-- **Language:** x86 Assembly (NASM) + C
+- **Language:** x86 Assembly (NASM) + C99
 - **Target Architecture:** x86-64
 - **Build Tools:** `nasm`, `gcc`, `ld`, `make`
 - **Emulator:** QEMU (primary), Bochs (optional)
@@ -47,3 +51,38 @@ The project explores **low-level OS development**, including bootloader design, 
 ---
 
 ## 📂 Repository Structure
+```
+SnakeOS/
+| arch/
+| | x86/
+| | | gdt.c
+| | | i8259.c
+| | | idt.c
+| | | gdt.asm
+| | | idt.asm
+| boot/
+| | x86/
+| | | stage0/
+| | | stage1/
+| | | kernel_entry.asm
+| | | shared_utils.asm
+| drivers/
+| | cdev.c
+| | console.c
+| | i8042.c
+| | i8253.c
+| | init_ram.c
+| | keyboard.c
+| | timer.c
+| | tty.c
+| | vga.c
+| include/
+| init/
+| | kmain.c
+| kernel/
+| | exception.c
+| | irq.c
+| | kprint.c
+| lib/
+| Makefile
+```

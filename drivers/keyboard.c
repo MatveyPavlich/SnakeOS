@@ -104,6 +104,8 @@ size_t keyboard_read(void *buffer, size_t n)
 /* keyboard_handle_scancode - ingestion API for low-level drivers (i8042, USB)
  *                            to send scancodes to the keyboard module.
  * @scancode:                 scancode to be send.
+ * TODO: figure out how to pass to the function the chip identity (currently
+ *       PS/2 logic is hardcoded
  */
 void keyboard_handle_scancode(uint8_t scancode)
 {

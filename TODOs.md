@@ -27,11 +27,11 @@ a modular codebase with a dedicated mechanism and code modules.
 - [x] Create a separate PS/2 driver module to power keyboard core module.
 
 ### TODOs
-- [ ] Separate PIT (i8253) code into a separate driver from timer.c
+- [x] Separate PIT (i8253) code into a separate driver from timer.c
+- [ ] Cleanup tty module and actually make it work so that I could print stuff with the keyboard on the screeen.
 - [ ] Create a core clocksource module in `/kernel` by adding `/kernel/clocksource.c`.
 - [ ] Scope how to solve the  data race in the `keyboard.c` module.
 - [ ] Address data race in the `keyboard.c` module.
-- [ ] Cleanup tty module and actually make it work so that I could print stuff with the keyboard on the screeen.
 - [ ] After the console is done scope out how to implement tasks
 - [ ] Scope how to implement a log functionality for debugging the OS
 - [ ] Refactor the current build system (monolith Makefile)
