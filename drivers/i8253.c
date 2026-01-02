@@ -1,6 +1,7 @@
 /* Driver for the Programmable Interval Timer (PIT) */
 
 #include "interrupt.h"
+#include "util.h"
 
 / * Hardware ports */
 #define PIT_CH0_DATA         0x40
@@ -28,10 +29,29 @@
 #define PIT_CH1              0x40
 #define PIT_CH2              0x80
 
+/* Timer stuff */
+#define TIMER_IRQ       0    // IRQ0 = PIT
+#define CLOCK_FREQUENCY 100  // Will give ~ 1 sec
+#define PIT_BASE_FREQ   1193182
+
+/* Forward declarations */
+static inline void pit_set_mode(uint8_t channel, uint8_t mode);
+static void i8253_irq_handle(int irq, struct interrupt_frame* frame, void *dev);
+
 int i8253_init(void)
 {
+        /* Set up PIT to the correct frequency with the square mode*/
+        uint32_t divisor = PIT_BASE_FREQ / CLOCK_FREQUENCY;
         pit_set_mode(PIT_CH0, PIT_MODE_3);
-        return 1;
+        outb(0x40, divisor & 0xFF);         // low byte
+        outb(0x40, (divisor >> 8) & 0xFF);  // high byte
+
+        if (irq_request(TIMER_IRQ, i8253_irq_handle, NULL)) {
+                kprintf("Error: irq allocation to the timer failed\n");
+                return 1;
+        }
+
+        return 0;
 }
 
 static inline void pit_set_mode(uint8_t channel, uint8_t mode)
@@ -41,6 +61,10 @@ static inline void pit_set_mode(uint8_t channel, uint8_t mode)
 
 static void i8253_irq_handle(int irq, struct interrupt_frame* frame, void *dev)
 {
-        // Call the time core module
+        (void)irq; (void)frame, (void)dev;
+        tick++;
+        /* TODO: implement set_clock_dirty_flag() to separate UI update 
+         * from the interrupt handling code that should be fast */
+        if (tick % CLOCK_FREQUENCY == 0)
+                timer_display_value(&tick); 
 }
-
