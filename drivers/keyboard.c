@@ -132,6 +132,7 @@ void keyboard_handle_scancode(uint8_t scancode)
         }
         char unsigned pressed_key = translate_scancode(key_scancode);
         keybuf_put((char)pressed_key);
+        kprintf("%c", pressed_key);
 }
 
 /* Translate PS2 scancodes into characters */

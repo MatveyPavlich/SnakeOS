@@ -24,6 +24,7 @@ void tty_init(void)
                 kbd = NULL;
                 return;
         }
+        kprintf("Successful tty init\n");
 }
 
 static void tty_handle_char(char c)

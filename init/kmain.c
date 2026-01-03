@@ -4,24 +4,24 @@
 #include "i8259.h"
 #include "init_ram.h"
 #include "keyboard.h"
-// #include "tty.h"
+#include "tty.h"
 #include "timer.h"
 #include "i8042.h"
 #include "tests.h"
 
 extern void print_64_bits(const char* str);
 
-// void kernel_console(void)
-// {
-//         char buf[128];
-//
-//         while (1) {
-//                 size_t n = tty_read(buf, sizeof(buf));
-//                 buf[n] = '\0';
-//
-//                 kprintf("got: %s\n", buf);
-//         }
-// }
+void kernel_console(void)
+{
+        char buf[128];
+
+        while (1) {
+                size_t n = tty_read(buf, sizeof(buf));
+                buf[n] = '\0';
+
+                kprintf("got: %s\n", buf);
+        }
+}
 
 void kmain()
 {
@@ -38,12 +38,12 @@ void kmain()
         print_ram_map();
         timer_init();
         keyboard_init();
-        // tty_init();
+        tty_init();
 
-        // kernel_console();
+        kernel_console();
 
         /* Tests for debugging purposes */
-        tests_div_by_zero();
+        // tests_div_by_zero();
 
         while (1) __asm__("hlt");
 }
