@@ -1,6 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /* Code adopted from the linux kernel, include/linux/circ_buf.h
- *
  * Macros for operations on the power of two buffer.
  */
 
@@ -12,6 +11,16 @@ struct circ_buf {
 	int head;
 	int tail;
 };
+
+static inline void circ_advance_head(struct circ_buf *cb, int size)
+{
+	cb->head = (cb->head + 1) & (size - 1);
+}
+
+static inline void circ_advance_tail(struct circ_buf *cb, int size)
+{
+	cb->tail = (cb->tail + 1) & (size - 1);
+}
 
 /* Return the number of elements in the buffer. */
 #define CIRC_CNT(head,tail,size) (((head) - (tail)) & ((size)-1))
