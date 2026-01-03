@@ -1,6 +1,7 @@
 /* Keyboard module to evaluate and store keys for consumption by tty */
 
 #include "cdev.h"
+#include "circ_buf.h"
 #include "i8042.h"
 #include "kprint.h"
 #include <stdbool.h>
@@ -21,16 +22,18 @@ static void keybuf_put(char c);
 static unsigned char translate_scancode(uint8_t sc);
 size_t keyboard_read(void *buffer, size_t n);
 
+/* Private keyboard state and buffer */
 struct keyboard_state {
         bool shift;
         bool caps;
 };
-
-/* Private keyboard state and buffer */
 static struct keyboard_state kbd;
-static char key_buffer[KEYBUFFER_SIZE]; /* ring buffer for charactes */
-static int key_buffer_head = 0;
-static int key_buffer_tail = 0;
+static char key_buffer[KEYBUFFER_SIZE];
+static struct circ_buf kbd_circ = {
+        .buf = key_buffer,
+        .head = 0,
+        .tail = 0,
+};
 
 static struct cdev keyboard;
 static struct cdev_ops keyboard_ops = {
@@ -90,12 +93,12 @@ size_t keyboard_read(void *buffer, size_t n)
 
         while (i < n) {
                 /* Busy-wait until a key is available */
-                while (key_buffer_head == key_buffer_tail) {
+                while (kbd_circ.head == kbd_circ.tail) {
                         __asm__ volatile ("hlt");
                 }
 
-                out[i++] = key_buffer[key_buffer_tail];
-                key_buffer_tail = (key_buffer_tail + 1) % KEYBUFFER_SIZE;
+                out[i++] = kbd_circ.buf[kbd_circ.tail];
+                circ_advance_tail(&kbd_circ, KEYBUFFER_SIZE);
         }
 
         return (size_t)i;
@@ -156,11 +159,11 @@ static unsigned char translate_scancode(uint8_t sc)
 
 static void keybuf_put(char c)
 {
-        int next = (key_buffer_head + 1) % KEYBUFFER_SIZE;
-        /* check buffer not full */
-        if (next != key_buffer_tail) {
-                key_buffer[key_buffer_head] = c;
-                key_buffer_head = next;
-        }
-        /* else: buffer full => drop key */
+        /* If no space, drop the key */
+        if (CIRC_SPACE(kbd_circ.head, kbd_circ.tail, KEYBUFFER_SIZE) == 0)
+                return;
+
+        /* Write at head, then advance head */
+        kbd_circ.buf[kbd_circ.head] = c;
+        circ_advance_head(&kbd_circ, KEYBUFFER_SIZE);
 }
