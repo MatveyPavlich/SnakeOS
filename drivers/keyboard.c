@@ -91,6 +91,7 @@ size_t keyboard_read(void *buffer, size_t n)
         char *out = buffer;
         size_t i = 0;
 
+        // unsigned long flags = irq_save();
         while (i < n) {
                 /* Busy-wait until a key is available */
                 while (kbd_circ.head == kbd_circ.tail) {
@@ -100,6 +101,7 @@ size_t keyboard_read(void *buffer, size_t n)
                 out[i++] = kbd_circ.buf[kbd_circ.tail];
                 circ_advance_tail(&kbd_circ, KEYBUFFER_SIZE);
         }
+        // irq_restore(flags);
 
         return (size_t)i;
 }
@@ -159,6 +161,8 @@ static unsigned char translate_scancode(uint8_t sc)
 
 static void keybuf_put(char c)
 {
+        // unsigned long flags = irq_save();
+
         /* If no space, drop the key */
         if (CIRC_SPACE(kbd_circ.head, kbd_circ.tail, KEYBUFFER_SIZE) == 0)
                 return;
@@ -166,4 +170,6 @@ static void keybuf_put(char c)
         /* Write at head, then advance head */
         kbd_circ.buf[kbd_circ.head] = c;
         circ_advance_head(&kbd_circ, KEYBUFFER_SIZE);
+
+        // irq_restore(flags);
 }

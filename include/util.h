@@ -27,3 +27,30 @@ static inline void io_wait(void)
 /* String stuff */
 size_t strlen(const char *s);
 int strcmp(const char *a, const char *b);
+
+/* irq_save - helper to save interrupt context? */
+static inline unsigned long irq_save(void)
+{
+        unsigned long flags;
+        __asm__ volatile (
+                "pushfq\n\t"
+                "pop %0\n\t"
+                "cli"
+                : "=r"(flags)
+                :
+                : "memory"
+        );
+        return flags;
+}
+
+/* irq_restore - helper to restore interrupt context? */
+static inline void irq_restore(unsigned long flags)
+{
+        __asm__ volatile (
+                "push %0\n\t"
+                "popfq"
+                :
+                : "r"(flags)
+                : "memory"
+        );
+}
