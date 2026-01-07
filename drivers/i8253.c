@@ -49,7 +49,7 @@ int i8253_init(void)
         outb(PIT_CH0_DATA, (divisor >> 8) & 0xFF);
 
         if (irq_request(TIMER_IRQ, i8253_irq_handle, NULL)) {
-                kprintf("Error: irq allocation for PIT failed\n");
+                kprint("Error: irq allocation for PIT failed\n");
                 return 1;
         }
 

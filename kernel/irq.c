@@ -24,8 +24,8 @@ static struct irq_chip *irq_chip_active;
 void irq_handle(int irq, struct interrupt_frame* frame)
 {
         if (irq < 0 || irq >= NMBR_IRQS) {
-                kprintf("ERROR: invalid IRQ (%d) in irq_handler.\n", irq);
-                kprintf("System halted.\n");
+                kprint("ERROR: invalid IRQ (%d) in irq_handler.\n", irq);
+                kprint("System halted.\n");
                 while (1) __asm__("hlt");
         }
 
@@ -33,7 +33,7 @@ void irq_handle(int irq, struct interrupt_frame* frame)
         if (desc->handler)
                 desc->handler(irq, frame, desc->dev_id);
         else
-                kprintf("Unhandled IRQ: %d. No action taken.\n", irq);
+                kprint("Unhandled IRQ: %d. No action taken.\n", irq);
 
         if (irq_chip_active && irq_chip_active->irq_eoi)
                 irq_chip_active->irq_eoi(irq);
@@ -42,7 +42,7 @@ void irq_handle(int irq, struct interrupt_frame* frame)
 int irq_set_chip(struct irq_chip *chip)
 {
         if (!chip) {
-                kprintf("ERROR: irq_set_chip(NULL)\n");
+                kprint("ERROR: irq_set_chip(NULL)\n");
                 return 1;
         }
 	irq_chip_active = chip;
@@ -51,20 +51,20 @@ int irq_set_chip(struct irq_chip *chip)
                 irq_chip_active->irq_init();
                 return 0;
         } else {
-                kprintf("ERROR: irq_chip is missing irq_init() method\n");
+                kprint("ERROR: irq_chip is missing irq_init() method\n");
                 return 1;
         }
 }
 
 int irq_request(int irq, irq_handler_t handler, void *dev)
 {
-        kprintf("Requesting %d IRQ\n", irq);
+        kprint("Requesting %d IRQ\n", irq);
         if (irq < 0 || irq >= NMBR_IRQS) {
-                kprintf("ERROR: %d is an invalid IRQ number\n", irq);
+                kprint("ERROR: %d is an invalid IRQ number\n", irq);
                 return 1;
         }
         if (!(irq_chip_active) || !(irq_chip_active->irq_unmask)) {
-                kprintf("ERROR: irq_chip inactive or has no irq_unmask method\n");
+                kprint("ERROR: irq_chip inactive or has no irq_unmask method\n");
                 return 1;
         }
 

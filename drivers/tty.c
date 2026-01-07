@@ -20,11 +20,11 @@ void tty_init(void)
 {
         kbd = cdev_get("keyboard");
         if (!kbd || !kbd->ops || !kbd->ops->read) {
-                kprintf("tty: keyboard device not available\n");
+                kprint("tty: keyboard device not available\n");
                 kbd = NULL;
                 return;
         }
-        kprintf("Successful tty init\n");
+        kprint("Successful tty init\n");
 }
 
 static void tty_handle_char(char c)
@@ -88,5 +88,5 @@ size_t tty_read(void *buf, size_t n)
 void tty_putc(char c)
 {
         /* For now, forward directly to kernel console */
-        kprintf("%c", c);
+        kprint("%c", c);
 }

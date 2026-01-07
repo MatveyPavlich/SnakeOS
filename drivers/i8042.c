@@ -12,7 +12,7 @@ static void i8042_irq_handler(int irq, struct interrupt_frame *frame,
 int i8042_init(void)
 {
         if (irq_request(I8042_KEYBOARD_IRQ, i8042_irq_handler, NULL)) {
-                kprintf("Error: irq allocation for PS/2 controller\n");
+                kprint("Error: irq allocation for PS/2 controller\n");
                 return 1;
         }
 

@@ -4,10 +4,10 @@
 #include <stdarg.h>
 
 /* Examples: 
- * kprintf("Value: %d\n", 1234);
- * kprintf("Hex: %x\n", 0xBEEF);
- * kprintf("Char: %c\n", 'A');
- * kprintf("String: %s\n", "OSDev!");
+ * kprint("Value: %d\n", 1234);
+ * kprint("Hex: %x\n", 0xBEEF);
+ * kprint("Char: %c\n", 'A');
+ * kprint("String: %s\n", "OSDev!");
  */
 
 enum {
@@ -150,8 +150,8 @@ void itoa_hex(unsigned int value, char* buffer)
         buffer[j] = '\0';
 }
 
-// Kernel Printf main function //
-void kprintf(const char* fmt, ...)
+// Kernel printf main function //
+void kprint(const char* fmt, ...)
 {
         va_list args;
         va_start(args, fmt);

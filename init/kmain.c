@@ -19,7 +19,7 @@ void kernel_console(void)
                 size_t n = tty_read(buf, sizeof(buf));
                 buf[n] = '\0';
 
-                kprintf("got: %s\n", buf);
+                kprint("got: %s\n", buf);
         }
 }
 
@@ -31,7 +31,7 @@ void kmain()
         gdt_init();
         idt_init();
         irq_arch_init();
-        kprintf("Interrupts are enabled!!!\n");
+        kprint("Interrupts are enabled!!!\n");
         __asm__ volatile ("sti"); // Enable interrupts after PIC is set up
 
         /* Key drevices init */

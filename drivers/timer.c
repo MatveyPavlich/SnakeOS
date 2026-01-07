@@ -38,7 +38,7 @@ int timer_init()
                 .priv = NULL,
         };
         if (cdev_register(&timer)) {
-                kprintf("Error: cdev registration for timer failed\n");
+                kprint("Error: cdev registration for timer failed\n");
                 return 1;
         }
         return 0;

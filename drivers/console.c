@@ -3,8 +3,8 @@
 MODULE OVERVIEW
 ===============================================================================
 
-1. kprintf.c
-   - Implements `kprintf()` and internal `vkprintf()` using `vsnprintf`.
+1. kprint.c
+   - Implements `kprint()` and internal `vkprintf()` using `vsnprintf`.
    - Handles string formatting, numbers, and specifiers.
    - Sends formatted characters to `console_putc()`.
 
@@ -30,7 +30,7 @@ MODULE OVERVIEW
 FLOW OF EXECUTION
 ===============================================================================
 
-    kprintf("Hello\n"); -> console_putc('H') -> vga_putc(0,0,'H') -> 0xB8000
+    kprint("Hello\n"); -> console_putc('H') -> vga_putc(0,0,'H') -> 0xB8000
 
 ===============================================================================
 */

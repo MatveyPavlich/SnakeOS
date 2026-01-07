@@ -18,7 +18,7 @@ void exception_handle(int vector, struct interrupt_frame *frame)
                 gp_fault_handler(vector, frame);
                 break;
         default:
-                kprintf("Exception %d unhandled. System halted\n", vector);
+                kprint("Exception %d unhandled. System halted\n", vector);
                 while (1) __asm__("hlt");
         }
 }
@@ -26,17 +26,17 @@ void exception_handle(int vector, struct interrupt_frame *frame)
 /* Handler for the General Protection (GP) fault */
 static void gp_fault_handler(int vector, struct interrupt_frame* frame)
 {
-        kprintf("General Protection Fault: %d\n", vector);
-        kprintf("RIP = %x\n",frame->rip);
-        kprintf("System halted\n");
+        kprint("General Protection Fault: %d\n", vector);
+        kprint("RIP = %x\n",frame->rip);
+        kprint("System halted\n");
         while (1) __asm__("hlt");
 }
 
 /* Division by zero */ 
 static void div_by_zero_handler(int vector, struct interrupt_frame* frame)
 {
-        kprintf("Division by zero: (exception %d)\n", vector);
-        kprintf("RIP = %x\n",frame->rip);
-        kprintf("System halted\n");
+        kprint("Division by zero: (exception %d)\n", vector);
+        kprint("RIP = %x\n",frame->rip);
+        kprint("System halted\n");
         while (1) __asm__("hlt");
 }
