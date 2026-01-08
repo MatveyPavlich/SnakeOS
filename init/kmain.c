@@ -1,3 +1,4 @@
+#include "console.h"
 #include "kprint.h"
 #include "gdt.h"
 #include "idt.h"
@@ -13,9 +14,8 @@ extern void print_64_bits(const char* str);
 
 void kmain()
 {
-        print_clear();
-
         /* Arch init */
+        console_init();
         gdt_init();
         idt_init();
         irq_arch_init();
