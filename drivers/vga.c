@@ -46,5 +46,15 @@ void vga_clear_screen(void)
         }
 }
 
-/* TODO: Implement scroll */
-// void vga_scroll_up(void)
+void vga_scroll_up(void)
+{
+        for (size_t row = 1; row < VGA_NUM_ROWS; row++) {
+                for (size_t col = 0; col < VGA_NUM_COLS; col++) {
+                        vga_memory[(row - 1) * (VGA_NUM_COLS) + col]
+                                = vga_memory[row * (VGA_NUM_COLS) + col];
+                }
+        }
+
+        vga_clear_row(VGA_NUM_ROWS - 1);
+}
+
