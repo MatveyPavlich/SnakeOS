@@ -10,6 +10,7 @@
 /* struct console - Structure to store console's state.
  * @row:            Current cursor row.
  * @col:            Current cursor col.
+ * @console_ops:    Console callbacks.
  */
 struct console {
         size_t row;
@@ -27,7 +28,7 @@ static void vga_console_putc(char c)
                 goto check_scroll;
         }
 
-        vga_put_at(kcon.row, kcon.col, c);
+        vga_put_char(kcon.row, kcon.col, c);
         kcon.col++;
 
         if (kcon.col >= VGA_NUM_COLS) {
@@ -35,13 +36,23 @@ static void vga_console_putc(char c)
                 kcon.row++;
         }
 
-        // check_scroll:
+        check_scroll:
         if (kcon.row >= VGA_NUM_ROWS) {
                 vga_scroll_up();
                 kcon.row = VGA_NUM_ROWS - 1;
         }
 }
 
+void console_putc(char c)
+{
+        kcon.ops->putc(c);
+}
+
+void console_write(const char *s)
+{
+        while (*s)
+                console_putc(*s++);
+}
 static void vga_console_clear(void)
 {
         vga_clear_screen();
@@ -61,15 +72,4 @@ void console_init(void)
         kcon.ops = &vga_console_ops;
 
         kcon.ops->clear();
-}
-
-void console_putc(char c)
-{
-        kcon.ops->putc(c);
-}
-
-void console_write(const char *s)
-{
-        while (*s)
-                console_putc(*s++);
 }

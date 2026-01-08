@@ -1,14 +1,14 @@
 /* Console subsystem interface. Code inspired and adopted from the linux kernel.
  * See include/linux/console.h
- * Console subsustem is responsible for calling the VGA module. It is a
+ * Console subsustem is responsible for calling the VGA module. It is the
  * penultimate step before writing characters to the memory:
- *       kprint("Yo\n"); -> console_putc('H') -> vga_putc(0,0,'H') -> 0xB8000
+ *       kprint("Yo\n"); -> console_putc('Y') -> vga_putc(0,0,'Y') -> 0xB8000
  */
 
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-#include <stddef.h>
+#include "stddef.h"
 
 /*
  * console_ops - low-level console backend operations
