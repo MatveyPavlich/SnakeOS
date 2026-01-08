@@ -5,16 +5,29 @@
  *       kprint("Yo\n"); -> console_putc('H') -> vga_putc(0,0,'H') -> 0xB8000
  */
 
-#include "stdint.h"
+#ifndef CONSOLE_H
+#define CONSOLE_H
 
-/* struct console_ops - Callback interface for a console
- * @con_putc:           Emit a single character to VGA.
- * @con_clear:          Clear a single character from VGA.
- * @con_scroll:         Scroll.
+#include <stddef.h>
+
+/*
+ * console_ops - low-level console backend operations
+ *
+ * This describes *how* characters are rendered.
+ * Policy (cursor, wrapping, scrolling) lives in console.c.
  */
-// struct console_ops {
-//         const char *owner;
-//         void (*con_putc)(struct vc_data *, int);
-//         void (*con_clear)(struct vc_data *, int, int, int, int);
-//         void (*con_scroll)(struct vc_data *, int, int, int, int);
-// };
+struct console_ops {
+        void (*putc)(char c);
+        void (*clear)(void);
+};
+
+/* Initialise the kernel console */
+void console_init(void);
+
+/* Output a single character */
+void console_putc(char c);
+
+/* Output a NUL-terminated string */
+void console_write(const char *s);
+
+#endif /* CONSOLE_H */
