@@ -18,22 +18,33 @@ enum {
 typedef struct {
         uint8_t character;
         uint8_t colour;
-} __attribute__((packed)) Char;
+} __attribute__((packed)) vga_char_t;
 
-static Char* const vga_memory = (Char*)VGA_MEMO_START;
+static vga_char_t* const vga_memory = (vga_char_t*)VGA_MEMO_START;
 static uint8_t default_colour = VGA_COLOR(VGA_COLOUR_BLACK, VGA_COLOUR_WHITE);
 
-void vga_clear_row(size_t row) {
-        Char empty = { ' ', default_colour };
-        for (size_t col = 0; col < VGA_NUM_COLS; col++)
-                vga_memory[col + VGA_NUM_COLS * row] = empty;
-}
+void vga_put_char(size_t row, size_t col, char c)
+{
+        if (row >= VGA_NUM_ROWS || col >= VGA_NUM_COLS)
+                return;
 
-void vga_put_char(size_t row, size_t col, char c) {
-        Char ch = { c, default_colour };
+        vga_char_t ch = { c, default_colour };
         vga_memory[col + VGA_NUM_COLS * row] = ch;
 }
 
-void vga_clear_char(size_t row, size_t col) {
-        vga_put_char(row, col, ' ');
+void vga_clear_row(size_t row)
+{
+        for (size_t col = 0; col < VGA_NUM_COLS; col++)
+                vga_put_char(row, col, ' ');
 }
+
+void vga_clear_screen(void)
+{
+        for (size_t row = 0; row < VGA_NUM_ROWS; row++) {
+                for (size_t col = 0; col < VGA_NUM_COLS; col++)
+                        vga_put_char(row, col, ' ');
+        }
+}
+
+/* TODO: Implement scroll */
+// void vga_scroll_up(void)

@@ -12,9 +12,9 @@
  * @con_clear:          Clear a single character from VGA.
  * @con_scroll:         Scroll.
  */
-struct console_ops {
-        const char *owner;
-        void (*con_putc)(struct vc_data *, int);
-        void (*con_clear)(struct vc_data *, int, int, int, int);
-        void (*con_scroll)(struct vc_data *, int, int, int, int);
-};
+// struct console_ops {
+//         const char *owner;
+//         void (*con_putc)(struct vc_data *, int);
+//         void (*con_clear)(struct vc_data *, int, int, int, int);
+//         void (*con_scroll)(struct vc_data *, int, int, int, int);
+// };
