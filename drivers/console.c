@@ -83,11 +83,13 @@ void console_draw_clock(void)
         buf[4] = '0' + (m % 10);
         buf[5] = ':';
         buf[6] = '0' + (s / 10);
-        buf[7] = '0' + (seconds % 10);
+        buf[7] = '0' + (s % 10);
         buf[8] = '\0';
 
-        for (int i = 0; i < 9; i++)
-                vga_put_char(VGA_NUM_ROWS - 1, VGA_NUM_COLS - 8 + i, *buf);
+        int row = VGA_NUM_ROWS - 1;
+        int col = VGA_NUM_COLS - 8;
+        for (int i = 0; i < 8; i++)
+                vga_put_char(row, col + i, buf[i]);
 }
 
 void console_init(void)
