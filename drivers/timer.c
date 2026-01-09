@@ -7,9 +7,9 @@
 #include "util.h"
 #include "i8253.h"
 
-#define VGA_MEMORY      ((uint8_t*)0xB8000)
-#define VGA_COLS        80
-#define VGA_ROWS        25
+#define VGA_MEMORY ((uint8_t*)0xB8000)
+#define VGA_COLS   80
+#define VGA_ROWS   25
 
 /* TODO: create a macro to later identify which value should be here */
 #define CLOCK_FREQUENCY 100  // Will give ~ 1 sec for PIT
@@ -19,40 +19,23 @@ static void timer_display_value(uint64_t* tick_pointer);
 size_t timer_read_ticks(void *buf, size_t n);
 
 static uint64_t tick = 0;
-static struct cdev timer;
-static struct cdev_ops timer_ops = {
-        .read = &timer_read_ticks,
-        .write = NULL,
-        .ioctl = NULL,
-};
 
 /* timer_init - initiate the system timer */
 int timer_init()
 {
         i8253_init(); /* TODO: later can add macro to detect which controller
                          is available */
-
-        timer = (struct cdev) {
-                .name = "timer",
-                .ops  = &timer_ops,
-                .priv = NULL,
-        };
-        if (cdev_register(&timer)) {
-                kprint("Error: cdev registration for timer failed\n");
-                return 1;
-        }
         return 0;
 }
 
-/* Caller API for finding the number of ticks. Handle the data race in the
- * future to prevent a caller receiving a value while a new PIT interrupt
- * is executing
- */
-size_t timer_read_ticks(void *buf, size_t n)
+uint64_t timer_get_ticks(void)
 {
-        (void)n;
-        memset(buf, tick, 8);
-        return 8; /* Ticks is 64 bits */ 
+        return tick;
+}
+
+uint64_t timer_get_seconds(void)
+{
+        return (tick / CLOCK_FREQUENCY);
 }
 
 /* timer_handle_tick - ingestion API for timer chips to send ticks into timer

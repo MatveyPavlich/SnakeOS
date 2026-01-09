@@ -21,7 +21,9 @@ struct console_ops {
         void (*clear)(void);
 };
 
-/* Initialise the kernel console */
+/* Initialise the kernel console by clearing the screen and creating a cursor
+ * position state
+ */
 void console_init(void);
 
 /* Output a single character */
