@@ -11,7 +11,6 @@
 
 extern void print_64_bits(const char* str);
 
-
 void kmain()
 {
         /* Arch init */
