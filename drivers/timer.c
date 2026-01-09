@@ -1,6 +1,5 @@
 // Implementation of the system timer
 #include "cdev.h"
-#include "console.h"
 #include "interrupt.h"
 #include "i8253.h"
 #include "stddef.h"
@@ -9,11 +8,7 @@
 #include "util.h"
 
 /* TODO: create a macro to later identify which value should be here */
-#define CLOCK_FREQUENCY 100  // Will give ~ 1 sec for PIT
-
-/* Forward declarations */
-static void timer_display_value(uint64_t* tick_pointer);
-size_t timer_read_ticks(void *buf, size_t n);
+#define CLOCK_FREQUENCY 100  /* 100 Hz (10 ms tick) */
 
 static uint64_t tick = 0;
 static timer_hook_t timer_secs_hook = NULL;
@@ -51,7 +46,7 @@ void timer_handle_tick()
          * from the interrupt handling code that should be fast */
         if (tick % CLOCK_FREQUENCY == 0) {
                 if (timer_secs_hook)
-                        timer_secs_hook;
+                        timer_secs_hook();
         }
 }
 

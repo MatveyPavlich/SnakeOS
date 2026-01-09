@@ -66,17 +66,6 @@ static const struct console_ops vga_console_ops = {
         .clear = vga_console_clear,
 };
 
-void console_init(void)
-{
-        kcon.row = 0;
-        kcon.col = 0;
-        kcon.ops = &vga_console_ops;
-
-        kcon.ops->clear();
-
-        timer_register_secs_hook(console_draw_clock);
-}
-
 void console_draw_clock(void)
 {
         uint64_t seconds = timer_get_seconds();
@@ -97,6 +86,17 @@ void console_draw_clock(void)
         buf[7] = '0' + (seconds % 10);
         buf[8] = '\0';
 
-        console_draw_at(VGA_ROWS - 1, VGA_COLS - 8, buf);
+        for (int i = 0; i < 9; i++)
+                vga_put_char(VGA_NUM_ROWS - 1, VGA_NUM_COLS - 8 + i, *buf);
 }
 
+void console_init(void)
+{
+        kcon.row = 0;
+        kcon.col = 0;
+        kcon.ops = &vga_console_ops;
+
+        kcon.ops->clear();
+
+        timer_register_secs_hook(console_draw_clock);
+}
