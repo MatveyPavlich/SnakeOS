@@ -13,7 +13,6 @@
 static uint64_t tick = 0;
 static timer_hook_t timer_secs_hook = NULL;
 
-/* timer_init - initiate the system timer */
 int timer_init()
 {
         i8253_init(); /* TODO: later can add macro to detect which controller
@@ -21,6 +20,7 @@ int timer_init()
         return 0;
 }
 
+/* Caller methods */
 void timer_register_secs_hook(timer_hook_t hook)
 {
         timer_secs_hook = hook;
@@ -36,9 +36,7 @@ uint64_t timer_get_seconds(void)
         return (tick / CLOCK_FREQUENCY);
 }
 
-/* timer_handle_tick - ingestion API for timer chips to send ticks into timer
- *                     core module.
- */
+/* Ingestion API for timer chips to send ticks into timer core module. */
 void timer_handle_tick()
 {
         tick++;
@@ -49,33 +47,3 @@ void timer_handle_tick()
                         timer_secs_hook();
         }
 }
-
-// static void timer_display_value(uint64_t* tick_pointer)
-// {
-//         uint64_t total_seconds = *tick_pointer / CLOCK_FREQUENCY;
-//         uint64_t hours = total_seconds / 3600;
-//         uint64_t minutes = (total_seconds / 60) % 60;
-//         uint64_t seconds = total_seconds % 60;
-//
-//         // Format hh:mm:ss
-//         char buf[9];
-//         buf[0] = '0' + (hours / 10) % 10;
-//         buf[1] = '0' + (hours % 10);
-//         buf[2] = ':';
-//         buf[3] = '0' + (minutes / 10);
-//         buf[4] = '0' + (minutes % 10);
-//         buf[5] = ':';
-//         buf[6] = '0' + (seconds / 10);
-//         buf[7] = '0' + (seconds % 10);
-//         buf[8] = '\0';
-//
-//         // Position: last row, right-aligned
-//         int row = VGA_ROWS - 1;
-//         int col = VGA_COLS - 8;  // 8 chars wide
-//         int offset = (row * VGA_COLS + col) * 2;
-//
-//         for (int i = 0; i < 8; i++) {
-//                 VGA_MEMORY[offset + i*2] = buf[i];      // character
-//                 VGA_MEMORY[offset + i*2 + 1] = 0x0F;    // white on black
-//         }
-// }
