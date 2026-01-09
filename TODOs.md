@@ -28,8 +28,8 @@ a modular codebase with a dedicated mechanism and code modules.
 
 ### TODOs
 - [x] Separate PIT (i8253) code into a separate driver from timer.c
-- [ ] Cleanup tty module and actually make it work so that I could print stuff with the keyboard on the screeen.
-- [ ] Create a core clocksource module in `/kernel` by adding `/kernel/clocksource.c`.
+- [x] Create a console subsystem and offload relevant logic to it from kprint and timer.c
+- [x] Create a core timer module from devices/timer.c and migrate it to `/kernel` 
 - [ ] Scope how to solve the  data race in the `keyboard.c` module.
 - [ ] Address data race in the `keyboard.c` module.
 - [ ] After the console is done scope out how to implement tasks

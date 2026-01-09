@@ -98,7 +98,7 @@ $(BUILD_DIR)/keyboard.o: drivers/keyboard.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/init_ram.o: drivers/init_ram.c
 	$(CC) $(CFLAGS) -c $< -o $@
-$(BUILD_DIR)/timer.o: drivers/timer.c
+$(BUILD_DIR)/timer.o: kernel/timer.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/irq.o: kernel/irq.c
 	$(CC) $(CFLAGS) -c $< -o $@
