@@ -3,6 +3,7 @@
 #include "console.h"
 #include "vga.h"
 #include "stddef.h"
+#include "timer.h"
 
 #define VGA_NUM_COLS 80
 #define VGA_NUM_ROWS 25
@@ -72,4 +73,30 @@ void console_init(void)
         kcon.ops = &vga_console_ops;
 
         kcon.ops->clear();
+
+        timer_register_secs_hook(console_draw_clock);
 }
+
+void console_draw_clock(void)
+{
+        uint64_t seconds = timer_get_seconds();
+
+        uint64_t h = seconds / 3600;
+        uint64_t m = (seconds / 60) % 60;
+        uint64_t s = seconds % 60;
+
+        // Format hh:mm:ss
+        char buf[9];
+        buf[0] = '0' + (h / 10) % 10;
+        buf[1] = '0' + (h % 10);
+        buf[2] = ':';
+        buf[3] = '0' + (m / 10);
+        buf[4] = '0' + (m % 10);
+        buf[5] = ':';
+        buf[6] = '0' + (s / 10);
+        buf[7] = '0' + (seconds % 10);
+        buf[8] = '\0';
+
+        console_draw_at(VGA_ROWS - 1, VGA_COLS - 8, buf);
+}
+
