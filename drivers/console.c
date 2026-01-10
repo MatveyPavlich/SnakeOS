@@ -9,6 +9,8 @@
 #define VGA_NUM_COLS 80
 #define VGA_NUM_ROWS 25
 
+struct console_ops;
+
 /* struct console - Structure to store console's state for a specific console
  *                  type (e.g., VGA, framebuffer, etc.) or a specific console
  *                  instance of the same type (e.g., con_vga_1, con_vga_2, etc).
@@ -18,7 +20,7 @@
  * @console_ops:    Console callbacks.
  */
 struct console {
-        char *name;
+        const char *name;
         size_t row;
         size_t col;
         const struct console_ops *ops;
@@ -92,6 +94,7 @@ void console_putc(char c)
 
 void console_write(const char *s)
 {
+        if (!s) return;
         while (*s)
                 console_putc(*s++);
 }
@@ -106,6 +109,8 @@ void console_clear(void)
 
 /* VGA-only overlay, bypasses console abstraction intentionally.
  * TODO: create a console_draw_clock() to manage timer drawing.
+ * TODO: Solve races (this will be executed from the timer context and can race
+ *       against the console imput.
  */
 static void vga_draw_clock(void)
 {
