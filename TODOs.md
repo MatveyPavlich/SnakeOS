@@ -30,6 +30,7 @@ a modular codebase with a dedicated mechanism and code modules.
 - [x] Separate PIT (i8253) code into a separate driver from timer.c
 - [x] Create a console subsystem and offload relevant logic to it from kprint and timer.c
 - [x] Create a core timer module from devices/timer.c and migrate it to `/kernel` 
+- [ ] Implement tty module with cursor movements.
 - [ ] Scope how to solve the  data race in the `keyboard.c` module.
 - [ ] Address data race in the `keyboard.c` module.
 - [ ] After the console is done scope out how to implement tasks
