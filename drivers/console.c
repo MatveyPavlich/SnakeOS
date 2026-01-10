@@ -1,19 +1,30 @@
 /* Implementation of the console API */
 
 #include "console.h"
-#include "vga.h"
-#include "stddef.h"
 #include "timer.h"
+#include "stddef.h"
+#include "vga.h"
 
 #define NR_CONS      10
 #define VGA_NUM_COLS 80
 #define VGA_NUM_ROWS 25
 
-struct console;
-struct console_ops;
+/* struct console - Structure to store console's state for a specific console
+ *                  type (e.g., VGA, framebuffer, etc.) or a specific console
+ *                  instance of the same type (e.g., con_vga_1, con_vga_2, etc).
+ * @name:           Identifier for a console.
+ * @row:            Current cursor row.
+ * @col:            Current cursor col.
+ * @console_ops:    Console callbacks.
+ */
+struct console {
+        char *name;
+        size_t row;
+        size_t col;
+        const struct console_ops *ops;
+};
 
-/* console_ops - Console backend operations owned by a specific console struct
- *               (see below).
+/* console_ops - Console backend operations owned by a specific console struct.
  * @putc:        Callback to write a character to a console.
  * @clear:       Callback to clear the screen.
  */
@@ -22,22 +33,8 @@ struct console_ops {
         void (*clear)(struct console *con);
 };
 
-/* struct console - Structure to store console's state for a specific console
- *                  type (e.g., VGA, framebuffer, etc.) or a specific console
- *                  instance of the same type (e.g., con_vga_1, con_vga_2, etc).
- * @row:            Current cursor row.
- * @col:            Current cursor col.
- * @console_ops:    Console callbacks.
- */
-struct console {
-        size_t row;
-        size_t col;
-        const struct console_ops *ops;
-};
-
 static struct console consoles[NR_CONS];
 static struct console *active_console;
-static struct console kcon_vga_1;
 
 /* console_vga_putc - Method for drawing a character in a VGA console.
  * @con:              Pointer to a specific vga console instance for which to
@@ -87,6 +84,9 @@ static void console_vga_clear_screen(struct console *con)
 
 void console_putc(char c)
 {
+        if (!active_console || !active_console->ops)
+                return;
+
         active_console->ops->putc(active_console, c);
 }
 
@@ -98,10 +98,16 @@ void console_write(const char *s)
 
 void console_clear(void)
 {
+        if (!active_console || !active_console->ops)
+                return;
+
         active_console->ops->clear(active_console);
 }
 
-void console_draw_clock(void)
+/* VGA-only overlay, bypasses console abstraction intentionally.
+ * TODO: create a console_draw_clock() to manage timer drawing.
+ */
+static void vga_draw_clock(void)
 {
         uint64_t seconds = timer_get_seconds();
 
@@ -134,12 +140,15 @@ static const struct console_ops console_vga_ops = {
 
 void console_init(void)
 {
-        kcon_vga_1.row = 0;
-        kcon_vga_1.col = 0;
-        kcon_vga_1.ops = &console_vga_ops;
+        consoles[0] = (struct console) {
+                .name = "kcon_vga_1",
+                .row = 0,
+                .col = 0,
+                .ops = &console_vga_ops,
+        };
 
-        active_console = &kcon_vga_1;
+        active_console = &consoles[0];
         active_console->ops->clear(active_console);
 
-        timer_register_secs_hook(console_draw_clock);
+        timer_register_secs_hook(vga_draw_clock);
 }
