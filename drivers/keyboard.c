@@ -3,6 +3,7 @@
 #include "cdev.h"
 #include "circ_buf.h"
 #include "i8042.h"
+#include "keyboard.h"
 #include "kprint.h"
 #include <stdbool.h>
 #include "stddef.h"
