@@ -5,20 +5,26 @@
 #include "stddef.h"
 #include "timer.h"
 
+#define NR_CONS      10
 #define VGA_NUM_COLS 80
 #define VGA_NUM_ROWS 25
 
-/* console_ops - Console backend operations for a specific console type (e.g.,
- *               VGA). Owned by a console struct.
+struct console;
+struct console_ops;
+
+/* console_ops - Console backend operations owned by a specific console struct
+ *               (see below).
  * @putc:        Callback to write a character to a console.
  * @clear:       Callback to clear the screen.
  */
 struct console_ops {
-        void (*putc)(char c);
-        void (*clear)(void);
+        void (*putc)(struct console *con, char c);
+        void (*clear)(struct console *con);
 };
 
-/* struct console - Structure to store console's state.
+/* struct console - Structure to store console's state for a specific console
+ *                  type (e.g., VGA, framebuffer, etc.) or a specific console
+ *                  instance of the same type (e.g., con_vga_1, con_vga_2, etc).
  * @row:            Current cursor row.
  * @col:            Current cursor col.
  * @console_ops:    Console callbacks.
@@ -29,34 +35,59 @@ struct console {
         const struct console_ops *ops;
 };
 
-static struct console kcon;
+static struct console consoles[NR_CONS];
+static struct console *active_console;
+static struct console kcon_vga_1;
 
-static void vga_console_putc(char c)
+/* console_vga_putc - Method for drawing a character in a VGA console.
+ * @con:              Pointer to a specific vga console instance for which to
+ *                    print the character (it will be used to fetch the cursor
+ *                    state.
+ * @c:                Character to be printed in the console.
+ */
+static void console_vga_putc(struct console *con, char c)
 {
         if (c == '\n') {
-                kcon.col = 0;
-                kcon.row++;
+                con->col = 0;
+                con->row++;
                 goto check_scroll;
         }
 
-        vga_put_char(kcon.row, kcon.col, c);
-        kcon.col++;
+        vga_put_char(con->row, con->col, c);
+        con->col++;
 
-        if (kcon.col >= VGA_NUM_COLS) {
-                kcon.col = 0;
-                kcon.row++;
+        if (con->col >= VGA_NUM_COLS) {
+                con->col = 0;
+                con->row++;
         }
 
         check_scroll:
-        if (kcon.row >= VGA_NUM_ROWS) {
+        if (con->row >= VGA_NUM_ROWS) {
                 vga_scroll_up();
-                kcon.row = VGA_NUM_ROWS - 1;
+                con->row = VGA_NUM_ROWS - 1;
         }
+}
+
+/* console_vga_clear_screen - Method for clearing a console screen.
+ * @con:                      Pointer to a specific vga console instance for
+ *                            which to clearn the screen and zero the cursor.
+ */
+static void console_vga_clear_screen(struct console *con)
+{
+        if (con == active_console)
+                vga_clear_screen();
+        else {
+                /* TODO: Impelement a console_screen_dirty_flag() to indicate
+                 * that a console should be cleaned
+                 */
+        }
+        con->row = 0;
+        con->col = 0;
 }
 
 void console_putc(char c)
 {
-        kcon.ops->putc(c);
+        active_console->ops->putc(active_console, c);
 }
 
 void console_write(const char *s)
@@ -64,17 +95,11 @@ void console_write(const char *s)
         while (*s)
                 console_putc(*s++);
 }
-static void vga_console_clear(void)
-{
-        vga_clear_screen();
-        kcon.row = 0;
-        kcon.col = 0;
-}
 
-static const struct console_ops vga_console_ops = {
-        .putc  = vga_console_putc,
-        .clear = vga_console_clear,
-};
+void console_clear(void)
+{
+        active_console->ops->clear(active_console);
+}
 
 void console_draw_clock(void)
 {
@@ -102,13 +127,19 @@ void console_draw_clock(void)
                 vga_put_char(row, col + i, buf[i]);
 }
 
+static const struct console_ops console_vga_ops = {
+        .putc  = console_vga_putc,
+        .clear = console_vga_clear_screen,
+};
+
 void console_init(void)
 {
-        kcon.row = 0;
-        kcon.col = 0;
-        kcon.ops = &vga_console_ops;
+        kcon_vga_1.row = 0;
+        kcon_vga_1.col = 0;
+        kcon_vga_1.ops = &console_vga_ops;
 
-        kcon.ops->clear();
+        active_console = &kcon_vga_1;
+        active_console->ops->clear(active_console);
 
         timer_register_secs_hook(console_draw_clock);
 }

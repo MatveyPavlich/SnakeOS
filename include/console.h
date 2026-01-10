@@ -19,4 +19,7 @@ void console_putc(char c);
 /* Output a NUL-terminated string */
 void console_write(const char *s);
 
+/* Clear console screen */
+void console_clear(void);
+
 #endif /* CONSOLE_H */
