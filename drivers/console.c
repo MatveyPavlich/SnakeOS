@@ -8,6 +8,16 @@
 #define VGA_NUM_COLS 80
 #define VGA_NUM_ROWS 25
 
+/* console_ops - Console backend operations for a specific console type (e.g.,
+ *               VGA). Owned by a console struct.
+ * @putc:        Callback to write a character to a console.
+ * @clear:       Callback to clear the screen.
+ */
+struct console_ops {
+        void (*putc)(char c);
+        void (*clear)(void);
+};
+
 /* struct console - Structure to store console's state.
  * @row:            Current cursor row.
  * @col:            Current cursor col.

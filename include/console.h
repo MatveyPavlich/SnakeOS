@@ -8,19 +8,6 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-#include "stddef.h"
-
-/*
- * console_ops - low-level console backend operations
- *
- * This describes *how* characters are rendered.
- * Policy (cursor, wrapping, scrolling) lives in console.c.
- */
-struct console_ops {
-        void (*putc)(char c);
-        void (*clear)(void);
-};
-
 /* Initialise the kernel console by clearing the screen and creating a cursor
  * position state
  */
