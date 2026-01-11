@@ -24,7 +24,6 @@ struct idt_metadata {
         uint64_t base;
 } __attribute__((packed));
 
-/* Temp fix: make sure idt_load() is after idt_metadata struct declaration */
 extern void idt_load(struct idt_metadata *idt_metadata);
 extern void* idt_stub_table[]; // 256 pointers
 static struct idt_descriptor_64 idt_table[IDT_DESCRIPTORS];
