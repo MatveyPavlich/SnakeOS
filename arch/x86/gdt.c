@@ -5,9 +5,9 @@
 #include "stdint.h"
 #include "util.h"
 
-#define GDT_SEGMENT_DESCRIPTOR_NUM 5 /* null, kernel code/data, user code/data */
-#define GDT_SYSTEM_DESCRIPTOR_COUNT  1  
-#define GDT_ENTRY_COUNT              (GDT_SEGMENT_DESCRIPTOR_NUM + GDT_SYSTEM_DESCRIPTOR_COUNT * 2)
+#define GDT_SEG_DESC_NUM 5 /* null, kernel code/data, user code/data */
+#define GDT_SYS_DESC_NUM 1  
+#define GDT_ENTRY_COUNT  (GDT_SEG_DESC_NUM + GDT_SYS_DESC_NUM * 2)
 
 /* struct gdt_seg_desc  -  Structure to represent a gdt segment descriptor.
  * @limit_low:             Bits [15:0] of segment's limit.
@@ -50,8 +50,11 @@ struct gdt_sys_desc {
         uint32_t reserved;
 } __attribute__((packed));
 
-// TSS entry
-typedef struct {
+/* struct gdt_tss_entry_64 - Format of the 64-bit TSS table row.
+ * (u should have 1 TSS entry per core => for now make the OS single core)
+ * @reserved0:
+ */
+struct gdt_tss_entry_64 {
         uint32_t reserved0;
         uint64_t rsp0;      // rsp when entering ring 0
         uint64_t rsp1;      // rsp when entering ring 1
@@ -71,19 +74,19 @@ typedef struct {
         uint16_t reserved3;
         uint16_t iomap;
 
-} __attribute__((packed)) Tss64Entry;
+} __attribute__((packed));
 
 struct gdt_metadata {
         uint16_t  gdt_size;
-        uintptr_t gdt_pointer;
+        uintptr_t gdt_table_pointer;
 
 } __attribute__((packed));
 
 extern void loadGdtr(struct gdt_metadata *m);
 extern void loadLtr(uint16_t selector);
 
-static uint64_t gdt[GDT_ENTRY_COUNT] __attribute__((aligned(16))); // GDT table
-static Tss64Entry tss __attribute__((aligned(16))); // TSS table (u should have 1 TSS per core => for now make the OS single core)
+static uint64_t gdt_table[GDT_ENTRY_COUNT] __attribute__((aligned(16)));
+static struct gdt_tss_entry_64 tss __attribute__((aligned(16))); 
 static uint8_t df_stack[4096] __attribute__((aligned(16))); // 4 KiB stack for TSS entry to be used in double faults 
 static uint8_t kernel_stack[16384] __attribute__((aligned(16))); // 16 KiB kernel stack for TSS entry to be used for kernel
 
@@ -157,8 +160,8 @@ void gdt_init() {
 
         /* 3. Load GDT: CPU copies data, so we don't need to store the struct */
         struct gdt_metadata gdt_meta = {
-                .gdt_pointer = (uintptr_t)gdt;
-                .gdt_size = sizeof(gdt) - 1;
+                .gdt_table_pointer = (uintptr_t)gdt_table;
+                .gdt_size = sizeof(gdt_table) - 1;
         }
         loadGdtr(&gdt_meta);
 
