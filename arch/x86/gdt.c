@@ -10,43 +10,44 @@
 #define GDT_ENTRY_COUNT              (GDT_SEGMENT_DESCRIPTOR_NUM + GDT_SYSTEM_DESCRIPTOR_COUNT * 2)
 
 /* struct gdt_seg_desc  -  Structure to represent a gdt segment descriptor.
- * @low_limit:             Bits [15:0] of segment's limit.
- * @low_base:              Bits [15:0] of segment's base.
- * @mid_base:              Bits [23:16] of segment's base.
+ * @limit_low:             Bits [15:0] of segment's limit.
+ * @base_low:              Bits [15:0] of segment's base.
+ * @base_mid:              Bits [23:16] of segment's base.
  * @access_bytes:          P|DPL|S|Type (see intel's manual).
- * @flags_and_high_limit:  Flags(high nibble) | limit[19:16](low nibble).
- * high_base:              Bits [31:24] of segment's base.
+ * @flags_and_limit_high:  Flags(high nibble) | limit[19:16](low nibble).
+ * @base_high:             Bits [31:24] of segment's base.
  */
 struct gdt_seg_desc {
-        uint16_t low_limit;
-        uint16_t low_base;
-        uint8_t  mid_base;
+        uint16_t limit_low;
+        uint16_t base_low;
+        uint8_t  base_mid;
         uint8_t  access_bytes;
-        uint8_t  flags_and_high_limit;
-        uint8_t  high_base;
+        uint8_t  flags_and_limit_high;
+        uint8_t  base_high;
 } __attribute__((packed));
 
 /* struct gdt_sys_desc  -  Structure to represent a gdt system descriptor. In
  *                         64-bits they are extended to x2 segment descriptors
  *                         (16 bytes)
- * @low_limit:             Bits [15:0] of segment's limit.
- * @low_base:              Bits [15:0] of segment's base.
- * @mid_base:              Bits [23:16] of segment's base.
- * @access_bytes:          P|DPL|S|Type (see intel's manual).
- * @flags_and_high_limit:  Flags(high nibble) | limit[19:16](low nibble).
- * high_base:              Bits [31:24] of segment's base.
+ * @limit_low:             Bits [15:0] of segment's limit.
+ * @base_low:              Bits [15:0] of segment's base.
+ * @base_mid:              Bits [23:16] of segment's base.
+ * @access:                Type(0x9 / 0xB) | P=1 | DPL | S=0
+ * @gran:                  Limit 16:19 | flags
+ * @base_high:             Bits [31:24] of segment's base.
+ * -- Extra 8 bytes for 64-bit TSS --
+ * @base_upper:            Bits [63:32] of segment's base.
+ * @reserved:              Reserved memo that should be 0.
  */
 struct gdt_sys_desc {
-        uint16_t limit_low;            // Limit 0:15
-        uint16_t base_low;             // Base 0:15
-        uint8_t  base_mid;             // Base 16:23
-        uint8_t  access;               // Type(0x9 / 0xB) | P=1 | DPL | S=0
-        uint8_t  gran;                 // Limit 16:19 | flags
-        uint8_t  base_high;            // Base 24:31
-
-        // extra 8 bytes for 64-bit TSS
-        uint32_t base_upper;           // Base 32:63
-        uint32_t reserved;             // Must be 0
+        uint16_t limit_low;
+        uint16_t base_low;
+        uint8_t  base_mid;
+        uint8_t  access; 
+        uint8_t  gran; 
+        uint8_t  base_high;
+        uint32_t base_upper;
+        uint32_t reserved;
 } __attribute__((packed));
 
 // TSS entry
@@ -72,14 +73,13 @@ typedef struct {
 
 } __attribute__((packed)) Tss64Entry;
 
-
-typedef struct {
+struct gdt_metadata {
         uint16_t  gdt_size;
         uintptr_t gdt_pointer;
 
-} __attribute__((packed)) GdtMetadata;
+} __attribute__((packed));
 
-extern void loadGdtr(GdtMetadata *m);
+extern void loadGdtr(struct gdt_metadata *m);
 extern void loadLtr(uint16_t selector);
 
 static uint64_t gdt[GDT_ENTRY_COUNT] __attribute__((aligned(16))); // GDT table
@@ -119,13 +119,13 @@ static struct gdt_seg_desc_t gdt_generate_seg_desc(uint32_t base,
         }
 
         struct gdt_seg_desc_t d = {
-                d.low_limit = (uint16_t)(limit & 0xFFFFu);
-                d.low_base  = (uint16_t)(base & 0xFFFFu);
-                d.mid_base  = (uint8_t)((base >> 16) & 0xFFu);
+                d.limit_low = (uint16_t)(limit & 0xFFFFu);
+                d.base_low  = (uint16_t)(base & 0xFFFFu);
+                d.base_mid  = (uint8_t)((base >> 16) & 0xFFu);
                 d.access_bytes = access;
-                d.flags_and_high_limit =
+                d.flags_and_limit_high =
                         (uint8_t)((flags & 0xF0u) | ((limit >> 16) & 0x0Fu));
-                d.high_base = (uint8_t)((base >> 24) & 0xFFu);
+                d.base_high = (uint8_t)((base >> 24) & 0xFFu);
         };
 
         return d;
@@ -155,11 +155,12 @@ void gdt_init() {
         struct gdt_sys_desc_t sys = createGdtSystemDescriptor((uint64_t)&tss, sizeof(Tss64Entry) - 1); // TSS (16 bytes → 2 entries)
         memcopy(&gdt[5], &sys, sizeof(sys));
 
-        // 3. Load GDT
-        GdtMetadata gdt_metadata;
-        gdt_metadata.gdt_pointer = (uintptr_t)gdt;
-        gdt_metadata.gdt_size = sizeof(gdt) - 1;
-        loadGdtr(&gdt_metadata);
+        /* 3. Load GDT: CPU copies data, so we don't need to store the struct */
+        struct gdt_metadata gdt_meta = {
+                .gdt_pointer = (uintptr_t)gdt;
+                .gdt_size = sizeof(gdt) - 1;
+        }
+        loadGdtr(&gdt_meta);
 
         // 4. Load TR 
         loadLtr(5 << 3);                                           // TSS descriptor at index 5 => offset = 0x28 (5*8)
