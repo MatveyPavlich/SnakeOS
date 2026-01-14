@@ -28,7 +28,7 @@ struct gdt_seg_desc {
 
 /* struct gdt_sys_desc  -  Structure to represent a gdt system descriptor. In
  *                         64-bits they are extended to x2 segment descriptors
- *                         (16 bytes)
+ *                         (16 bytes).
  * @limit_low:             Bits [15:0] of segment's limit.
  * @base_low:              Bits [15:0] of segment's base.
  * @base_mid:              Bits [23:16] of segment's base.
@@ -50,17 +50,19 @@ struct gdt_sys_desc {
         uint32_t reserved;
 } __attribute__((packed));
 
-/* struct gdt_tss_entry_64 - Format of the 64-bit TSS table row. Note that you
- *                           should have 1 tss entry per core. So, while the OS
- *                           is single core just have 1 of them.
- * @reserved0:
- * @rsp0:                    Ring 0 stack ptr (i.e., rsp reg).
- * @rsp1:                    Ring 1 stack ptr. Zero out since not used.
- * @rsp2:                    Ring 2 stack ptr. Zero out since not used.
- * @ist1-7:                  Interrupt stack table.
- * @iomap:                   I/O permissions bitmap.
+/* struct tss_64 - Structure of the 64-bit TSS to be stored in memory and
+ *                 referenced by a CPU through the GDT (you'll need to create a
+ *                 dedicated GDT descriptor for TSS). Note that you should have
+ *                 1 tss entry per core. So, while the OS is single core just
+ *                 have 1 of them.
+ * @reserved0-3:   Zero out.
+ * @rsp0:          Ring 0 stack ptr (i.e., rsp reg).
+ * @rsp1:          Ring 1 stack ptr (i.e., rsp reg). Zero out since not used.
+ * @rsp2:          Ring 2 stack ptr (i.e., rsp reg). Zero out since not used.
+ * @ist1-7:        Interrupt stack table.
+ * @iomap:         I/O permissions bitmap.
  */
-struct gdt_tss_entry_64 {
+struct tss_64 {
         uint32_t reserved0;
         uint64_t rsp0;
         uint64_t rsp1;
@@ -91,13 +93,16 @@ struct gdt_metadata {
 
 } __attribute__((packed));
 
-extern void loadGdtr(struct gdt_metadata *m);
-extern void loadLtr(uint16_t selector);
+extern void gdt_load(struct gdt_metadata *m);
+extern void gdt_load_tss(uint16_t gdt_tss_offset);
 
 static uint64_t gdt_table[GDT_ENTRY_COUNT] __attribute__((aligned(16)));
-static struct gdt_tss_entry_64 tss __attribute__((aligned(16))); 
-static uint8_t df_stack[4096] __attribute__((aligned(16))); // 4 KiB stack for TSS entry to be used in double faults 
-static uint8_t kernel_stack[16384] __attribute__((aligned(16))); // 16 KiB
+static struct tss_64 tss __attribute__((aligned(16))); 
+
+/* 4KiB emergency stack for double faults */
+static uint8_t emergency_stack[4096] __attribute__((aligned(16)));
+/* 16KiB kernel stack */
+static uint8_t kernel_stack[16384] __attribute__((aligned(16)));
 
 static struct gdt_sys_desc gdt_generate_sys_desc(uint64_t base, uint32_t limit)
 {
@@ -119,9 +124,9 @@ static struct gdt_sys_desc gdt_generate_sys_desc(uint64_t base, uint32_t limit)
 }
 
 static struct gdt_seg_desc_t gdt_generate_seg_desc(uint32_t base,
-                uint32_t limit,
-                uint8_t access,
-                uint8_t flags)
+                                                   uint32_t limit,
+                                                   uint8_t access,
+                                                   uint8_t flags)
 {
         /* limit = 20 bits; base = 32 bits; access = 8 btis; flags = 4 bits */
 
@@ -148,7 +153,7 @@ void gdt_init() {
         /* 1. Init TSS */
         memset(&tss, 0, sizeof(Tss64Entry));
         tss.rsp0 = ((uint64_t)(kernel_stack + sizeof(kernel_stack)));
-        tss.ist1 = ((uint64_t)(df_stack + sizeof(df_stack))); 
+        tss.ist1 = ((uint64_t)(emergency_stack + sizeof(df_stack))); 
         tss.iomap = sizeof(Tss64Entry); // no I/O bitmap
 
         // 2. Build GDT
@@ -172,10 +177,10 @@ void gdt_init() {
                 .gdt_table_pointer = (uintptr_t)gdt_table;
                 .gdt_size = sizeof(gdt_table) - 1;
         }
-        loadGdtr(&gdt_meta);
+        gdt_load(&gdt_meta);
 
         // 4. Load TR 
-        loadLtr(5 << 3);                                           // TSS descriptor at index 5 => offset = 0x28 (5*8)
+        gdt_load_tss(5 << 3); // TSS descriptor at index 5 => offset = 0x28 (5*8)
 
         return;
 }

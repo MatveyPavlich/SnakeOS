@@ -28,10 +28,10 @@ gdt_load:
         .return:
                 ret
 
-; void gdt_load_tss(uint_16_t      - Function to load the GDT offset for
-;                   gdt_tss_index)   into the CPU.
-; @gdt_tss_index:                    Byte offset for the GDT into the TSS
-;                                    descriptor;
+; void gdt_load_tss(uint_16_t       - Function to load the GDT offset for
+;                   gdt_tss_offset)   into the CPU.
+; @gdt_tss_index:                     Byte offset for the GDT into the TSS
+;                                     descriptor;
 gdt_load_tss:
         ltr di
         ret
