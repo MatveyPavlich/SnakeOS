@@ -50,19 +50,22 @@ struct gdt_sys_desc {
         uint32_t reserved;
 } __attribute__((packed));
 
-/* struct gdt_tss_entry_64 - Format of the 64-bit TSS table row.
- * (u should have 1 TSS entry per core => for now make the OS single core)
+/* struct gdt_tss_entry_64 - Format of the 64-bit TSS table row. Note that you
+ *                           should have 1 tss entry per core. So, while the OS
+ *                           is single core just have 1 of them.
  * @reserved0:
+ * @rsp0:                    Ring 0 stack ptr (i.e., rsp reg).
+ * @rsp1:                    Ring 1 stack ptr. Zero out since not used.
+ * @rsp2:                    Ring 2 stack ptr. Zero out since not used.
+ * @ist1-7:                  Interrupt stack table.
+ * @iomap:                   I/O permissions bitmap.
  */
 struct gdt_tss_entry_64 {
         uint32_t reserved0;
-        uint64_t rsp0;      // rsp when entering ring 0
-        uint64_t rsp1;      // rsp when entering ring 1
-        uint64_t rsp2;      // rsp when entering ring 2
+        uint64_t rsp0;
+        uint64_t rsp1;
+        uint64_t rsp2;
         uint64_t reserved1;
-        // The next 7 entries are the "Interrupt stack Table"
-        // Here we can define stack pointers to use when handling interrupts.
-        // Which one to use is defined in the Interrupt Descriptor Table.
         uint64_t ist1;
         uint64_t ist2;
         uint64_t ist3;
@@ -76,6 +79,12 @@ struct gdt_tss_entry_64 {
 
 } __attribute__((packed));
 
+/* struct gdt_metadata - structure to be passed into the CPU and load the GDT.
+ *                       Note that the CPU copies this data and stores itself,
+ *                       so we don't need to keep this struct.
+ * @gdt_size:            Size of the GDT table in bytes.
+ * @gdt_table_pointer:   Pointer to the GDT table start.
+ */
 struct gdt_metadata {
         uint16_t  gdt_size;
         uintptr_t gdt_table_pointer;
@@ -88,7 +97,7 @@ extern void loadLtr(uint16_t selector);
 static uint64_t gdt_table[GDT_ENTRY_COUNT] __attribute__((aligned(16)));
 static struct gdt_tss_entry_64 tss __attribute__((aligned(16))); 
 static uint8_t df_stack[4096] __attribute__((aligned(16))); // 4 KiB stack for TSS entry to be used in double faults 
-static uint8_t kernel_stack[16384] __attribute__((aligned(16))); // 16 KiB kernel stack for TSS entry to be used for kernel
+static uint8_t kernel_stack[16384] __attribute__((aligned(16))); // 16 KiB
 
 static struct gdt_sys_desc gdt_generate_sys_desc(uint64_t base, uint32_t limit)
 {
