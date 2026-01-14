@@ -5,6 +5,30 @@
 #include "stdint.h"
 #include "util.h"
 
+/* Access byte bits */
+#define DESC_P          0x80    /* Present */
+#define DESC_DPL0       0x00
+#define DESC_DPL3       0x60
+#define DESC_S          0x10    /* Descriptor type (0 = system, 1 = code/data) */
+
+/* Code/Data types */
+#define DESC_CODE       0x08
+#define DESC_DATA       0x00
+#define DESC_EXEC       0x08
+#define DESC_RW         0x02
+#define DESC_ACCESSED   0x01
+
+/* Typical segments */
+#define GDT_KERNEL_CODE (DESC_P | DESC_S | DESC_EXEC | DESC_RW)
+#define GDT_KERNEL_DATA (DESC_P | DESC_S | DESC_RW)
+#define GDT_USER_CODE   (DESC_P | DESC_S | DESC_EXEC | DESC_RW | DESC_DPL3)
+#define GDT_USER_DATA   (DESC_P | DESC_S | DESC_RW | DESC_DPL3)
+
+/* TSS flags */
+#define TSS_AVAIL_64   0x09
+#define TSS_BUSY_64    0x0B
+#define TSS_DESC_ACCESS (DESC_P | TSS_AVAIL_64)
+
 #define GDT_SEG_DESC_NUM 5 /* null, kernel code/data, user code/data */
 #define GDT_SYS_DESC_NUM 1  
 #define GDT_ENTRY_COUNT  (GDT_SEG_DESC_NUM + GDT_SYS_DESC_NUM * 2)
@@ -110,10 +134,9 @@ static struct gdt_sys_desc gdt_generate_sys_desc(uint64_t base, uint32_t limit)
                 d.limit_low  = limit & 0xFFFF;
                 d.base_low   = base & 0xFFFF;
                 d.base_mid   = (base >> 16) & 0xFF;
-                d.access     = 0x89;   // 10001001b = present, type=available 64-bit TSS
-                                       // use 0x89 (available) or 0x89 | 0x2 = 0x8B (busy)
+                d.access     = TSS_DESC_ACCESS;
                 d.gran       = ((limit >> 16) & 0x0F);
-                d.gran      |= 0x00;   // G=0, AVL=0, L=0, DB=0 (must be zero for TSS)
+                d.gran      |= 0x00; // G=0, AVL=0, L=0, DB=0 (must be zero for TSS)
                 d.base_high  = (base >> 24) & 0xFF;
 
                 d.base_upper = (base >> 32) & 0xFFFFFFFF;
@@ -140,8 +163,8 @@ static struct gdt_seg_desc_t gdt_generate_seg_desc(uint32_t base,
                 d.base_low  = (uint16_t)(base & 0xFFFFu);
                 d.base_mid  = (uint8_t)((base >> 16) & 0xFFu);
                 d.access_bytes = access;
-                d.flags_and_limit_high =
-                        (uint8_t)((flags & 0xF0u) | ((limit >> 16) & 0x0Fu));
+                d.flags_and_limit_high = (uint8_t)((flags & 0xF0u)
+                                         | ((limit >> 16) & 0x0Fu));
                 d.base_high = (uint8_t)((base >> 24) & 0xFFu);
         };
 
@@ -150,13 +173,13 @@ static struct gdt_seg_desc_t gdt_generate_seg_desc(uint32_t base,
 
 void gdt_init() {
 
-        /* 1. Init TSS */
-        memset(&tss, 0, sizeof(Tss64Entry));
+        /* Init TSS */
+        memset(&tss, 0, sizeof(tss));
         tss.rsp0 = ((uint64_t)(kernel_stack + sizeof(kernel_stack)));
         tss.ist1 = ((uint64_t)(emergency_stack + sizeof(df_stack))); 
-        tss.iomap = sizeof(Tss64Entry); // no I/O bitmap
+        tss.iomap = sizeof(tss); /* no I/O bitmap */
 
-        // 2. Build GDT
+        /* GDT entries */
         struct gdt_seg_desc_t seg;
         seg = gdt_generate_seg_desc(0, 0, 0, 0);             // Null
         memcopy(&gdt[0], &seg, sizeof(seg));
