@@ -1,4 +1,4 @@
-/* TODO: cleanup according to the linux coding style (which I now use) */
+/* TODO: minor cleanup requires */
 
 #include "kprint.h"
 #include "stddef.h"
