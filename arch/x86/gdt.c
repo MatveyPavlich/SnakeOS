@@ -18,6 +18,14 @@
 #define DESC_RW         0x02
 #define DESC_ACCESSED   0x01
 
+#define DESC_GRAN_4K    0x80
+#define DESC_SIZE_32    0x40
+#define DESC_LONG_64    0x20
+#define DESC_AVL        0x10
+
+#define GDT_FLAGS_CODE64 (DESC_LONG_64 | DESC_GRAN_4K)
+#define GDT_FLAGS_DATA   (DESC_GRAN_4K)
+
 /* Typical segments */
 #define GDT_KERNEL_CODE (DESC_P | DESC_S | DESC_EXEC | DESC_RW)
 #define GDT_KERNEL_DATA (DESC_P | DESC_S | DESC_RW)
@@ -128,47 +136,54 @@ static uint8_t emergency_stack[4096] __attribute__((aligned(16)));
 /* 16KiB kernel stack */
 static uint8_t kernel_stack[16384] __attribute__((aligned(16)));
 
-static struct gdt_sys_desc gdt_generate_sys_desc(uint64_t base, uint32_t limit)
+static struct gdt_sys_desc gdt_generate_sys_desc(uint64_t base,
+                                                   uint32_t limit)
 {
         struct gdt_sys_desc d = {
-                d.limit_low  = limit & 0xFFFF;
-                d.base_low   = base & 0xFFFF;
-                d.base_mid   = (base >> 16) & 0xFF;
-                d.access     = TSS_DESC_ACCESS;
-                d.gran       = ((limit >> 16) & 0x0F);
-                d.gran      |= 0x00; // G=0, AVL=0, L=0, DB=0 (must be zero for TSS)
-                d.base_high  = (base >> 24) & 0xFF;
-
-                d.base_upper = (base >> 32) & 0xFFFFFFFF;
-                d.reserved   = 0;
-        }
+                .limit_low  = limit & 0xFFFF,
+                .base_low   = base & 0xFFFF,
+                .base_mid   = (base >> 16) & 0xFF,
+                .access     = TSS_DESC_ACCESS,
+                .gran       = ((limit >> 16) & 0x0F),
+                .base_high  = (base >> 24) & 0xFF,
+                .base_upper = (base >> 32) & 0xFFFFFFFF,
+                .reserved   = 0,
+        };
 
         return d;
 }
 
-static struct gdt_seg_desc_t gdt_generate_seg_desc(uint32_t base,
+static struct gdt_seg_desc gdt_generate_seg_desc(uint32_t base,
                                                    uint32_t limit,
                                                    uint8_t access,
                                                    uint8_t flags)
 {
-        /* limit = 20 bits; base = 32 bits; access = 8 btis; flags = 4 bits */
-
         if (limit > 0xFFFFF) {
                 kprint("Invalid gdt entry \n");
                 while (1) __asm__("hlt");
         }
 
-        struct gdt_seg_desc_t d = {
-                d.limit_low = (uint16_t)(limit & 0xFFFFu);
-                d.base_low  = (uint16_t)(base & 0xFFFFu);
-                d.base_mid  = (uint8_t)((base >> 16) & 0xFFu);
-                d.access_bytes = access;
-                d.flags_and_limit_high = (uint8_t)((flags & 0xF0u)
-                                         | ((limit >> 16) & 0x0Fu));
-                d.base_high = (uint8_t)((base >> 24) & 0xFFu);
+        struct gdt_seg_desc d = {
+                .limit_low = (uint16_t)(limit & 0xFFFFu),
+                .base_low  = (uint16_t)(base & 0xFFFFu),
+                .base_mid  = (uint8_t)((base >> 16) & 0xFFu),
+                .access_bytes = access,
+                .flags_and_limit_high = (uint8_t)((flags & 0xF0u)
+                                         | ((limit >> 16) & 0x0Fu)),
+                .base_high = (uint8_t)((base >> 24) & 0xFFu),
         };
 
         return d;
+}
+
+static void gdt_set_seg(int idx, struct gdt_seg_desc *d)
+{
+        memcopy(&gdt_table[idx], d, sizeof(*d));
+}
+
+static void gdt_set_sys(int idx, struct gdt_sys_desc *d)
+{
+        memcopy(&gdt_table[idx], d, sizeof(*d)); /* writes 2 slots */
 }
 
 void gdt_init() {
@@ -176,42 +191,38 @@ void gdt_init() {
         /* Init TSS */
         memset(&tss, 0, sizeof(tss));
         tss.rsp0 = ((uint64_t)(kernel_stack + sizeof(kernel_stack)));
-        tss.ist1 = ((uint64_t)(emergency_stack + sizeof(df_stack))); 
+        tss.ist1 = ((uint64_t)(emergency_stack + sizeof(emergency_stack))); 
         tss.iomap = sizeof(tss); /* no I/O bitmap */
 
         /* GDT entries */
-        gdt_table[0] = gdt_generate_seg_desc(0, 0, 0, 0); /* Null entry */
+        struct gdt_seg_desc s;
 
-        gdt[1] = gdt_generate_seg_desc(0,
-                                       0xFFFFF,
-                                       GDT_KERNEL_CODE,
-                                       GDT_FLAGS_CODE64);
+        s = gdt_generate_seg_desc(0, 0, 0, 0);
+        gdt_set_seg(0, &s);
 
-        gdt[2] = gdt_generate_seg_desc(0,
-                                       0xFFFFF,
-                                       GDT_KERNEL_DATA,
-                                       GDT_FLAGS_DATA);
+        s = gdt_generate_seg_desc(0, 0xFFFFF, GDT_KERNEL_CODE,
+                                              GDT_FLAGS_CODE64);
+        gdt_set_seg(1, &s);
 
-        gdt[3] = gdt_generate_seg_desc(0,
-                                       0xFFFFF,
-                                       GDT_USER_CODE,
-                                       GDT_FLAGS_CODE64);
+        s = gdt_generate_seg_desc(0, 0xFFFFF, GDT_KERNEL_DATA, GDT_FLAGS_DATA);
+        gdt_set_seg(2, &s);
 
-        gdt[4] = gdt_generate_seg_desc(0,
-                                       0xFFFFF,
-                                       GDT_USER_DATA,
-                                       GDT_FLAGS_DATA);
+        s = gdt_generate_seg_desc(0, 0xFFFFF, GDT_USER_CODE, GDT_FLAGS_CODE64);
+        gdt_set_seg(3, &s);
+
+        s = gdt_generate_seg_desc(0, 0xFFFFF, GDT_USER_DATA, GDT_FLAGS_DATA);
+        gdt_set_seg(3, &s);
 
         /* GDT descriptor for the TSS is two slots */
-        struct gdt_sys_desc_t sys = gdt_generate_sys_desc((uint64_t)&tss,
-                                                          sizeof(tss) - 1);
-        memcopy(&gdt[5], &sys, sizeof(sys));
+        struct gdt_sys_desc sys = gdt_generate_sys_desc((uint64_t)&tss,
+                                                        sizeof(tss) - 1);
+        memcopy(&gdt_table[5], &sys, sizeof(sys));
 
         /* Load GDT & TSS */
         struct gdt_metadata gdt_meta = {
-                .gdt_table_pointer = (uintptr_t)gdt_table;
-                .gdt_size = sizeof(gdt_table) - 1;
-        }
+                .gdt_table_pointer = (uintptr_t)gdt_table,
+                .gdt_size = sizeof(gdt_table) - 1,
+        };
         gdt_load(&gdt_meta);
         gdt_load_tss(5 << 3); /* TSS at index 5 => offset = 0x28 (5*8) */
 
