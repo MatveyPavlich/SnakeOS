@@ -180,30 +180,40 @@ void gdt_init() {
         tss.iomap = sizeof(tss); /* no I/O bitmap */
 
         /* GDT entries */
-        struct gdt_seg_desc_t seg;
-        seg = gdt_generate_seg_desc(0, 0, 0, 0);             // Null
-        memcopy(&gdt[0], &seg, sizeof(seg));
-        seg = gdt_generate_seg_desc(0, 0xFFFFF, 0x9A, 0x20); // Kernel code
-        memcopy(&gdt[1], &seg, sizeof(seg));
-        seg = gdt_generate_seg_desc(0, 0xFFFFF, 0x92, 0xC0); // Kernel data
-        memcopy(&gdt[2], &seg, sizeof(seg));
-        seg = gdt_generate_seg_desc(0, 0xFFFFF, 0xFA, 0x20); // User code
-        memcopy(&gdt[3], &seg, sizeof(seg));
-        seg = gdt_generate_seg_desc(0, 0xFFFFF, 0xF2, 0xC0); // User data
-        memcopy(&gdt[4], &seg, sizeof(seg));
+        gdt_table[0] = gdt_generate_seg_desc(0, 0, 0, 0); /* Null entry */
 
-        struct gdt_sys_desc_t sys = createGdtSystemDescriptor((uint64_t)&tss, sizeof(Tss64Entry) - 1); // TSS (16 bytes → 2 entries)
+        gdt[1] = gdt_generate_seg_desc(0,
+                                       0xFFFFF,
+                                       GDT_KERNEL_CODE,
+                                       GDT_FLAGS_CODE64);
+
+        gdt[2] = gdt_generate_seg_desc(0,
+                                       0xFFFFF,
+                                       GDT_KERNEL_DATA,
+                                       GDT_FLAGS_DATA);
+
+        gdt[3] = gdt_generate_seg_desc(0,
+                                       0xFFFFF,
+                                       GDT_USER_CODE,
+                                       GDT_FLAGS_CODE64);
+
+        gdt[4] = gdt_generate_seg_desc(0,
+                                       0xFFFFF,
+                                       GDT_USER_DATA,
+                                       GDT_FLAGS_DATA);
+
+        /* GDT descriptor for the TSS is two slots */
+        struct gdt_sys_desc_t sys = gdt_generate_sys_desc((uint64_t)&tss,
+                                                          sizeof(tss) - 1);
         memcopy(&gdt[5], &sys, sizeof(sys));
 
-        /* 3. Load GDT: CPU copies data, so we don't need to store the struct */
+        /* Load GDT & TSS */
         struct gdt_metadata gdt_meta = {
                 .gdt_table_pointer = (uintptr_t)gdt_table;
                 .gdt_size = sizeof(gdt_table) - 1;
         }
         gdt_load(&gdt_meta);
-
-        // 4. Load TR 
-        gdt_load_tss(5 << 3); // TSS descriptor at index 5 => offset = 0x28 (5*8)
+        gdt_load_tss(5 << 3); /* TSS at index 5 => offset = 0x28 (5*8) */
 
         return;
 }
