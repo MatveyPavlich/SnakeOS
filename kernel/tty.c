@@ -1,12 +1,10 @@
 /* tty subsytem implementation */
 
-/* tty.c */
-
-#include "tty.h"
 #include "console.h"
 #include "input.h"
-#include <stddef.h>
+#include "stddef.h"
 #include <stdbool.h>
+#include "tty.h"
 
 #define TTY_BUF_SIZE 256
 
@@ -55,7 +53,6 @@ static void tty_cursor_right(void)
                         console_move_cursor(1, 0);
         }
 }
-
 
 static void tty_insert_char(char c)
 {

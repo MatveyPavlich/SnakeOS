@@ -1,6 +1,6 @@
 /* input.h */
 #pragma once
-#include <stdint.h>
+#include "stdint.h"
 
 enum keycode {
         KEY_NONE = 0,
