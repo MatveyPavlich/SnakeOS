@@ -2,12 +2,14 @@
 
 #include "cdev.h"
 #include "circ_buf.h"
+#include "input.h"
 #include "i8042.h"
 #include "keyboard.h"
 #include "kprint.h"
 #include <stdbool.h>
 #include "stddef.h"
 #include "stdint.h"
+#include "tty.h"
 #include "util.h"
 
 #define KEYBUFFER_SIZE  128
