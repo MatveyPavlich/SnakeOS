@@ -8,6 +8,51 @@ The project explores **low-level OS development**, including bootloader design,
 memory management, graphics, and hardware interfacing, to build a minimalist
 but fully functional 64-bit OS.
 
+
+## How to run
+
+### Prerequisites
+
+Make sure the following tools are installed on your system:
+
+- `nasm` (x86 assembly)
+- `gcc` (with x86-64 support)
+- `ld`
+- `make`
+- `qemu-system-x86_64`
+
+#### Arch Linux
+```
+sudo pacman -S nasm gcc make qemu-system-x86
+```
+
+#### Ubuntu / Debian
+```
+sudo pacman -S nasm gcc make qemu-system-x86
+```
+#### MacOS (Homebrew)
+```
+brew install nasm qemu
+```
+> **Note:**  
+> On macOS, the system `gcc` is typically an alias for `clang`.  
+> This project uses freestanding C and a custom linker script, so a cross-compiler
+> is recommended if you run into build issues.
+
+### Build
+From the project root, run:
+```
+make
+```
+
+This will:
+- Assemble the bootloader (NASM)
+- Compile the kernel (C99)
+- Link everything into a bootable image
+- Produce a FAT12-formatted floppy disk image
+
+The output image is typically located at: `build/main.img`
+
 ---
 
 ## 📜 Project Goals
