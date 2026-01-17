@@ -52,6 +52,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			 $(BUILD_DIR)/vga.o                                 \
 			 $(BUILD_DIR)/i8042.o                               \
 			 $(BUILD_DIR)/i8253.o                               \
+			 $(BUILD_DIR)/tty.o                                 \
 			 $(BUILD_DIR)/tests.o
 			 -T kernel.ld
 	$(LD) $(LDFLAGS) -o $@ $(BUILD_DIR)/kernel_entry.o \
@@ -73,6 +74,7 @@ $(BUILD_DIR)/kernel.elf: $(BUILD_DIR)/kernel_entry.o $(BUILD_DIR)/kmain.o   \
 			    $(BUILD_DIR)/vga.o             \
 			    $(BUILD_DIR)/i8042.o           \
 			    $(BUILD_DIR)/i8253.o           \
+			    $(BUILD_DIR)/tty.o             \
 			    $(BUILD_DIR)/tests.o
 $(BUILD_DIR)/kernel.bin: $(BUILD_DIR)/kernel.elf
 	objcopy -O binary $< $@
@@ -117,6 +119,8 @@ $(BUILD_DIR)/i8042.o: drivers/i8042.c
 $(BUILD_DIR)/i8253.o: drivers/i8253.c
 	$(CC) $(CFLAGS) -c $< -o $@
 $(BUILD_DIR)/tests.o: debugging/tests/tests.c
+	$(CC) $(CFLAGS) -c $< -o $@
+$(BUILD_DIR)/tty.o: kernel/tty.c
 	$(CC) $(CFLAGS) -c $< -o $@
 	
 # === Run ===
