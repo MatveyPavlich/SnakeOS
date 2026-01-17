@@ -40,16 +40,14 @@ brew install nasm qemu
 > is recommended if you run into build issues.
 
 ### Build
-From the project root, run:
-```
-make
-```
+From the project root, run `make` followed by `make run`.
 
 This will:
 - Assemble the bootloader (NASM)
 - Compile the kernel (C99)
 - Link everything into a bootable image
 - Produce a FAT12-formatted floppy disk image
+- Start the QEMU
 
 The output image is typically located at: `build/main.img`
 
