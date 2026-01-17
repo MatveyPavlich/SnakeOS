@@ -22,4 +22,7 @@ void console_write(const char *s);
 /* Clear console screen */
 void console_clear(void);
 
+void console_backspace(void);
+void console_move_cursor(int dx, int dy);
+
 #endif /* CONSOLE_H */

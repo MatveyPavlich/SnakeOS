@@ -48,7 +48,7 @@ static void tty_cursor_left(void)
 
 static void tty_cursor_right(void)
 {
-        if (tty_active.cursor < tty.len) {
+        if (tty_active.cursor < tty_active.len) {
                 tty_active.cursor++;
                 if (tty_active.echo)
                         console_move_cursor(1, 0);
@@ -63,7 +63,7 @@ static void tty_insert_char(char c)
         for (size_t i = tty_active.len; i > tty_active.cursor; i--)
                 tty_active.buf[i] = tty_active.buf[i - 1];
 
-        tty_active.buf[tty.cursor] = c;
+        tty_active.buf[tty_active.cursor] = c;
         tty_active.cursor++;
         tty_active.len++;
 

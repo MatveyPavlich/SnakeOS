@@ -99,6 +99,51 @@ void console_write(const char *s)
                 console_putc(*s++);
 }
 
+void console_backspace(void)
+{
+        struct console *con = active_console;
+
+        if (!con)
+                return;
+
+        if (con->col == 0) {
+                if (con->row == 0)
+                        return;
+
+                con->row--;
+                con->col = VGA_NUM_COLS - 1;
+        } else {
+                con->col--;
+        }
+
+        /* overwrite character at new cursor position */
+        vga_put_char(con->row, con->col, ' ');
+}
+
+void console_move_cursor(int dx, int dy)
+{
+        struct console *con = active_console;
+
+        if (!con)
+                return;
+
+        int new_col = (int)con->col + dx;
+        int new_row = (int)con->row + dy;
+
+        if (new_col < 0)
+                new_col = 0;
+        if (new_col >= VGA_NUM_COLS)
+                new_col = VGA_NUM_COLS - 1;
+
+        if (new_row < 0)
+                new_row = 0;
+        if (new_row >= VGA_NUM_ROWS)
+                new_row = VGA_NUM_ROWS - 1;
+
+        con->col = (size_t)new_col;
+        con->row = (size_t)new_row;
+}
+
 void console_clear(void)
 {
         if (!active_console || !active_console->ops)
