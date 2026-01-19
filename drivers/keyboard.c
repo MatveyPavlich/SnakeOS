@@ -1,7 +1,6 @@
-/* Keyboard module to evaluate and store keys for consumption by tty */
+/* Keyboard module to convert keyboard scancodes into key events and send those
+ * into the tty layer.*/
 
-#include "cdev.h"
-#include "circ_buf.h"
 #include "input.h"
 #include "i8042.h"
 #include "keyboard.h"
@@ -12,7 +11,6 @@
 #include "tty.h"
 #include "util.h"
 
-#define KEYBUFFER_SIZE  128
 #define KEYBOARD_IRQ    1
 
 /* PS/2 key codes */
@@ -20,93 +18,38 @@
 #define RIGHT_SHIFT     0x36
 #define CAPS_LOCK       0x3A
 
-/* Forward declarations */
-static void keybuf_put(char c);
-static unsigned char translate_scancode(uint8_t sc);
-size_t keyboard_read(void *buffer, size_t n);
-
-/* Private keyboard state and buffer */
+/* State of modifier keys */
 struct keyboard_state {
         bool shift;
         bool caps;
 };
 static struct keyboard_state kbd;
-static char key_buffer[KEYBUFFER_SIZE];
-static struct circ_buf kbd_circ = {
-        .buf = key_buffer,
-        .head = 0,
-        .tail = 0,
-};
 
-static struct cdev keyboard;
-static struct cdev_ops keyboard_ops = {
-        .read = &keyboard_read,
-        .write = NULL,
-        .ioctl = NULL,
-};
-
-static const unsigned char base_map[0x60] = {
-        /*00*/  0,  27,'1','2','3','4','5','6','7','8','9','0','-','=', '\b',
-        /*0F*/ '\t','q','w','e','r','t','y','u','i','o','p','[',']','\n', 0,
-        /*1E*/ 'a','s','d','f','g','h','j','k','l',';','\'','`',  0,'\\','z',
-        /*2D*/ 'x','c','v','b','n','m',',','.','/',  0,  '*',  0,' ',
-        /*39*/  ' ',
-        /*3A..*/  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-        /*44*/  0,   0,   0,   0,   0,   0
-};
-
-static const unsigned char shift_map[0x60] = {
-        /*00*/  0,  27,'!','@','#','$','%','^','&','*','(',')','_','+', '\b',
-        /*0F*/ '\t','Q','W','E','R','T','Y','U','I','O','P','{','}','\n', 0,
-        /*1E*/ 'A','S','D','F','G','H','J','K','L',':','"','~',  0, '|','Z',
-        /*2D*/ 'X','C','V','B','N','M','<','>','?',  0,  '*',  0,' ',
-        /*39*/  ' ', 
-        /*3A..*/  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-        /*44*/  0,   0,   0,   0,   0,   0
-};
+// static const unsigned char base_map[0x60] = {
+//         /*00*/  0,  27,'1','2','3','4','5','6','7','8','9','0','-','=', '\b',
+//         /*0F*/ '\t','q','w','e','r','t','y','u','i','o','p','[',']','\n', 0,
+//         /*1E*/ 'a','s','d','f','g','h','j','k','l',';','\'','`',  0,'\\','z',
+//         /*2D*/ 'x','c','v','b','n','m',',','.','/',  0,  '*',  0,' ',
+//         /*39*/  ' ',
+//         /*3A..*/  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+//         /*44*/  0,   0,   0,   0,   0,   0
+// };
+//
+// static const unsigned char shift_map[0x60] = {
+//         /*00*/  0,  27,'!','@','#','$','%','^','&','*','(',')','_','+', '\b',
+//         /*0F*/ '\t','Q','W','E','R','T','Y','U','I','O','P','{','}','\n', 0,
+//         /*1E*/ 'A','S','D','F','G','H','J','K','L',':','"','~',  0, '|','Z',
+//         /*2D*/ 'X','C','V','B','N','M','<','>','?',  0,  '*',  0,' ',
+//         /*39*/  ' ', 
+//         /*3A..*/  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+//         /*44*/  0,   0,   0,   0,   0,   0
+// };
 
 int keyboard_init(void)
 {
         i8042_init(); /* PS/2 controller for the keyboard */
 
-        keyboard = (struct cdev) {
-                .name = "keyboard",
-                .ops  = &keyboard_ops,
-                .priv = NULL,
-        };
-
-        if (cdev_register(&keyboard)) {
-                kprint("Error: cdev registration for keyboard failed\n");
-                return 1;
-        }
-
         return 0;
-}
-
-/* keyboard_read - caller method for reading keyboard buffer.
- * @buffer:        pointer to the buffer where to copy characters.
- * @n:             number of characters to copy.
- * Known bug: data race is possible if keyboard_read is executed while another
- * keyboard interrupt is fired and new charactes are appended to the buffer
- */
-size_t keyboard_read(void *buffer, size_t n)
-{
-        char *out = buffer;
-        size_t i = 0;
-
-        // unsigned long flags = irq_save();
-        while (i < n) {
-                /* Busy-wait until a key is available */
-                while (kbd_circ.head == kbd_circ.tail) {
-                        __asm__ volatile ("hlt");
-                }
-
-                out[i++] = kbd_circ.buf[kbd_circ.tail];
-                circ_advance_tail(&kbd_circ, KEYBUFFER_SIZE);
-        }
-        // irq_restore(flags);
-
-        return (size_t)i;
 }
 
 static enum keycode scancode_to_keycode(uint8_t scancode)
@@ -160,6 +103,20 @@ static enum keycode scancode_to_keycode(uint8_t scancode)
                 case 0x0A: return KEY_9;
                 case 0x0B: return KEY_0;
 
+                /* punctuation */
+                case 0x0C: return KEY_MINUS;       /* - _ */
+                case 0x0D: return KEY_EQUAL;       /* = + */
+                case 0x1A: return KEY_LBRACKET;    /* [ { */
+                case 0x1B: return KEY_RBRACKET;    /* ] } */
+                case 0x27: return KEY_SEMICOLON;   /* ; : */
+                case 0x28: return KEY_APOSTROPHE;  /* ' " */
+                case 0x29: return KEY_GRAVE;       /* ` ~ */
+                case 0x2B: return KEY_BACKSLASH;   /* \ | */
+                case 0x33: return KEY_COMMA;       /* , < */
+                case 0x34: return KEY_DOT;         /* . > */
+                case 0x35: return KEY_SLASH;       /* / ? */
+                case 0x39: return KEY_SPACE;
+
                 default:
                         return KEY_NONE;
         }
@@ -167,17 +124,40 @@ static enum keycode scancode_to_keycode(uint8_t scancode)
 
 static char keycode_to_ascii(enum keycode key, uint8_t mods, bool caps)
 {
+        bool shift = mods & MOD_SHIFT;
+
+        /* letters */
         if (key >= KEY_A && key <= KEY_Z) {
-                bool upper = (mods & MOD_SHIFT) ^ caps;
-                return upper ? ('A' + (key - KEY_A))
-                             : ('a' + (key - KEY_A));
+                bool upper = shift ^ caps;
+                return upper ? ('A' + key - KEY_A)
+                             : ('a' + key - KEY_A);
         }
 
+        /* digits (UK layout) */
         if (key >= KEY_0 && key <= KEY_9) {
-                return '0' + (key - KEY_0);
+                static const char unshifted[] = "0123456789";
+                static const char shifted[]   = ")!\"£$%^&*(";
+                return shift ? shifted[key - KEY_0]
+                             : unshifted[key - KEY_0];
         }
 
-        return 0; /* non-printable */
+        /* punctuation */
+        switch (key) {
+                case KEY_MINUS:       return shift ? '_' : '-';
+                case KEY_EQUAL:       return shift ? '+' : '=';
+                case KEY_LBRACKET:    return shift ? '{' : '[';
+                case KEY_RBRACKET:    return shift ? '}' : ']';
+                case KEY_SEMICOLON:   return shift ? ':' : ';';
+                case KEY_APOSTROPHE:  return shift ? '"' : '\'';
+                case KEY_GRAVE:       return shift ? '~' : '`';
+                case KEY_BACKSLASH:   return shift ? '|' : '\\';
+                case KEY_COMMA:       return shift ? '<' : ',';
+                case KEY_DOT:         return shift ? '>' : '.';
+                case KEY_SLASH:       return shift ? '?' : '/';
+                case KEY_SPACE:       return ' ';
+                default:
+                        return 0;
+        }
 }
 
 /* keyboard_handle_scancode - ingestion API for low-level drivers (i8042, USB)
@@ -220,38 +200,4 @@ void keyboard_handle_scancode(uint8_t scancode)
                 ev.ascii = keycode_to_ascii(key, ev.mods, kbd.caps);
 
         tty_handle_key(&ev);
-}
-
-/* Translate PS2 scancodes into characters */
-static unsigned char translate_scancode(uint8_t sc)
-{
-        if (sc < sizeof(base_map)) {
-                unsigned char c = kbd.shift ? shift_map[sc] : base_map[sc];
-
-                if (c >= 'a' && c <= 'z') {
-                        if (kbd.caps && !kbd.shift)
-                                c = (unsigned char)(c - 'a' + 'A');
-                }
-                else if (c >= 'A' && c <= 'Z') {
-                        if (kbd.caps && !kbd.shift)
-                                c = (unsigned char)(c - 'A' + 'a');
-                }
-                return c;
-        }
-        return 0;
-}
-
-static void keybuf_put(char c)
-{
-        // unsigned long flags = irq_save();
-
-        /* If no space, drop the key */
-        if (CIRC_SPACE(kbd_circ.head, kbd_circ.tail, KEYBUFFER_SIZE) == 0)
-                return;
-
-        /* Write at head, then advance head */
-        kbd_circ.buf[kbd_circ.head] = c;
-        circ_advance_head(&kbd_circ, KEYBUFFER_SIZE);
-
-        // irq_restore(flags);
 }

@@ -32,6 +32,20 @@ enum keycode {
         KEY_SHIFT,
         KEY_CTRL,
         KEY_ALT,
+
+        /* punctuation keys (US/UK physical positions) */
+        KEY_MINUS,
+        KEY_EQUAL,
+        KEY_LBRACKET,
+        KEY_RBRACKET,
+        KEY_SEMICOLON,
+        KEY_APOSTROPHE,
+        KEY_GRAVE,
+        KEY_BACKSLASH,
+        KEY_COMMA,
+        KEY_DOT,
+        KEY_SLASH,
+        KEY_SPACE,
 };
 
 enum key_action {
