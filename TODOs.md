@@ -31,8 +31,8 @@ a modular codebase with a dedicated mechanism and code modules.
 - [x] Create a console subsystem and offload relevant logic to it from kprint and timer.c
 - [x] Create a core timer module from devices/timer.c and migrate it to `/kernel` 
 - [x] Refactor gdt.c and gdt.asm (code is such a mess).
-- [ ] Implement tty module with cursor movements.
-- [ ] Connect keyboard.c to tty's ingestion API.
+- [x] Implement tty module with cursor movements.
+- [x] Connect keyboard.c to tty's ingestion API.
 - [ ] Implement tty.c API by handing different key events.
 - [ ] Scope how to solve the  data race in the `keyboard.c` module.
 - [ ] Address data race in the `keyboard.c` module.

@@ -25,26 +25,6 @@ struct keyboard_state {
 };
 static struct keyboard_state kbd;
 
-// static const unsigned char base_map[0x60] = {
-//         /*00*/  0,  27,'1','2','3','4','5','6','7','8','9','0','-','=', '\b',
-//         /*0F*/ '\t','q','w','e','r','t','y','u','i','o','p','[',']','\n', 0,
-//         /*1E*/ 'a','s','d','f','g','h','j','k','l',';','\'','`',  0,'\\','z',
-//         /*2D*/ 'x','c','v','b','n','m',',','.','/',  0,  '*',  0,' ',
-//         /*39*/  ' ',
-//         /*3A..*/  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-//         /*44*/  0,   0,   0,   0,   0,   0
-// };
-//
-// static const unsigned char shift_map[0x60] = {
-//         /*00*/  0,  27,'!','@','#','$','%','^','&','*','(',')','_','+', '\b',
-//         /*0F*/ '\t','Q','W','E','R','T','Y','U','I','O','P','{','}','\n', 0,
-//         /*1E*/ 'A','S','D','F','G','H','J','K','L',':','"','~',  0, '|','Z',
-//         /*2D*/ 'X','C','V','B','N','M','<','>','?',  0,  '*',  0,' ',
-//         /*39*/  ' ', 
-//         /*3A..*/  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-//         /*44*/  0,   0,   0,   0,   0,   0
-// };
-
 int keyboard_init(void)
 {
         i8042_init(); /* PS/2 controller for the keyboard */
@@ -52,6 +32,9 @@ int keyboard_init(void)
         return 0;
 }
 
+/* scancode_to_keycode - Hepler to convert a scancode into enum keycode.
+ * @scancode:            Keyboard scancode to be converted.
+ */
 static enum keycode scancode_to_keycode(uint8_t scancode)
 {
         switch (scancode) {
@@ -122,6 +105,11 @@ static enum keycode scancode_to_keycode(uint8_t scancode)
         }
 }
 
+/* keycode_to_ascii - Hepler to convert enum keycode into the ascii char.
+ * @key:              Key to be converted into ascii.
+ * @mods:             Shift state
+ * @caps:             Caps state
+ */
 static char keycode_to_ascii(enum keycode key, uint8_t mods, bool caps)
 {
         bool shift = mods & MOD_SHIFT;
