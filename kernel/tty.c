@@ -80,7 +80,6 @@ static void tty_insert_char(char c)
         }
 }
 
-
 static void tty_newline(void)
 {
         if (tty_active.echo)

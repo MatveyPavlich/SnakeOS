@@ -109,6 +109,77 @@ size_t keyboard_read(void *buffer, size_t n)
         return (size_t)i;
 }
 
+static enum keycode scancode_to_keycode(uint8_t scancode)
+{
+        switch (scancode) {
+                /* control keys */
+                case 0x1C: return KEY_ENTER;
+                case 0x0E: return KEY_BACKSPACE;
+                case 0x4B: return KEY_LEFT;
+                case 0x4D: return KEY_RIGHT;
+                case 0x48: return KEY_UP;
+                case 0x50: return KEY_DOWN;
+
+                /* letters */
+                case 0x1E: return KEY_A;
+                case 0x30: return KEY_B;
+                case 0x2E: return KEY_C;
+                case 0x20: return KEY_D;
+                case 0x12: return KEY_E;
+                case 0x21: return KEY_F;
+                case 0x22: return KEY_G;
+                case 0x23: return KEY_H;
+                case 0x17: return KEY_I;
+                case 0x24: return KEY_J;
+                case 0x25: return KEY_K;
+                case 0x26: return KEY_L;
+                case 0x32: return KEY_M;
+                case 0x31: return KEY_N;
+                case 0x18: return KEY_O;
+                case 0x19: return KEY_P;
+                case 0x10: return KEY_Q;
+                case 0x13: return KEY_R;
+                case 0x1F: return KEY_S;
+                case 0x14: return KEY_T;
+                case 0x16: return KEY_U;
+                case 0x2F: return KEY_V;
+                case 0x11: return KEY_W;
+                case 0x2D: return KEY_X;
+                case 0x15: return KEY_Y;
+                case 0x2C: return KEY_Z;
+
+                /* digits (top row, not keypad) */
+                case 0x02: return KEY_1;
+                case 0x03: return KEY_2;
+                case 0x04: return KEY_3;
+                case 0x05: return KEY_4;
+                case 0x06: return KEY_5;
+                case 0x07: return KEY_6;
+                case 0x08: return KEY_7;
+                case 0x09: return KEY_8;
+                case 0x0A: return KEY_9;
+                case 0x0B: return KEY_0;
+
+                default:
+                        return KEY_NONE;
+        }
+}
+
+static char keycode_to_ascii(enum keycode key, uint8_t mods, bool caps)
+{
+        if (key >= KEY_A && key <= KEY_Z) {
+                bool upper = (mods & MOD_SHIFT) ^ caps;
+                return upper ? ('A' + (key - KEY_A))
+                             : ('a' + (key - KEY_A));
+        }
+
+        if (key >= KEY_0 && key <= KEY_9) {
+                return '0' + (key - KEY_0);
+        }
+
+        return 0; /* non-printable */
+}
+
 /* keyboard_handle_scancode - ingestion API for low-level drivers (i8042, USB)
  *                            to send scancodes to the keyboard module.
  * @scancode:                 scancode to be send.
@@ -126,21 +197,29 @@ void keyboard_handle_scancode(uint8_t scancode)
                 case LEFT_SHIFT:
                 case RIGHT_SHIFT:
                         kbd.shift = is_key_pressed;
-                        return;
+                        break;
                 case CAPS_LOCK:
                         /* Toggle capslock on the press only */
                         if (is_key_pressed)
                                 kbd.caps = !kbd.caps;
-                        return;
-                default:
-                        /* Do not buffer released keys, just the pressed ones */
-                        if (!is_key_pressed)
-                                return;
                         break;
         }
-        char unsigned pressed_key = translate_scancode(key_scancode);
-        keybuf_put((char)pressed_key);
-        kprint("%c", pressed_key);
+
+        enum keycode key = scancode_to_keycode(key_scancode);
+        if (key == KEY_NONE)
+                return;
+
+        struct key_event ev = {
+                .key    = key,
+                .action = is_key_pressed ? KEY_PRESS : KEY_RELEASE,
+                .mods   = kbd.shift ? MOD_SHIFT : 0,
+                .ascii  = 0,
+        };
+
+        if (is_key_pressed)
+                ev.ascii = keycode_to_ascii(key, ev.mods, kbd.caps);
+
+        tty_handle_key(&ev);
 }
 
 /* Translate PS2 scancodes into characters */
