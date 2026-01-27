@@ -1,6 +1,8 @@
+#include "stdint.h"
+
 struct spinlock {
         int locked;
-        unsigned long irq_flags;
+        uint64_t irq_flags;
 };
 
 void spinlock_init(struct spinlock *lk);
