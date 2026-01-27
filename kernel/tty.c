@@ -1,4 +1,4 @@
-/* tty subsytem implementation */
+/* tty subsystem implementation */
 
 #include "console.h"
 #include "input.h"

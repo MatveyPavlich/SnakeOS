@@ -41,6 +41,7 @@ a modular codebase with a dedicated mechanism and code modules.
 - [ ] Refactor the current build system (monolith Makefile)
 
 ### General plan
+- [ ] Remove bugs from the console
 - [ ] Implement basic IRQ locks
 - [ ] Create a page managemet API
 - [ ] Implement tasks
