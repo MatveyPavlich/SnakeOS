@@ -33,9 +33,17 @@ a modular codebase with a dedicated mechanism and code modules.
 - [x] Refactor gdt.c and gdt.asm (code is such a mess).
 - [x] Implement tty module with cursor movements.
 - [x] Connect keyboard.c to tty's ingestion API.
-- [ ] Implement tty.c API by handing different key events.
+- [x] Implement tty.c API by handing different key events.
 - [ ] Scope how to solve the  data race in the `keyboard.c` module.
 - [ ] Address data race in the `keyboard.c` module.
 - [ ] After the console is done scope out how to implement tasks
 - [ ] Scope how to implement a log functionality for debugging the OS
 - [ ] Refactor the current build system (monolith Makefile)
+
+### General plan
+- [ ] Implement basic IRQ locks
+- [ ] Create a page managemet API
+- [ ] Implement tasks
+- [ ] Create scheduler
+- [ ] Userspace and syscalls
+- [ ] VFS
