@@ -30,6 +30,7 @@ static struct keyboard_state kbd;
 int keyboard_init(void)
 {
         i8042_init(); /* PS/2 controller for the keyboard */
+        spinlock_init(&kbd.lock);
 
         return 0;
 }
@@ -158,6 +159,7 @@ static char keycode_to_ascii(enum keycode key, uint8_t mods, bool caps)
  */
 void keyboard_handle_scancode(uint8_t scancode)
 {
+        spin_lock(&kbd.lock);
         /* Check if a key was pressed or released by looking up bit 7 (0x80)
          * in the scancode for PS/2 */
         bool is_key_pressed = !(scancode & 0x80);
@@ -176,18 +178,24 @@ void keyboard_handle_scancode(uint8_t scancode)
         }
 
         enum keycode key = scancode_to_keycode(key_scancode);
-        if (key == KEY_NONE)
+        if (key == KEY_NONE) {
+                spin_unlock(&kbd.lock);
                 return;
+        }
+
+        uint8_t mods = kbd.shift ? MOD_SHIFT : 0;
+        bool caps = kbd.caps;
+        spin_unlock(&kbd.lock);
 
         struct key_event ev = {
                 .key    = key,
                 .action = is_key_pressed ? KEY_PRESS : KEY_RELEASE,
-                .mods   = kbd.shift ? MOD_SHIFT : 0,
+                .mods   = mods,
                 .ascii  = 0,
         };
 
         if (is_key_pressed)
-                ev.ascii = keycode_to_ascii(key, ev.mods, kbd.caps);
+                ev.ascii = keycode_to_ascii(key, mods, caps);
 
         tty_handle_key(&ev);
 }
