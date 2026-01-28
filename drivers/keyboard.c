@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include "stddef.h"
 #include "stdint.h"
+#include "spinlock.h"
 #include "tty.h"
 #include "util.h"
 
@@ -22,6 +23,7 @@
 struct keyboard_state {
         bool shift;
         bool caps;
+        struct spinlock lock;
 };
 static struct keyboard_state kbd;
 
