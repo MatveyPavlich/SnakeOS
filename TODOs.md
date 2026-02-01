@@ -34,8 +34,8 @@ a modular codebase with a dedicated mechanism and code modules.
 - [x] Implement tty module with cursor movements.
 - [x] Connect keyboard.c to tty's ingestion API.
 - [x] Implement tty.c API by handing different key events.
-- [ ] Scope how to solve the  data race in the `keyboard.c` module.
-- [ ] Address data race in the `keyboard.c` module.
+- [x] Scope how to solve the  data race in the `keyboard.c` module.
+- [x] Address data race in the `keyboard.c` module.
 - [ ] After the console is done scope out how to implement tasks
 - [ ] Scope how to implement a log functionality for debugging the OS
 - [ ] Refactor the current build system (monolith Makefile)
