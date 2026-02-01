@@ -145,6 +145,7 @@ void console_move_cursor(int dx, int dy)
 
         con->col = (size_t)new_col;
         con->row = (size_t)new_row;
+        // vga_set_cursor(con->row, con->col);
 }
 
 void console_clear(void)

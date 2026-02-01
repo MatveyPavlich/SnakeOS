@@ -6,14 +6,14 @@ void *memset(void *dst, int value, size_t n);
 
 /* ATT syntax for writing 1 byte to a port (IO bus) */
 static inline void outb(uint16_t port, uint8_t val) {
-    __asm__ volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
+        __asm__ volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
 }
 
 /* ATT syntax for reading 1 byte from a port (IO bus) */
 static inline uint8_t inb(uint16_t port) {
-    uint8_t ret;
-    __asm__ volatile ( "inb %1, %0" : "=a"(ret) : "Nd"(port) );
-    return ret;
+        uint8_t ret;
+        __asm__ volatile ( "inb %1, %0" : "=a"(ret) : "Nd"(port) );
+        return ret;
 }
 
 /* Wait 1-4 ms. Useful for PIC remapping on old hardware. Linux uses port 0x80,
@@ -21,7 +21,7 @@ static inline uint8_t inb(uint16_t port) {
  * */
 static inline void io_wait(void)
 {
-    outb(0x80, 0);
+        outb(0x80, 0);
 }
 
 /* String stuff */
