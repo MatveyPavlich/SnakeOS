@@ -27,7 +27,9 @@ struct console {
 };
 
 /* console_ops - Console backend operations owned by a specific console struct.
- * @putc:        Callback to write a character to a console.
+ * @putc:        Callback to write a character in the console at the current
+ *               cursor position. To write at a different position you need to
+ *               move the cursor first.
  * @clear:       Callback to clear the screen.
  */
 struct console_ops {
@@ -84,6 +86,7 @@ static void console_vga_clear_screen(struct console *con)
         con->col = 0;
 }
 
+/* console_putc - console method for printing a character at the cursor posn */
 void console_putc(char c)
 {
         if (!active_console || !active_console->ops)

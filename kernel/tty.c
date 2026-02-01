@@ -11,6 +11,7 @@
 /* struct tty - structure to represent a terminal line.
  * buf:         Characters that the line contains.
  * len:         Number characters on the line.
+ * cursor:      Cursor position on the line.
  * echo:        True when text is displayed on the screen, false for when its
  *              hidden (e.g., password line).
  */
@@ -28,21 +29,35 @@ struct tty tty_active = {
         .echo = true,
 };
 
+/* tty_backspace - text deletion function. */
 static void tty_backspace(void)
 {
         if (tty_active.cursor == 0)
                 return;
 
+        /* Updated active tty line state */
         for (size_t i = tty_active.cursor - 1; i < tty_active.len - 1; i++)
                 tty_active.buf[i] = tty_active.buf[i + 1];
-
         tty_active.cursor--;
         tty_active.len--;
 
-        if (tty_active.echo)
-                console_backspace();
-}
+        /* Redraw the new tty state in the console */
+        if (!tty_active.echo)
+                return;
+        else {
+                console_move_cursor(-1, 0);
 
+                /* Redraw tail and clear the last character */
+                for (size_t i = tty_active.cursor; i < tty_active.len; i++)
+                        console_putc(tty_active.buf[i]);
+                console_putc(' ');
+
+                /* Align console cursor with tty's cursor by shift latter to the
+                 * left */
+                size_t chars_printed = tty_active.len - tty_active.cursor + 1;
+                console_move_cursor(chars_printed * (-1), 0);
+        }
+}
 
 static void tty_cursor_left(void)
 {
@@ -61,7 +76,6 @@ static void tty_cursor_right(void)
                         console_move_cursor(1, 0);
         }
 }
-
 
 static void tty_insert_char(char c)
 {
@@ -86,10 +100,6 @@ static void tty_insert_char(char c)
                 for (size_t i = tty_active.cursor; i < tty_active.len; i++)
                         console_move_cursor(-1, 0);
         }
-}
-
-static void tty_delete_char(void)
-{
 }
 
 static void tty_newline(void)
