@@ -104,8 +104,10 @@ static void tty_insert_char(char c)
 
 static void tty_newline(void)
 {
+        /* TODO: Migrate <SnakeOS> printing to shell once you implement it.
+         * Cause TTY is responsible only for the within-line logic.*/
         if (tty_active.echo)
-                console_putc('\n');
+                console_write("\n<SnakeOS> ");
 
         /* In a real OS, you'd wake readers here */
 

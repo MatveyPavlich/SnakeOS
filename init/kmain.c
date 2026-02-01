@@ -25,6 +25,7 @@ void kmain()
         print_ram_map();
         timer_init();
         keyboard_init();
+        kprint("<SnakeOS> "); /* TODO: replace with shell_init */
 
         /* Tests for debugging purposes */
         // tests_div_by_zero();
