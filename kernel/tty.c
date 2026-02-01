@@ -8,13 +8,20 @@
 
 #define TTY_BUF_SIZE 256
 
+/* struct tty - structure to represent a terminal line.
+ * buf:         Characters that the line contains.
+ * len:         Number characters on the line.
+ * echo:        True when text is displayed on the screen, false for when its
+ *              hidden (e.g., password line).
+ */
 struct tty {
         char   buf[TTY_BUF_SIZE];
-        size_t len;       /* number of chars in buffer */
-        size_t cursor;    /* 0 <= cursor <= len */
+        size_t len;
+        size_t cursor;
         bool   echo;
 };
 
+/* Active editable line in the terminal */
 struct tty tty_active = {
         .len = 0,
         .cursor = 0,
@@ -55,6 +62,7 @@ static void tty_cursor_right(void)
         }
 }
 
+
 static void tty_insert_char(char c)
 {
         if (tty_active.len >= TTY_BUF_SIZE)
@@ -78,6 +86,10 @@ static void tty_insert_char(char c)
                 for (size_t i = tty_active.cursor; i < tty_active.len; i++)
                         console_move_cursor(-1, 0);
         }
+}
+
+static void tty_delete_char(void)
+{
 }
 
 static void tty_newline(void)
