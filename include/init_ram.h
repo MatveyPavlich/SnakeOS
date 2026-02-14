@@ -1,7 +1,6 @@
 #include "stddef.h"
 #include "stdint.h"
 
-
 struct ram_entry {
         uint64_t base;
         uint64_t length;
