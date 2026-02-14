@@ -162,6 +162,6 @@ get_memory_map:
         jnz .next_entry
 
     .done:
-        mov ax, cx            ; AX = number of entries
+        mov [0x5FFD], cx            ; AX = number of entries
         popad
         ret
