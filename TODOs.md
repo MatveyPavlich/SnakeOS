@@ -36,11 +36,6 @@ a modular codebase with a dedicated mechanism and code modules.
 - [x] Implement tty.c API by handing different key events.
 - [x] Scope how to solve the  data race in the `keyboard.c` module.
 - [x] Address data race in the `keyboard.c` module.
-- [ ] After the console is done scope out how to implement tasks
-- [ ] Scope how to implement a log functionality for debugging the OS
-- [ ] Refactor the current build system (monolith Makefile)
-
-### General plan
 - [x] Remove bugs from the console
 - [x] Implement basic IRQ locks
 - [ ] Create a page managemet API
@@ -48,3 +43,7 @@ a modular codebase with a dedicated mechanism and code modules.
 - [ ] Create scheduler
 - [ ] Userspace and syscalls
 - [ ] VFS
+
+### Nice to have
+- [ ] Scope how to implement a log functionality for debugging the OS
+- [ ] Refactor the current build system (monolith Makefile)
